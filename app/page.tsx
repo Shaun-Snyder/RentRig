@@ -1,8 +1,8 @@
-export default function Home() {
+export default function Page() {
   return (
-    <main style={{ padding: 40 }}>
+    <div style={{ padding: 40 }}>
       <h1>RentRig is Live 🚀</h1>
-      <p>If you can see this, routing works.</p>
-    </main>
+      <p>If you see this, routing and rendering work.</p>
+    </div>
   );
 }
