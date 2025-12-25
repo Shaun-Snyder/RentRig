@@ -4,30 +4,25 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
-import ProfileForm from "@/components/ProfileForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-
   const { data, error } = await supabase.auth.getUser();
+
   if (error || !data?.user) {
     redirect("/login");
   }
 
   const user = data.user;
 
-  // Only select columns that actually exist in your profiles table
-  const { data: profile, error: profileError } = await supabase
+  // profiles table only contains: id, role, created_at, updated_at
+  const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  if (profileError || !profile) {
-    throw new Error("Profile not found (or role missing).");
-  }
-
-  const role = profile.role; // <-- NO fallback to "user"
+  const role = profile?.role || "user";
   const email = user.email || "(no email)";
 
   return (
@@ -39,11 +34,6 @@ export default async function DashboardPage() {
         <p className="mt-2 text-slate-600">Welcome back.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {/* Keep this form if you want, but it will only work if your DB has full_name.
-              If your DB does NOT have full_name, leave it here but it won't save anything
-              until we update ProfileForm + table columns. */}
-          <ProfileForm initialFullName={""} />
-
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <div className="text-sm text-slate-500">Email</div>
             <div className="mt-2 font-medium">{email}</div>
@@ -54,7 +44,7 @@ export default async function DashboardPage() {
             <div className="mt-2 font-medium">{role}</div>
           </div>
 
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <div className="rounded-xl border bg-white p-5 shadow-sm md:col-span-2">
             <div className="text-sm text-slate-500">User ID</div>
             <div className="mt-2 font-mono text-sm break-all">{user.id}</div>
           </div>
