@@ -1,3 +1,4 @@
+
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -7,23 +8,27 @@ import ProfileForm from "@/components/ProfileForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
 
+  const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) {
     redirect("/login");
   }
 
   const user = data.user;
 
-  const { data: profile } = await supabase
+  // Only select columns that actually exist in your profiles table
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("email, full_name, role")
+    .select("role")
     .eq("id", user.id)
     .single();
 
-  const email = profile?.email || user.email || "(no email)";
-  const fullName = profile?.full_name || "(no name set)";
-  const role = profile?.role || "user";
+  if (profileError || !profile) {
+    throw new Error("Profile not found (or role missing).");
+  }
+
+  const role = profile.role; // <-- NO fallback to "user"
+  const email = user.email || "(no email)";
 
   return (
     <>
@@ -34,7 +39,10 @@ export default async function DashboardPage() {
         <p className="mt-2 text-slate-600">Welcome back.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <ProfileForm initialFullName={profile?.full_name || ""} />
+          {/* Keep this form if you want, but it will only work if your DB has full_name.
+              If your DB does NOT have full_name, leave it here but it won't save anything
+              until we update ProfileForm + table columns. */}
+          <ProfileForm initialFullName={""} />
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <div className="text-sm text-slate-500">Email</div>
@@ -55,5 +63,4 @@ export default async function DashboardPage() {
     </>
   );
 }
-
 
