@@ -9,9 +9,9 @@ export default async function ServerHeader() {
   } = await supabase.auth.getUser();
 
   // Logged out
-  if (!user) {
-    return <Header isAuthed={false} isAdmin={false} />;
-  }
+ if (!user) {
+  return <Header role={undefined} />;
+}
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -21,5 +21,6 @@ export default async function ServerHeader() {
 
   const isAdmin = profile?.role === "admin";
 
-  return <Header isAuthed={true} isAdmin={isAdmin} />;
+  const role = profile?.role ?? "user";
+return <Header role={role} />;
 }
