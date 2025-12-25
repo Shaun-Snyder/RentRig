@@ -1,3 +1,4 @@
+
 export const dynamic = "force-dynamic";
 
 import ServerHeader from "@/components/ServerHeader";
@@ -17,14 +18,16 @@ export default async function AdminPage() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("email, full_name, role")
+    .select("full_name, role")
     .eq("id", user.id)
     .single();
 
+  // If profile row is missing or query fails, send back
   if (error || !profile) {
     redirect("/dashboard");
   }
 
+  // Admin gate
   if (profile.role !== "admin") {
     redirect("/dashboard");
   }
@@ -35,9 +38,7 @@ export default async function AdminPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold">Admin</h1>
-        <p className="mt-2 text-slate-600">
-          You have admin access. ✅
-        </p>
+        <p className="mt-2 text-slate-600">You have admin access. ✅</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border bg-white p-5 shadow-sm">
@@ -48,16 +49,11 @@ export default async function AdminPage() {
           </div>
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <div className="text-sm text-slate-500">Email</div>
-            <div className="mt-2 font-medium">{profile.email}</div>
-          </div>
-
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
             <div className="text-sm text-slate-500">Role</div>
             <div className="mt-2 font-medium">{profile.role}</div>
           </div>
 
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <div className="rounded-xl border bg-white p-5 shadow-sm md:col-span-2">
             <div className="text-sm text-slate-500">User ID</div>
             <div className="mt-2 font-mono text-sm break-all">{user.id}</div>
           </div>
@@ -66,4 +62,3 @@ export default async function AdminPage() {
     </>
   );
 }
-
