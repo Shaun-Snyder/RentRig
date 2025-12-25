@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
+import ProfileForm from "@/components/ProfileForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -33,10 +34,7 @@ export default async function DashboardPage() {
         <p className="mt-2 text-slate-600">Welcome back.</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <div className="text-sm text-slate-500">Full name</div>
-            <div className="mt-2 font-medium">{fullName}</div>
-          </div>
+          <ProfileForm initialFullName={profile?.full_name || ""} />
 
           <div className="rounded-xl border bg-white p-5 shadow-sm">
             <div className="text-sm text-slate-500">Email</div>
