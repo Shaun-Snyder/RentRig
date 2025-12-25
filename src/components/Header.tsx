@@ -4,53 +4,42 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "./LogoutButton";
 
-type HeaderProps = {
-  isAdmin?: boolean;
-  isAuthed?: boolean;
-};
-
-export default function Header({ isAdmin = false, isAuthed = false }: HeaderProps) {
+function NavLink({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
   const pathname = usePathname();
-
-  const linkClass = (href: string) =>
-    `px-3 py-2 rounded-md text-sm font-medium ${
-      pathname === href
-        ? "bg-gray-900 text-white"
-        : "text-gray-700 hover:bg-gray-100"
-    }`;
+  const active = pathname === href;
 
   return (
+    <Link
+      href={href}
+      className={`rounded-md px-3 py-2 text-sm font-medium ${
+        active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+export default function Header({ role }: { role?: string }) {
+  return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold tracking-tight">RentRig</span>
-
-          <nav className="flex items-center gap-1">
-            {isAuthed ? (
-              <>
-                <Link className={linkClass("/dashboard")} href="/dashboard">
-                  Dashboard
-                </Link>
-
-                {isAdmin ? (
-                  <Link className={linkClass("/admin")} href="/admin">
-                    Admin
-                  </Link>
-                ) : null}
-              </>
-            ) : (
-              <Link className={linkClass("/login")} href="/login">
-                Login
-              </Link>
-            )}
+          <div className="text-lg font-bold">RentRig</div>
+          <nav className="flex items-center gap-2">
+            <NavLink href="/dashboard" label="Dashboard" />
+            {role === "admin" && <NavLink href="/admin" label="Admin" />}
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isAuthed ? <LogoutButton /> : null}
-        </div>
+        <LogoutButton />
       </div>
     </header>
   );
 }
-
