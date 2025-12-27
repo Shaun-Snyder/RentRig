@@ -6,29 +6,32 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function isValidISODate(value: string) {
-  // basic YYYY-MM-DD validation
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-// Parse "YYYY-MM-DD" into a Date at UTC midnight
+// Parse YYYY-MM-DD into a UTC date at midnight (avoids timezone bugs)
 function parseISODate(value: string) {
-  if (!isValidISODate(value)) throw new Error("Invalid date format.");
-  const [y, m, d] = value.split("-").map((n) => Number(n));
+  const [y, m, d] = value.split("-").map((v) => Number(v));
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-// Add N days to a Date, keeping UTC midnight
 function addDaysUTC(date: Date, days: number) {
-  const out = new Date(date.getTime());
-  out.setUTCDate(out.getUTCDate() + Number(days || 0));
-  return out;
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
 }
 
-// Inclusive overlap check: [aStart, aEnd] overlaps [bStart, bEnd]
+// Half-open overlap: [aStart, aEnd) overlaps [bStart, bEnd)
 function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
-  return aStart.getTime() <= bEnd.getTime() && bStart.getTime() <= aEnd.getTime();
+  return aStart < bEnd && bStart < aEnd;
 }
 
+/**
+ * Renter requests a rental (pending).
+ * We also compute buffer_days from the listing's turnaround_days (default 1).
+ * Server-side we prevent requesting dates that overlap any APPROVED rental
+ * when considering buffers.
+ */
 export async function requestRental(formData: FormData) {
   const listing_id = String(formData.get("listing_id") ?? "").trim();
   const start_date = String(formData.get("start_date") ?? "").trim();
@@ -40,51 +43,42 @@ export async function requestRental(formData: FormData) {
     return { ok: false, message: "Dates must be YYYY-MM-DD." };
   }
 
+  const reqStart = parseISODate(start_date);
+  const reqEndBase = parseISODate(end_date);
+  if (!(reqStart < addDaysUTC(reqEndBase, 1))) {
+    return { ok: false, message: "End date must be on/after start date." };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   const user = data?.user;
-
   if (error || !user) redirect("/login");
 
-  // Get listing turnaround_days (buffer)
-  const { data: listingRow, error: listingErr } = await supabase
+  // get listing turnaround_days => buffer_days (default 1)
+  const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, owner_id, is_published, turnaround_days")
+    .select("id, turnaround_days, is_published")
     .eq("id", listing_id)
     .single();
 
-  if (listingErr || !listingRow) {
-    return { ok: false, message: "Listing not found." };
-  }
-  if (!listingRow.is_published) {
-    return { ok: false, message: "This listing is not available." };
-  }
-  if (listingRow.owner_id === user.id) {
-    return { ok: false, message: "You cannot rent your own listing." };
-  }
+  if (listingError || !listing) return { ok: false, message: "Listing not found." };
+  if (!listing.is_published) return { ok: false, message: "This listing is not published." };
 
-  const buffer_days = Number(listingRow.turnaround_days ?? 0);
+  const buffer_days = Math.max(0, Number(listing.turnaround_days ?? 1));
+  const reqEnd = addDaysUTC(reqEndBase, buffer_days);
 
-  // Server-side availability check against APPROVED rentals
-  // booked range is [start_date, end_date + buffer_days]
-  const reqStart = parseISODate(start_date);
-  const reqEnd = addDaysUTC(parseISODate(end_date), buffer_days);
-
+  // Load approved rentals to prevent overlaps (with buffers)
   const { data: approved, error: approvedError } = await supabase
     .from("rentals")
-    .select("start_date, end_date, buffer_days")
+    .select("start_date, end_date, buffer_days, status")
     .eq("listing_id", listing_id)
     .eq("status", "approved");
 
   if (approvedError) return { ok: false, message: approvedError.message };
 
   for (const r of approved ?? []) {
-    const rStart = parseISODate(String((r as any).start_date));
-    const rEnd = addDaysUTC(
-      parseISODate(String((r as any).end_date)),
-      Number((r as any).buffer_days ?? 0)
-    );
-
+    const rStart = parseISODate(String(r.start_date));
+    const rEnd = addDaysUTC(parseISODate(String(r.end_date)), Number((r as any).buffer_days ?? 0));
     if (rangesOverlap(reqStart, reqEnd, rStart, rEnd)) {
       return {
         ok: false,
@@ -93,7 +87,6 @@ export async function requestRental(formData: FormData) {
     }
   }
 
-  // insert rental request (RLS enforces published listing + renter_id = auth.uid)
   const { error: insertError } = await supabase.from("rentals").insert({
     listing_id,
     renter_id: user.id,
@@ -108,7 +101,6 @@ export async function requestRental(formData: FormData) {
 
   revalidatePath(`/listings/${listing_id}`);
   revalidatePath("/dashboard/rentals");
-  revalidatePath("/dashboard/owner-rentals");
   return { ok: true, message: "Rental request sent." };
 }
 
@@ -118,17 +110,15 @@ export async function cancelRental(rentalId: string) {
   const user = data?.user;
   if (!user) redirect("/login");
 
-  // renter can cancel their own pending rental
   const { data: current } = await supabase
     .from("rentals")
-    .select("id, status, renter_id, listing_id")
+    .select("id, status, renter_id")
     .eq("id", rentalId)
     .single();
 
   if (!current) return { ok: false, message: "Rental not found." };
   if (current.renter_id !== user.id) return { ok: false, message: "Not allowed." };
-  if (current.status !== "pending")
-    return { ok: false, message: "Only pending rentals can be cancelled." };
+  if (current.status !== "pending") return { ok: false, message: "Only pending rentals can be cancelled." };
 
   const { error } = await supabase
     .from("rentals")
@@ -139,48 +129,59 @@ export async function cancelRental(rentalId: string) {
   if (error) return { ok: false, message: error.message };
 
   revalidatePath("/dashboard/rentals");
-  revalidatePath("/dashboard/owner-rentals");
   return { ok: true, message: "Cancelled." };
 }
 
-export async function ownerSetRentalStatus(
-  rentalId: string,
-  nextStatus: "approved" | "rejected"
-) {
+/**
+ * Owner approves/rejects a pending rental.
+ * On approve, prevent overlaps vs other APPROVED rentals (with buffers).
+ */
+export async function ownerSetRentalStatus(rentalId: string, nextStatus: "approved" | "rejected") {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const user = data?.user;
   if (!user) redirect("/login");
 
-  const { data: row } = await supabase
+  const { data: row, error: rowError } = await supabase
     .from("rentals")
-    .select("id, status, listing_id")
+    .select("id, status, listing_id, start_date, end_date, buffer_days")
     .eq("id", rentalId)
     .single();
 
-  if (!row) return { ok: false, message: "Rental not found." };
-  if (row.status !== "pending")
-    return { ok: false, message: "Only pending rentals can be updated." };
+  if (rowError || !row) return { ok: false, message: "Rental not found." };
+  if (row.status !== "pending") return { ok: false, message: "Only pending rentals can be updated." };
 
-  // RLS ensures only the owner of the listing can update this rental row
+  if (nextStatus === "approved") {
+    const reqStart = parseISODate(String(row.start_date));
+    const reqEnd = addDaysUTC(parseISODate(String(row.end_date)), Number(row.buffer_days ?? 0));
+
+    const { data: approved, error: approvedError } = await supabase
+      .from("rentals")
+      .select("id, start_date, end_date, buffer_days, status")
+      .eq("listing_id", row.listing_id)
+      .eq("status", "approved");
+
+    if (approvedError) return { ok: false, message: approvedError.message };
+
+    for (const r of approved ?? []) {
+      if (r.id === rentalId) continue;
+      const rStart = parseISODate(String(r.start_date));
+      const rEnd = addDaysUTC(parseISODate(String(r.end_date)), Number((r as any).buffer_days ?? 0));
+      if (rangesOverlap(reqStart, reqEnd, rStart, rEnd)) {
+        return {
+          ok: false,
+          message: "Cannot approve: this listing is already booked for those dates.",
+        };
+      }
+    }
+  }
+
+  // RLS should enforce owner permissions
   const { error } = await supabase.from("rentals").update({ status: nextStatus }).eq("id", rentalId);
 
-  if (error) {
-    const msg = (error as any)?.message ? String((error as any).message) : "Update failed.";
-
-    // Friendly message if the overlap constraint is hit
-    if (msg.toLowerCase().includes("rentals_no_overlapping_approved")) {
-      return {
-        ok: false,
-        message: "Cannot approve: this listing is already booked for those dates.",
-      };
-    }
-
-    return { ok: false, message: msg };
-  }
+  if (error) return { ok: false, message: error.message };
 
   revalidatePath("/dashboard/owner-rentals");
   revalidatePath("/dashboard/rentals");
   return { ok: true, message: nextStatus === "approved" ? "Approved." : "Rejected." };
 }
-

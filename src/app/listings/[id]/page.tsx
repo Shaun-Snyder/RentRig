@@ -4,18 +4,21 @@ import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import RentalRequestForm from "@/components/RentalRequestForm";
 
-export default async function ListingDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ListingPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
+  const id = params.id;
 
   const { data: listing } = await supabase
     .from("listings")
     .select("id, title, description, city, state, price_per_day, is_published, created_at")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
+
+  const { data: approvedRentals } = await supabase
+    .from("rentals")
+    .select("start_date, end_date, buffer_days, status")
+    .eq("listing_id", id)
+    .eq("status", "approved");
 
   if (!listing) {
     return (
@@ -36,7 +39,9 @@ export default async function ListingDetailPage({
         <h1 className="text-3xl font-semibold">{listing.title}</h1>
         <p className="mt-2 text-slate-600">
           ${Number(listing.price_per_day).toFixed(2)}/day
-          {listing.city || listing.state ? ` • ${[listing.city, listing.state].filter(Boolean).join(", ")}` : ""}
+          {listing.city || listing.state
+            ? ` • ${[listing.city, listing.state].filter(Boolean).join(", ")}`
+            : ""}
         </p>
 
         {listing.description && (
@@ -47,7 +52,7 @@ export default async function ListingDetailPage({
 
         <div className="mt-10">
           {listing.is_published ? (
-            <RentalRequestForm listingId={listing.id} />
+            <RentalRequestForm listingId={id} blocked={approvedRentals ?? []} />
           ) : (
             <p className="text-slate-600">This listing is not published.</p>
           )}
