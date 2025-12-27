@@ -1,9 +1,9 @@
-
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
+import ProfileForm from "@/components/ProfileForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -15,15 +15,14 @@ export default async function DashboardPage() {
 
   const user = data.user;
 
-  // profiles table only contains: id, role, created_at, updated_at
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name, phone")
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role || "user";
-  const email = user.email || "(no email)";
+  const role = profile?.role ?? "user";
+  const email = user.email ?? "(no email)";
 
   return (
     <>
@@ -48,6 +47,13 @@ export default async function DashboardPage() {
             <div className="text-sm text-slate-500">User ID</div>
             <div className="mt-2 font-mono text-sm break-all">{user.id}</div>
           </div>
+        </div>
+
+        <div className="mt-10">
+          <ProfileForm
+            initialFullName={profile?.full_name ?? ""}
+            initialPhone={profile?.phone ?? ""}
+          />
         </div>
       </main>
     </>
