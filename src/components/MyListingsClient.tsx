@@ -12,6 +12,11 @@ type Listing = {
   price_per_day: number;
   is_published: boolean;
   created_at: string;
+<label className="grid gap-1">
+  <span className="text-sm text-slate-600">Turnaround days</span>
+  <input name="turnaround_days" className="border rounded-lg p-2" defaultValue="1" />
+  <span className="text-xs text-slate-500">0 = same-day turnover, 1+ = buffer days</span>
+</label>
 };
 
 export default function MyListingsClient({ listings }: { listings: Listing[] }) {
