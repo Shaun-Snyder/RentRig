@@ -14,7 +14,7 @@ export default async function RenterRentalsPage() {
 
   const { data: rentals } = await supabase
     .from("rentals")
-    .select("id, listing_id, start_date, end_date, status, created_at")
+    .select("id, listing_id, renter_id, start_date, end_date, status, buffer_days, message, created_at")
     .eq("renter_id", user.id)
     .order("created_at", { ascending: false });
 
