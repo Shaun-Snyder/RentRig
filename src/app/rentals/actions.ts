@@ -87,11 +87,24 @@ export async function ownerSetRentalStatus(rentalId: string, nextStatus: "approv
 
   // RLS ensures only the owner of the listing can update this rental row
   const { error } = await supabase
-    .from("rentals")
-    .update({ status: nextStatus })
-    .eq("id", rentalId);
+  .from("rentals")
+  .update({ status: nextStatus })
+  .eq("id", rentalId);
 
-  if (error) return { ok: false, message: error.message };
+if (error) {
+  const msg = (error as any)?.message ? String((error as any).message) : "Update failed.";
+
+  // Friendly message if the overlap constraint is hit
+  if (msg.toLowerCase().includes("rentals_no_overlapping_approved")) {
+    return {
+      ok: false,
+      message: "Cannot approve: this listing is already booked for those dates.",
+    };
+  }
+
+  return { ok: false, message: msg };
+}
+
 
   revalidatePath("/dashboard/owner-rentals");
   revalidatePath("/dashboard/rentals");
