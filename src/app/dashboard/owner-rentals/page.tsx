@@ -15,7 +15,7 @@ export default async function OwnerRentalsPage() {
   // Get all rentals where the listing is owned by this user
   const { data: rentals } = await supabase
     .from("rentals")
-    .select("id, listing_id, renter_id, start_date, end_date, status, created_at")
+    .select("id, listing_id, renter_id, start_date, end_date, status, message, created_at")
     .order("created_at", { ascending: false });
 
   // Filter server-side using listings ownership (since RLS already prevents non-owner from seeing)

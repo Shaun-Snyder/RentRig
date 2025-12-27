@@ -31,6 +31,14 @@ export default function RentalRequestForm({ listingId }: { listingId: string }) 
         <span className="text-sm text-slate-600">End date</span>
         <input name="end_date" type="date" className="border rounded-lg p-2" />
       </label>
+<label className="grid gap-1">
+  <span className="text-sm text-slate-600">Message to owner (optional)</span>
+  <textarea
+    name="message"
+    className="border rounded-lg p-2"
+    placeholder="Pickup time, experience, questions, anything helpful..."
+  />
+</label>
 
       <button className="rounded-lg border px-4 py-2 w-fit" disabled={isPending}>
         {isPending ? "Sending..." : "Request rental"}

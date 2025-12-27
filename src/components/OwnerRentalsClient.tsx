@@ -12,6 +12,7 @@ type RentalRow = {
   status: string;
   created_at: string;
   listing: { id: string; title: string } | null;
+  message?: string | null;
 };
 
 export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }) {
@@ -30,6 +31,13 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                 <div className="font-semibold">{r.listing?.title ?? "Listing"}</div>
                 <div className="text-sm text-slate-600">
                   {r.start_date} → {r.end_date} • <span className="font-medium">{r.status}</span>
+                   {r.message && (
+  <div className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+    <div className="text-xs font-semibold text-slate-500">Message</div>
+    <div className="mt-1 whitespace-pre-wrap">{r.message}</div>
+  </div>
+)}
+
                 </div>
                 <div className="text-xs text-slate-500 break-all">Renter: {r.renter_id}</div>
               </div>

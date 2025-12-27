@@ -13,6 +13,7 @@ export async function requestRental(formData: FormData) {
   const listing_id = String(formData.get("listing_id") ?? "").trim();
   const start_date = String(formData.get("start_date") ?? "").trim();
   const end_date = String(formData.get("end_date") ?? "").trim();
+  const message = String(formData.get("message") ?? "").trim();
 
   if (!listing_id) return { ok: false, message: "Missing listing id." };
   if (!isValidISODate(start_date) || !isValidISODate(end_date)) {
@@ -49,6 +50,7 @@ export async function requestRental(formData: FormData) {
     start_date,
     end_date, // checkout/return date (not booked)
     buffer_days,
+    message: message || null,
     status: "pending",
   });
 
