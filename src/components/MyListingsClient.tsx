@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createListing, deleteListing, togglePublish } from "@/app/dashboard/listings/actions";
+import {
+  createListing,
+  deleteListing,
+  togglePublish,
+} from "@/app/dashboard/listings/actions";
 
 type Listing = {
   id: string;
@@ -10,13 +14,9 @@ type Listing = {
   city: string | null;
   state: string | null;
   price_per_day: number;
+  turnaround_days: number | null;
   is_published: boolean;
   created_at: string;
-<label className="grid gap-1">
-  <span className="text-sm text-slate-600">Turnaround days</span>
-  <input name="turnaround_days" className="border rounded-lg p-2" defaultValue="1" />
-  <span className="text-xs text-slate-500">0 = same-day turnover, 1+ = buffer days</span>
-</label>
 };
 
 export default function MyListingsClient({ listings }: { listings: Listing[] }) {
@@ -39,15 +39,23 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
 
         <label className="grid gap-1">
           <span className="text-sm text-slate-600">Title</span>
-          <input name="title" className="border rounded-lg p-2" placeholder="e.g. 2020 Ford F-250" />
+          <input
+            name="title"
+            className="border rounded-lg p-2"
+            placeholder="e.g. 2020 Ford F-250"
+          />
         </label>
 
         <label className="grid gap-1">
           <span className="text-sm text-slate-600">Description</span>
-          <textarea name="description" className="border rounded-lg p-2" placeholder="Details (optional)" />
+          <textarea
+            name="description"
+            className="border rounded-lg p-2"
+            placeholder="Details (optional)"
+          />
         </label>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">City</span>
             <input name="city" className="border rounded-lg p-2" placeholder="Orlando" />
@@ -61,6 +69,18 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">Price / day</span>
             <input name="price_per_day" className="border rounded-lg p-2" defaultValue="0" />
+          </label>
+
+          <label className="grid gap-1">
+            <span className="text-sm text-slate-600">Turnaround days</span>
+            <input
+              name="turnaround_days"
+              className="border rounded-lg p-2"
+              defaultValue="1"
+            />
+            <span className="text-xs text-slate-500">
+              0 = same-day turnover, 1+ = buffer days
+            </span>
           </label>
         </div>
 
@@ -86,49 +106,5 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
                     <div className="text-sm text-slate-600">
                       ${Number(l.price_per_day).toFixed(2)}/day
                       {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded-lg border px-3 py-2"
-                      onClick={() => {
-                        setMsg("");
-                        startTransition(async () => {
-                          const res = await togglePublish(l.id, !l.is_published);
-                          setMsg(res.message);
-                        });
-                      }}
-                      disabled={isPending}
-                    >
-                      {l.is_published ? "Unpublish" : "Publish"}
-                    </button>
-
-                    <button
-                      className="rounded-lg border px-3 py-2"
-                      onClick={() => {
-                        setMsg("");
-                        startTransition(async () => {
-                          const res = await deleteListing(l.id);
-                          setMsg(res.message);
-                        });
-                      }}
-                      disabled={isPending}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-
-                {l.description && <div className="text-sm text-slate-700">{l.description}</div>}
-                <div className="text-xs text-slate-500 break-all">ID: {l.id}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {msg && <p className="text-sm">{msg}</p>}
-      </div>
-    </div>
-  );
-}
+                      {typeof l.turnaround_days === "number"
+                        ? ` • Turnaround: ${l.turnaround_days}d`
