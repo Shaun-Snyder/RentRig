@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition } from "react";
@@ -79,4 +80,3 @@ export default function RenterRentalsClient({ rentals }: { rentals: RentalRow[] 
     </div>
   );
 }
-
