@@ -28,7 +28,9 @@ export default async function ListingsPage() {
               <div key={l.id} className="rounded-xl border bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <div className="font-semibold">{l.title}</div>
+                    <a className="font-semibold underline" href={`/listings/${l.id}`}>
+  {l.title}
+</a>
                     <div className="text-sm text-slate-600">
                       ${Number(l.price_per_day).toFixed(2)}/day
                       {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
