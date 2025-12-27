@@ -58,7 +58,11 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
         <div className="grid gap-3 md:grid-cols-4">
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">City</span>
-            <input name="city" className="border rounded-lg p-2" placeholder="Orlando" />
+            <input
+              name="city"
+              className="border rounded-lg p-2"
+              placeholder="Orlando"
+            />
           </label>
 
           <label className="grid gap-1">
@@ -68,7 +72,11 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
 
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">Price / day</span>
-            <input name="price_per_day" className="border rounded-lg p-2" defaultValue="0" />
+            <input
+              name="price_per_day"
+              className="border rounded-lg p-2"
+              defaultValue="0"
+            />
           </label>
 
           <label className="grid gap-1">
@@ -105,6 +113,57 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
                     <div className="font-semibold">{l.title}</div>
                     <div className="text-sm text-slate-600">
                       ${Number(l.price_per_day).toFixed(2)}/day
-                      {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
+                      {l.city || l.state
+                        ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}`
+                        : ""}
                       {typeof l.turnaround_days === "number"
                         ? ` • Turnaround: ${l.turnaround_days}d`
+                        : ""}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2"
+                      onClick={() => {
+                        setMsg("");
+                        startTransition(async () => {
+                          const res = await togglePublish(l.id, !l.is_published);
+                          setMsg(res.message);
+                        });
+                      }}
+                      disabled={isPending}
+                    >
+                      {l.is_published ? "Unpublish" : "Publish"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="rounded-lg border px-3 py-2"
+                      onClick={() => {
+                        setMsg("");
+                        startTransition(async () => {
+                          const res = await deleteListing(l.id);
+                          setMsg(res.message);
+                        });
+                      }}
+                      disabled={isPending}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                {l.description && <div className="text-sm text-slate-700">{l.description}</div>}
+                <div className="text-xs text-slate-500 break-all">ID: {l.id}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {msg && <p className="text-sm">{msg}</p>}
+      </div>
+    </div>
+  );
+}
