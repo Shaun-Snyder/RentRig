@@ -40,3 +40,60 @@ export async function requestRental(formData: FormData) {
   revalidatePath("/dashboard/rentals");
   return { ok: true, message: "Rental request sent." };
 }
+export async function cancelRental(rentalId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user;
+  if (!user) redirect("/login");
+
+  // renter can cancel their own pending rental
+  const { data: current } = await supabase
+    .from("rentals")
+    .select("id, status, renter_id, listing_id")
+    .eq("id", rentalId)
+    .single();
+
+  if (!current) return { ok: false, message: "Rental not found." };
+  if (current.renter_id !== user.id) return { ok: false, message: "Not allowed." };
+  if (current.status !== "pending") return { ok: false, message: "Only pending rentals can be cancelled." };
+
+  const { error } = await supabase
+    .from("rentals")
+    .update({ status: "cancelled" })
+    .eq("id", rentalId)
+    .eq("renter_id", user.id);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/dashboard/rentals");
+  return { ok: true, message: "Cancelled." };
+}
+
+export async function ownerSetRentalStatus(rentalId: string, nextStatus: "approved" | "rejected") {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user;
+  if (!user) redirect("/login");
+
+  // Make sure this rental belongs to a listing owned by the current user
+  const { data: row } = await supabase
+    .from("rentals")
+    .select("id, status, listing_id")
+    .eq("id", rentalId)
+    .single();
+
+  if (!row) return { ok: false, message: "Rental not found." };
+  if (row.status !== "pending") return { ok: false, message: "Only pending rentals can be updated." };
+
+  // RLS ensures only the owner of the listing can update this rental row
+  const { error } = await supabase
+    .from("rentals")
+    .update({ status: nextStatus })
+    .eq("id", rentalId);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/dashboard/owner-rentals");
+  revalidatePath("/dashboard/rentals");
+  return { ok: true, message: nextStatus === "approved" ? "Approved." : "Rejected." };
+}

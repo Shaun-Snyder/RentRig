@@ -31,6 +31,35 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold">Dashboard</h1>
         <p className="mt-2 text-slate-600">Welcome back.</p>
+<div className="mt-6 flex flex-wrap gap-3">
+  <a
+    href="/dashboard/listings"
+    className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
+  >
+    My Listings
+  </a>
+
+  <a
+    href="/dashboard/rentals"
+    className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
+  >
+    My Rentals
+  </a>
+
+  <a
+    href="/dashboard/owner-rentals"
+    className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
+  >
+    Owner Requests
+  </a>
+
+  <a
+    href="/listings"
+    className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
+  >
+    Browse Listings
+  </a>
+</div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border bg-white p-5 shadow-sm">
