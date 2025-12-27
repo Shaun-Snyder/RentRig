@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,22 +7,28 @@ export async function GET(req: Request) {
   const listingId = searchParams.get("listing_id");
 
   if (!listingId) {
-    return NextResponse.json({ error: "Missing listing_id" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing listing_id" },
+      { status: 400 }
+    );
   }
 
   const supabase = await createClient();
 
-  // Only approved rentals matter for availability
   const { data, error } = await supabase
     .from("rentals")
-    .select("start_date, end_date, buffer_days, status")
+    .select("start_date, end_date, buffer_days")
     .eq("listing_id", listingId)
     .eq("status", "approved");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 
-  // Return ranges; client will compute blocked dates
-  return NextResponse.json({ rentals: data ?? [] });
+  return NextResponse.json({
+    blocked: data ?? [],
+  });
 }
