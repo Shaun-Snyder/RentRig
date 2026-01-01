@@ -1,36 +1,43 @@
-export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import MyListingsClient from "@/components/MyListingsClient";
 
-export default async function MyListingsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardListingsPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
 
-  if (error || !data?.user) {
-    redirect("/login");
-  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const user = data.user;
+  if (!user) redirect("/login");
 
-  const { data: listings } = await supabase
+  // IMPORTANT: select("*") so operator/driver fields make it to the client
+  const { data: listings, error } = await supabase
     .from("listings")
-    .select("id, title, description, city, state, price_per_day, turnaround_days, is_published, created_at")
+    .select("*")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
+  if (error) {
+    return (
+      <div style={{ padding: 24 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 600 }}>My Listings</h1>
+        <p style={{ marginTop: 12, color: "crimson" }}>Load failed: {error.message}</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <ServerHeader />
+    <div style={{ padding: 24 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700 }}>My Listings</h1>
+      <p style={{ marginTop: 6, color: "#64748b" }}>
+        Create, publish, and manage your equipment/rig listings.
+      </p>
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <h1 className="text-3xl font-semibold">My Listings</h1>
-        <p className="mt-2 text-slate-600">Create, publish, and manage your equipment/rig listings.</p>
-
-        <MyListingsClient listings={listings ?? []} />
-      </main>
-    </>
+      <MyListingsClient listings={(listings ?? []) as any} />
+    </div>
   );
 }

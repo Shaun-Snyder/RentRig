@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -6,8 +7,9 @@ function isUuid(v: string) {
 }
 
 // Returns blocked date ranges for a listing based on APPROVED rentals.
-// We treat end_date as checkout/return day, and apply buffer_days.
-// Blocked range semantics we return to UI: [start_date, end_date_plus_buffer) (end exclusive)
+// Blocked range semantics returned to UI:
+//   start: inclusive
+//   end_exclusive: exclusive (end_date + buffer_days)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const listing_id = (searchParams.get("listing_id") ?? "").trim();
@@ -15,6 +17,7 @@ export async function GET(req: Request) {
   if (!listing_id) {
     return NextResponse.json({ error: "missing listing_id" }, { status: 400 });
   }
+
   if (!isUuid(listing_id)) {
     return NextResponse.json(
       { error: `invalid input syntax for type uuid: "${listing_id}"` },
@@ -22,17 +25,16 @@ export async function GET(req: Request) {
     );
   }
 
-  // Use service role so this route can read approved rentals regardless of RLS.
-  // Add SUPABASE_SERVICE_ROLE_KEY in Vercel env (Production + Preview).
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  console.log("[availability] listing_id:", listing_id);
+  console.log("[availability] url:", url);
+  console.log("[availability] hasServiceKey:", !!serviceKey, "len:", serviceKey?.length);
 
   if (!url || !serviceKey) {
     return NextResponse.json(
-      {
-        error:
-          "Missing env: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Add SUPABASE_SERVICE_ROLE_KEY to Vercel env vars.",
-      },
+      { error: "missing env", hasUrl: !!url, hasServiceKey: !!serviceKey },
       { status: 500 }
     );
   }
@@ -41,7 +43,7 @@ export async function GET(req: Request) {
     auth: { persistSession: false },
   });
 
-  // Optional: ensure listing exists
+  // Ensure listing exists
   const { data: listing, error: listingErr } = await supabase
     .from("listings")
     .select("id")
@@ -52,9 +54,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "listing not found" }, { status: 404 });
   }
 
+  // Fetch approved rentals
   const { data: rentals, error } = await supabase
     .from("rentals")
-    .select("start_date, end_date, buffer_days, status")
+    .select("start_date, end_date, buffer_days")
     .eq("listing_id", listing_id)
     .eq("status", "approved");
 
@@ -65,16 +68,12 @@ export async function GET(req: Request) {
   const blocked = (rentals ?? []).map((r) => {
     const buffer = Number(r.buffer_days ?? 0);
 
-    // end_exclusive = end_date + buffer_days
-    // end_date is YYYY-MM-DD; easiest: return both and let client compute display.
-    // We'll compute here as ISO date string.
     const end = new Date(r.end_date + "T00:00:00Z");
     end.setUTCDate(end.getUTCDate() + buffer);
-    const end_exclusive = end.toISOString().slice(0, 10);
 
     return {
-      start: r.start_date,          // inclusive
-      end_exclusive,               // exclusive
+      start: r.start_date, // inclusive
+      end_exclusive: end.toISOString().slice(0, 10), // exclusive
       buffer_days: buffer,
     };
   });

@@ -10,7 +10,11 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.88.0",
     "next": "14.2.35",
+    "nodemailer": "^7.0.12",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2",
     "react": "18.2.0",
+    "react-day-picker": "^9.13.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {

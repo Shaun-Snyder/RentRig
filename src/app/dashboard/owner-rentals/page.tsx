@@ -1,3 +1,4 @@
+
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -13,9 +14,35 @@ export default async function OwnerRentalsPage() {
   const user = data.user;
 
   // Get all rentals where the listing is owned by this user
+  // NOTE: RLS should already restrict rows to only the owner's listings.
   const { data: rentals } = await supabase
     .from("rentals")
-    .select("id, listing_id, renter_id, start_date, end_date, status, message, created_at")
+    .select(
+      [
+        "id",
+        "listing_id",
+        "renter_id",
+        "start_date",
+        "end_date",
+        "status",
+        "message",
+        "created_at",
+
+        // ✅ Step 3.3 fields (hourly estimate -> finalize)
+        "hourly_is_estimate",
+        "hourly_estimated_hours",
+        "hourly_final_hours",
+        "hourly_final_total",
+        "hourly_finalized_at",
+
+        // Operator snapshot (needed for finalize UI + display)
+        "operator_selected",
+        "operator_rate_unit",
+        "operator_rate",
+        "operator_hours",
+        "operator_total",
+      ].join(", ")
+    )
     .order("created_at", { ascending: false });
 
   // Filter server-side using listings ownership (since RLS already prevents non-owner from seeing)
@@ -24,22 +51,28 @@ export default async function OwnerRentalsPage() {
 
   const { data: listings } = await supabase
     .from("listings")
-    .select("id, title")
+    .select("id, title, owner_id")
     .in("id", listingIds.length ? listingIds : ["00000000-0000-0000-0000-000000000000"]);
 
-  const listingMap = new Map((listings ?? []).map((l) => [l.id, l]));
+  // Extra safety: ensure listing belongs to current owner (in case RLS policy changes)
+  const ownedListings = (listings ?? []).filter((l) => l.owner_id === user.id);
+  const listingMap = new Map(ownedListings.map((l) => [l.id, l]));
 
-  const enriched = (rentals ?? []).map((r) => ({
-    ...r,
-    listing: listingMap.get(r.listing_id) ?? null,
-  }));
+  const enriched = (rentals ?? [])
+    .filter((r) => listingMap.has(r.listing_id))
+    .map((r) => ({
+      ...r,
+      listing: listingMap.get(r.listing_id) ?? null,
+    }));
 
   return (
     <>
       <ServerHeader />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <h1 className="text-3xl font-semibold">Owner Requests</h1>
-        <p className="mt-2 text-slate-600">Approve or reject rental requests for your listings.</p>
+        <p className="mt-2 text-slate-600">
+          Approve or reject rental requests for your listings.
+        </p>
 
         <OwnerRentalsClient rentals={enriched} />
       </main>
