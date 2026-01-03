@@ -3,15 +3,18 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
+import ListingsClient from "@/components/ListingsClient";
 
 type ListingRow = {
   id: string;
   title: string;
+  description: string | null;
   city: string | null;
   state: string | null;
   price_per_day: number;
-  category: string;
-  license_required: boolean;
+  created_at: string;
+  category: string | null;
+  license_required: boolean | null;
   license_type: string | null;
 };
 
@@ -19,7 +22,7 @@ type PhotoRow = {
   id: string;
   listing_id: string;
   path: string;
-  sort_order: number;
+  sort_order: number | null;
   created_at: string;
 };
 
@@ -46,16 +49,20 @@ function catLabel(v: string) {
 export default async function ListingsPage({
   searchParams,
 }: {
-  searchParams: { category?: string };
+  searchParams: { category?: string; q?: string };
 }) {
   const supabase = await createClient();
 
-  const selected = (searchParams?.category || "").trim();
+  const selected = (searchParams?.category || "").toString().trim();
   const selectedIsValid = CATEGORIES.some((c) => c.key === selected);
+
+  const q = (searchParams?.q || "").toString().trim();
 
   let query = supabase
     .from("listings")
-    .select("id, title, city, state, price_per_day, category, license_required, license_type")
+    .select(
+      "id, title, description, city, state, price_per_day, created_at, category, license_required, license_type"
+    )
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
@@ -63,7 +70,24 @@ export default async function ListingsPage({
     query = query.eq("category", selected);
   }
 
-  const { data: listings } = await query;
+  if (q) {
+    // Keep it simple for now: title match. (zip comes next step)
+    query = query.ilike("title", `%${q}%`);
+  }
+
+  const { data: listings, error } = await query;
+
+  if (error) {
+    return (
+      <>
+        <ServerHeader />
+        <main className="mx-auto max-w-6xl px-6 py-10">
+          <h1 className="text-3xl font-semibold">Browse Listings</h1>
+          <p className="mt-4 text-red-600">Load failed: {error.message}</p>
+        </main>
+      </>
+    );
+  }
 
   const listingList = (listings ?? []) as ListingRow[];
   const listingIds = listingList.map((l) => l.id);
@@ -86,6 +110,13 @@ export default async function ListingsPage({
     if (!firstPhotoByListing.has(p.listing_id)) firstPhotoByListing.set(p.listing_id, p);
   }
 
+  // Add thumb_url for ListingsClient cards
+  const listingListForClient = listingList.map((l) => {
+    const photo = firstPhotoByListing.get(l.id);
+    const thumb_url = photo?.path ? photoUrl(photo.path) : "";
+    return { ...l, thumb_url };
+  });
+
   return (
     <>
       <ServerHeader />
@@ -99,78 +130,62 @@ export default async function ListingsPage({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/listings"
-              className={`rounded-full border px-4 py-2 text-sm ${
-                !selectedIsValid ? "bg-slate-900 text-white border-slate-900" : "bg-white hover:bg-slate-50"
-              }`}
-            >
-              All
-            </Link>
+          {/* Small server-side search box (keeps URL params). Sliders + availability UI stays in ListingsClient */}
+          <form action="/listings" method="get" className="flex flex-wrap items-center gap-2">
+            {selectedIsValid ? <input type="hidden" name="category" value={selected} /> : null}
 
-            {CATEGORIES.map((c) => {
-              const active = selected === c.key;
-              return (
-                <Link
-                  key={c.key}
-                  href={`/listings?category=${c.key}`}
-                  className={`rounded-full border px-4 py-2 text-sm ${
-                    active ? "bg-slate-900 text-white border-slate-900" : "bg-white hover:bg-slate-50"
-                  }`}
-                >
-                  {c.label}
-                </Link>
-              );
-            })}
-          </div>
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search by name (zip next)..."
+              className="w-full max-w-md rounded-lg border px-3 py-2"
+            />
+
+            <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-white">
+              Search
+            </button>
+
+            {q ? (
+              <a
+                href={selectedIsValid ? `/listings?category=${selected}` : "/listings"}
+                className="rounded-lg border px-4 py-2"
+              >
+                Clear
+              </a>
+            ) : null}
+          </form>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listingList.length === 0 ? (
-            <div className="rounded-xl border bg-white p-6 text-slate-600">
-              No published listings yet{selectedIsValid ? " in this category." : "."}
-            </div>
-          ) : (
-            listingList.map((l) => {
-              const photo = firstPhotoByListing.get(l.id);
-              const thumb = photo?.path ? photoUrl(photo.path) : "";
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/listings"
+            className={`rounded-full border px-4 py-2 text-sm ${
+              !selectedIsValid
+                ? "bg-slate-900 text-white border-slate-900"
+                : "bg-white hover:bg-slate-50"
+            }`}
+          >
+            All
+          </Link>
 
-              return (
-                <Link
-                  key={l.id}
-                  href={`/listings/${l.id}`}
-                  className="rounded-xl border bg-white p-4 shadow-sm hover:shadow transition grid gap-3"
-                >
-                  <div className="h-44 w-full rounded-lg border bg-slate-50 overflow-hidden">
-                    {thumb ? (
-                      <img src={thumb} alt="Listing thumbnail" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-sm text-slate-400">
-                        No photo
-                      </div>
-                    )}
-                  </div>
+          {CATEGORIES.map((c) => {
+            const active = selected === c.key;
+            return (
+              <Link
+                key={c.key}
+                href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  active ? "bg-slate-900 text-white border-slate-900" : "bg-white hover:bg-slate-50"
+                }`}
+              >
+                {c.label}
+              </Link>
+            );
+          })}
+        </div>
 
-                  <div className="grid gap-1">
-                    <div className="font-semibold text-lg">{l.title}</div>
-                    <div className="text-sm text-slate-600">
-                      ${Number(l.price_per_day).toFixed(2)}/day
-                      {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
-                    </div>
-
-                    <div className="text-xs text-slate-500">Category: {catLabel(l.category)}</div>
-
-                    {l.license_required ? (
-                      <div className="text-xs text-amber-700">
-                        License required{l.license_type ? `: ${l.license_type}` : ""}
-                      </div>
-                    ) : null}
-                  </div>
-                </Link>
-              );
-            })
-          )}
+        <div className="mt-8">
+          <ListingsClient listings={listingListForClient as any} />
         </div>
       </main>
     </>

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DayPicker, DateRange } from "react-day-picker";
 import "react-day-picker/dist/style.css";
+import { createClient } from "@/lib/supabase/client";
 
 type Listing = {
   id: string;
@@ -16,6 +17,20 @@ type Listing = {
 };
 
 type SortMode = "newest" | "price_asc" | "price_desc";
+
+const CATEGORIES = [
+  { key: "heavy_equipment", label: "Heavy Equipment" },
+  { key: "lifts", label: "Lifts" },
+  { key: "trailers", label: "Trailers" },
+  { key: "vans_covered", label: "Vans / Covered" },
+  { key: "trucks", label: "Trucks" },
+  { key: "other", label: "Other" },
+] as const;
+
+function catLabel(key: unknown) {
+  const k = String(key ?? "");
+  return CATEGORIES.find((c) => c.key === k)?.label ?? (k || "Other");
+}
 
 type BlockedRange = {
   start: string; // YYYY-MM-DD inclusive
@@ -49,6 +64,22 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [sort, setSort] = useState<SortMode>("newest");
+  const supabase = createClient();
+
+  type ListingPhoto = {
+    id: string;
+    listing_id: string;
+    path: string;
+    sort_order: number | null;
+    created_at?: string;
+  };
+
+  function storageUrl(path: string) {
+    const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  const [thumbById, setThumbById] = useState<Record<string, string>>({});
 
   // ---------- Price sliders ----------
   const priceBounds = useMemo(() => {
@@ -427,40 +458,73 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       ) : (
         <div className="grid gap-4">
           {filteredSorted.map((l) => {
-            const st = checked ? availabilityStatus[l.id] : null;
-            return (
-              <div key={l.id} className="rounded-xl border bg-white p-5 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <a className="font-semibold underline" href={`/listings/${l.id}`}>
-                      {l.title}
-                    </a>
+  const st = checked ? availabilityStatus[l.id] : null;
+  const thumb = (l as any).thumb_url || "";
 
-                    <div className="mt-1 text-sm text-slate-600">
-                      ${Number(l.price_per_day).toFixed(2)}/day
-                      {l.city || l.state
-                        ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}`
-                        : ""}
-                      {st === "available" && (
-                        <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
-                          Available
-                        </span>
-                      )}
-                      {st === "booked" && (
-                        <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
-                          Booked
-                        </span>
-                      )}
-                    </div>
+  return (
+    <div
+      key={l.id}
+      className="rounded-xl border bg-white p-4 shadow-sm hover:shadow transition grid gap-3"
+    >
+      {/* Thumbnail */}
+      <a
+  href={`/listings/${l.id}`}
+  className="block w-24 h-24 rounded-lg border bg-slate-50 overflow-hidden flex-shrink-0"
+>
+  {thumb ? (
+    <img
+      src={thumb}
+      alt="Listing thumbnail"
+      className="h-full w-full object-contain"
+    />
+  ) : (
+    <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+      No photo
+    </div>
+  )}
+</a>
 
-                    {l.description && (
-                      <div className="mt-2 text-sm text-slate-700">{l.description}</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* Info */}
+      <div className="grid gap-1">
+        <a className="font-semibold text-lg underline" href={`/listings/${l.id}`}>
+          {l.title}
+        </a>
+
+        <div className="text-sm text-slate-600">
+          ${Number(l.price_per_day).toFixed(2)}/day
+          {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
+
+          {st === "available" && (
+            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
+              Available
+            </span>
+          )}
+
+          {st === "booked" && (
+            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
+              Booked
+            </span>
+          )}
+        </div>
+
+        {l.category && (
+          <div className="text-xs text-slate-500">Category: {catLabel(l.category)}</div>
+        )}
+
+        {l.license_required ? (
+          <div className="text-xs text-amber-700">
+            License required{l.license_type ? `: ${l.license_type}` : ""}
+          </div>
+        ) : null}
+
+        {l.description && (
+          <div className="mt-1 text-sm text-slate-700">{l.description}</div>
+        )}
+      </div>
+    </div>
+  );
+})}
+
         </div>
       )}
     </div>

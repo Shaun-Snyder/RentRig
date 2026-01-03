@@ -60,6 +60,7 @@ type ListingPhoto = {
   path: string;
   sort_order: number | null;
   created_at?: string;
+  thumb_url?: string | null;
 };
 
 function money(v: any) {
