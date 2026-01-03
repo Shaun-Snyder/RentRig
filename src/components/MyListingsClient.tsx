@@ -18,6 +18,7 @@ type Listing = {
 
   city?: string | null;
   state?: string | null;
+  zip?: string | null,
 
   price_per_day: number | null;
   price_per_week: number | null;
@@ -86,7 +87,8 @@ function rateLabel(unit: string | null | undefined) {
 export default function MyListingsClient({ listings }: { listings: Listing[] }) {
   const router = useRouter();
   const supabase = createClient();
-
+  
+  const [zip, setZip] = useState("");
   const [msg, setMsg] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -338,6 +340,15 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
             <input className="rounded-md border px-3 py-2" name="state" />
           </div>
         </div>
+        <label className="grid gap-1">
+  <span className="text-sm text-slate-600">ZIP code (optional)</span>
+  <input
+    className="border rounded-lg p-2"
+    placeholder="e.g. 32817"
+    value={zip}
+    onChange={(e) => setZip(e.target.value)}
+  />
+</label>
 
         <div className="grid gap-1">
           <label className="text-sm">Description</label>
