@@ -5,12 +5,16 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createListing, updateListing, deleteListing } from "@/app/dashboard/listings/actions";
+import Link from "next/link";
 
 type Listing = {
   id: string;
   title: string;
   category: string;
   description: string | null;
+
+  license_required: boolean;
+  license_type: string | null;
 
   city?: string | null;
   state?: string | null;
@@ -93,9 +97,6 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
   // controlled so the unit label doesn’t feel stale in the edit UI
   const [editOperatorRateUnit, setEditOperatorRateUnit] = useState<Record<string, "day" | "hour">>({});
 
-  const createPhotosRef = useRef<HTMLInputElement | null>(null);
-  const [createPhotoPreviewUrls, setCreatePhotoPreviewUrls] = useState<string[]>([]);
-
   function storageUrl(path: string) {
     const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
     return data.publicUrl;
@@ -106,6 +107,26 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
     const sorted = arr.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
     return sorted[0]?.path ? storageUrl(sorted[0].path) : null;
   }
+
+  async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
+  if (!files || files.length === 0) return;
+
+  for (const file of Array.from(files)) {
+    const fd = new FormData();
+    fd.set("listing_id", listingId);
+    fd.set("file", file);
+
+    const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
+    if (!res.ok) {
+      let msg = `Upload failed (${res.status})`;
+      try {
+        const j = await res.json();
+        msg = j?.error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+  }
+}
 
   async function refreshPhotos(listingId: string) {
     setPhotoMsgByListing((p) => ({ ...p, [listingId]: "Refreshing..." }));
@@ -263,22 +284,30 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
 
   return (
     <div className="grid gap-6">
-      {/* CREATE */}
-      <form
+      {/* CREATE */} 
+       <form
         className="rounded-lg border bg-white p-4 grid gap-3"
-        action={(fd) => {
-          setMsg("");
-          startTransition(async () => {
-            try {
-              const res: any = await createListing(fd);
-              setMsg(res?.message ?? "Created.");
-              router.refresh();
-            } catch (e: any) {
-              setMsg(e?.message ?? "Create failed.");
-            }
-          });
-        }}
+      action={(fd) => {
+  setMsg("");
+  startTransition(async () => {
+    try {
+      const res: any = await createListing(fd);
+      setMsg(res?.message ?? "Created.");
+      router.refresh();
+    } catch (e: any) {
+      setMsg(e?.message ?? "Create failed.");
+    }
+  });
+}}
+
       >
+        <div className="flex items-center justify-between">
+  <h1 className="text-xl font-semibold">Dashboard</h1>
+  <Link href="/dashboard" className="rounded-lg border px-3 py-2">
+    Dashboard
+  </Link>
+</div>
+
         <div className="text-lg font-semibold">Create listing</div>
 
         <div className="grid gap-1">
@@ -292,7 +321,7 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
             <option value="heavy_equipment">Heavy equipment</option>
             <option value="lifts">Lifts</option>
             <option value="trailers">Trailers</option>
-            <option value="box_vans">Box van / covered trucks</option>
+            <option value="vans_covered">Vans_covered</option>
             <option value="trucks">Trucks</option>
             <option value="other">Other</option>
           </select>
@@ -341,6 +370,24 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
           <label className="text-sm">Security deposit</label>
           <input className="rounded-md border px-3 py-2" name="security_deposit" type="number" min="0" step="1" />
         </div>
+{/* License (create) */}
+<div className="grid gap-2">
+  <label className="text-sm font-semibold">Required license</label>
+
+  <label className="flex items-center gap-2 text-sm">
+    <input type="checkbox" name="license_required" value="true" />
+    This listing requires a license
+  </label>
+
+  <div className="grid gap-1">
+    <label className="text-sm text-slate-600">License type / note (shown to renter)</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="license_type"
+      placeholder="e.g., CDL, OSHA forklift, excavator certification"
+    />
+  </div>
+</div>
 
         {/* Delivery */}
         <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
@@ -463,32 +510,6 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
             <label className="text-sm">Turnaround days</label>
             <input className="rounded-md border px-3 py-2" name="turnaround_days" type="number" min="0" step="1" defaultValue={0} />
           </div>
-        </div>
-
-        {/* Photos (create) preview only */}
-        <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
-          <div className="text-sm font-medium">Photos</div>
-          <input
-            ref={createPhotosRef}
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => {
-              const files = e.target.files;
-              if (!files) return setCreatePhotoPreviewUrls([]);
-              const urls = Array.from(files).map((f) => URL.createObjectURL(f));
-              setCreatePhotoPreviewUrls(urls);
-            }}
-          />
-          {createPhotoPreviewUrls.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {createPhotoPreviewUrls.map((u) => (
-                <img key={u} src={u} className="h-24 w-full object-cover rounded border" alt="" />
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-slate-500">Create listing first, then click Edit to upload photos.</div>
-          )}
         </div>
 
         <button disabled={isPending} className="rounded-md bg-black text-white px-4 py-2 w-fit">
@@ -769,7 +790,7 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
                       <option value="heavy_equipment">Heavy equipment</option>
                       <option value="lifts">Lifts</option>
                       <option value="trailers">Trailers</option>
-                      <option value="box_vans">Box van / covered trucks</option>
+                      <option value="vans_covered">Vans_covered</option>
                       <option value="trucks">Trucks</option>
                       <option value="other">Other</option>
                     </select>

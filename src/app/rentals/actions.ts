@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { assertAllowedInsertKeys } from "@/lib/db/insertGuard";
 
 /**
  * STEP #3 toggle:
@@ -282,38 +283,63 @@ export async function requestRental(formData: FormData) {
     }
   }
 
-  const { error: insertError } = await supabase.from("rentals").insert({
-    listing_id,
-    renter_id: user.id,
-    start_date,
-    end_date,
-    buffer_days,
-    message,
-    status: "pending",
+  const rentalInsert = {
+  listing_id,
+  renter_id: user.id,
+  start_date,
+  end_date,
+  buffer_days,
+  message,
+  status: "pending",
 
-    delivery_selected,
-    delivery_fee: delivery_fee_final,
+  delivery_selected,
+  delivery_fee: delivery_fee_final,
 
-    // unified service fields (driver/driver_labor/operator/none)
-    service_choice,
-    service_unit,
-    service_hours,
+  // operator snapshot (kept for existing invoice + finalize)
+  operator_selected: operatorSelectedFinal,
+  operator_rate: operatorRate,
+  operator_rate_unit: operatorUnit,
+  operator_days,
+  operator_hours: operatorUnit === "hour" ? operator_hours : 0,
+  operator_total,
 
-    // operator snapshot (kept for existing invoice + finalize)
-    operator_selected: operatorSelectedFinal,
-    operator_rate: operatorRate,
-    operator_rate_unit: operatorUnit,
-    operator_days,
-    operator_hours: operatorUnit === "hour" ? (service_choice === "operator" ? service_hours : operator_hours) : 0,
-    operator_total,
+  // hourly finalize support (existing)
+  hourly_is_estimate,
+  hourly_estimated_hours,
+  hourly_final_hours: null,
+  hourly_final_total: null,
+  hourly_finalized_at: null,
+};
 
-    // hourly finalize support (existing)
-    hourly_is_estimate,
-    hourly_estimated_hours,
-    hourly_final_hours: null,
-    hourly_final_total: null,
-    hourly_finalized_at: null,
-  });
+assertAllowedInsertKeys("rentals", rentalInsert, [
+  "listing_id",
+  "renter_id",
+  "start_date",
+  "end_date",
+  "buffer_days",
+  "message",
+  "status",
+
+  "delivery_selected",
+  "delivery_fee",
+
+  "operator_selected",
+  "operator_rate",
+  "operator_rate_unit",
+  "operator_days",
+  "operator_hours",
+  "operator_total",
+
+  "hourly_is_estimate",
+  "hourly_estimated_hours",
+  "hourly_final_hours",
+  "hourly_final_total",
+  "hourly_finalized_at",
+]);
+
+const { error: insertError } = await supabase
+  .from("rentals")
+  .insert(rentalInsert);
 
   if (insertError) return { ok: false, message: insertError.message };
 

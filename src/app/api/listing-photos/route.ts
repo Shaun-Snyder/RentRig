@@ -27,63 +27,22 @@ function getAnyFile(fd: FormData): File | null {
   return null;
 }
 
-async function assertListingOwnedByUser(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  listingId: string,
-  userId: string
-) {
-  // IMPORTANT: your listings table column is owner_id (underscore)
-  const { data: listing, error } = await supabase
-    .from("listings")
-    .select("id, owner_id")
-    .eq("id", listingId)
-    .single();
-
-  if (error) return { ok: false as const, status: 400, error: error.message };
-  if (!listing) return { ok: false as const, status: 404, error: "Listing not found" };
-  if (listing.owner_id !== userId) return { ok: false as const, status: 403, error: "Forbidden" };
-
-  return { ok: true as const };
-}
-
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const listingId = req.nextUrl.searchParams.get("listing_id");
+
   if (!listingId) return json(400, { error: "listing_id is required" });
 
   const { data, error } = await supabase
     .from("listing_photos")
-    .select("id, listing_id, path, sort_order, created_at")
+    .select("*")
     .eq("listing_id", listingId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) return json(400, { error: error.message });
 
-  const paths = (data ?? []).map((p) => p.path).filter(Boolean) as string[];
-
-  // Signed URLs so your client can render them reliably
-  const { data: signed, error: signedErr } = await supabase.storage
-    .from("listing-photos")
-    .createSignedUrls(paths, 60 * 60);
-
-  if (signedErr) return json(400, { error: signedErr.message });
-
-  const urlByPath = new Map<string, string>();
-  (signed ?? []).forEach((x) => {
-    if (x.path && x.signedUrl) urlByPath.set(x.path, x.signedUrl);
-  });
-
-  const photos = (data ?? []).map((p) => ({
-    ...p,
-    url: p.path ? urlByPath.get(p.path) ?? null : null,
-  }));
-
-  // Keep BOTH shapes so your UI won’t break depending on what it expects
-  return json(200, {
-    photos,
-    urls: photos.map((p) => p.url).filter(Boolean),
-  });
+  return json(200, { photos: data ?? [] });
 }
 
 export async function POST(req: NextRequest) {
@@ -97,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   const fd = await req.formData();
 
-  // DEBUG: show what keys are coming in (you can remove later)
+  // DEBUG: show what keys are coming in
   const keys: string[] = [];
   for (const [k, v] of fd.entries()) {
     keys.push(`${k}:${v instanceof File ? `File(${v.name})` : String(v)}`);
@@ -110,8 +69,15 @@ export async function POST(req: NextRequest) {
   if (!listingId) return json(400, { error: "Missing listing_id", keys });
   if (!file) return json(400, { error: "Missing file", keys });
 
-  const own = await assertListingOwnedByUser(supabase, listingId, user.id);
-  if (!own.ok) return json(own.status, { error: own.error });
+  // Make sure listing belongs to this user (listings table uses owner_id)
+  const { data: listing, error: listingErr } = await supabase
+    .from("listings")
+    .select("id, owner_id")
+    .eq("id", listingId)
+    .single();
+
+  if (listingErr) return json(400, { error: listingErr.message });
+  if (!listing || listing.owner_id !== user.id) return json(403, { error: "Forbidden" });
 
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${listingId}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
@@ -123,7 +89,7 @@ export async function POST(req: NextRequest) {
     upsert: false,
   });
 
-  if (up.error) return json(400, { error: up.error.message, keys });
+  if (up.error) return json(400, { error: up.error.message });
 
   // sort_order = append to end
   const { data: last, error: lastErr } = await supabase
@@ -137,28 +103,21 @@ export async function POST(req: NextRequest) {
 
   const nextSort = (last?.[0]?.sort_order ?? -1) + 1;
 
-  // ✅ FIX: listing_photos requires uploaded_by (NOT NULL)
+  // listing_photos table uses uploaded_by (NOT owner_id)
   const ins = await supabase
     .from("listing_photos")
     .insert({
       listing_id: listingId,
+      uploaded_by: user.id,
       path,
       sort_order: nextSort,
-      uploaded_by: user.id,
     })
-    .select("id, listing_id, path, sort_order, created_at")
+    .select("*")
     .single();
 
   if (ins.error) return json(400, { error: ins.error.message });
 
-  // Return a signed url for immediate UI update
-  const { data: signedOne, error: signedOneErr } = await supabase.storage
-    .from("listing-photos")
-    .createSignedUrl(path, 60 * 60);
-
-  if (signedOneErr) return json(200, { ok: true, photo: ins.data });
-
-  return json(200, { ok: true, photo: { ...ins.data, url: signedOne?.signedUrl ?? null } });
+  return json(200, { ok: true, photo: ins.data });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -180,14 +139,10 @@ export async function DELETE(req: NextRequest) {
     .single();
 
   if (photoErr) return json(400, { error: photoErr.message });
-  if (!photo) return json(404, { error: "Photo not found" });
+  if (!photo) return json(404, { error: "Not found" });
 
-  // If you want: only uploader can delete
-  if (photo.uploaded_by && photo.uploaded_by !== user.id) return json(403, { error: "Forbidden" });
-
-  // verify ownership via listing as well (extra safety)
-  const own = await assertListingOwnedByUser(supabase, photo.listing_id, user.id);
-  if (!own.ok) return json(own.status, { error: own.error });
+  // only uploader can delete
+  if (photo.uploaded_by !== user.id) return json(403, { error: "Forbidden" });
 
   await supabase.storage.from("listing-photos").remove([photo.path]);
 

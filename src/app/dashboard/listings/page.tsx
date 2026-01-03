@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MyListingsClient from "@/components/MyListingsClient";
+import ServerHeader from "@/components/ServerHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,9 @@ export default async function DashboardListingsPage() {
   }
 
   return (
+  <div>
+    <ServerHeader />
+
     <div style={{ padding: 24 }}>
       <h1 style={{ fontSize: 28, fontWeight: 700 }}>My Listings</h1>
       <p style={{ marginTop: 6, color: "#64748b" }}>
@@ -38,6 +42,8 @@ export default async function DashboardListingsPage() {
       </p>
 
       <MyListingsClient listings={(listings ?? []) as any} />
-    </div>
-  );
+        </div>
+  </div>
+);
 }
+

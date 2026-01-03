@@ -1,64 +1,91 @@
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
-  const supabase = createClient();
+function json(status: number, body: any) {
+  return NextResponse.json(body, { status });
+}
+
+function getListingId(body: any) {
+  const a = typeof body?.listing_id === "string" ? body.listing_id : "";
+  const b = typeof body?.listingId === "string" ? body.listingId : "";
+  const s = (a || b).trim();
+  return s || null;
+}
+
+function getOrderArray(body: any): Array<{ id: string; sort_order: number }> | null {
+  // Accept either "photos" (what your UI sends) or "order" (what older route might expect)
+  const arr = Array.isArray(body?.photos) ? body.photos : Array.isArray(body?.order) ? body.order : null;
+  if (!arr) return null;
+
+  const cleaned: Array<{ id: string; sort_order: number }> = [];
+  for (const item of arr) {
+    const id = typeof item?.id === "string" ? item.id.trim() : "";
+    const sort_order =
+      typeof item?.sort_order === "number"
+        ? item.sort_order
+        : typeof item?.sort_order === "string"
+          ? Number(item.sort_order)
+          : NaN;
+
+    if (!id || Number.isNaN(sort_order)) return null;
+    cleaned.push({ id, sort_order });
+  }
+  return cleaned;
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = await createClient();
 
   const {
     data: { user },
-    error: authErr,
   } = await supabase.auth.getUser();
 
-  if (authErr || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return json(401, { error: "Not authenticated" });
 
-  let body: any;
+  let body: any = null;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return json(400, { error: "Expected JSON body" });
   }
 
-  const listing_id = body?.listing_id as string | undefined;
-  const order = body?.order as Array<{ id: string; sort_order: number }> | undefined;
+  const listingId = getListingId(body);
+  if (!listingId) return json(400, { error: "Missing listing_id" });
 
-  if (!listing_id || !Array.isArray(order)) {
-    return NextResponse.json({ error: "Missing listing_id or order" }, { status: 400 });
-  }
+  const order = getOrderArray(body);
+  if (!order) return json(400, { error: "Missing order array (expected `photos` or `order`)" });
 
-  // Ensure listing belongs to user
+  // Verify listing ownership
   const { data: listing, error: listingErr } = await supabase
     .from("listings")
     .select("id, owner_id")
-    .eq("id", listing_id)
+    .eq("id", listingId)
     .single();
 
-  if (listingErr || !listing) {
-    return NextResponse.json({ error: "Listing not found" }, { status: 404 });
-  }
-  if ((listing as any).owner_id !== user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (listingErr) return json(400, { error: listingErr.message });
+  if (!listing || listing.owner_id !== user.id) return json(403, { error: "Forbidden" });
 
-  // Update each photo row sort_order (only within this listing)
-  for (const row of order) {
-    if (!row?.id) continue;
-    const so = Number(row.sort_order ?? 0);
+  // Update each photo's sort_order (scoped to this listing)
+  // NOTE: We scope by listing_id so you can't reorder someone else's photos.
+  const updates = await Promise.all(
+    order.map((p) =>
+      supabase
+        .from("listing_photos")
+        .update({ sort_order: p.sort_order })
+        .eq("id", p.id)
+        .eq("listing_id", listingId)
+    )
+  );
 
-    const { error: upErr } = await supabase
-      .from("listing_photos")
-      .update({ sort_order: so })
-      .eq("id", row.id)
-      .eq("listing_id", listing_id);
+  const firstErr = updates.find((u) => u.error)?.error;
+  if (firstErr) return json(400, { error: firstErr.message });
 
-    if (upErr) {
-      return NextResponse.json({ error: upErr.message }, { status: 400 });
-    }
-  }
+  return json(200, { ok: true });
+}
 
-  return NextResponse.json({ ok: true });
+export async function GET() {
+  return json(405, { error: "Method not allowed" });
 }
