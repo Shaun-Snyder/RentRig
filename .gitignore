@@ -26,3 +26,11 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+SNAPSHOT_WORKING_DIFF.txt
+docs/
+src/additions/
+src/app/api/health/
+src/app/api/inspect/
+src/app/listings/[id]/page.tsx.bak
+src/lib/db/
