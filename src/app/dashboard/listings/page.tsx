@@ -17,10 +17,11 @@ export default async function DashboardListingsPage() {
 
   // IMPORTANT: select("*") so operator/driver fields make it to the client
   const { data: listings, error } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
+  .from("listings")
+  .select("*")
+  .eq("owner_id", user.id)
+  .eq("is_published", true)
+  .order("created_at", { ascending: false });
 
   if (error) {
     return (
@@ -41,7 +42,7 @@ export default async function DashboardListingsPage() {
         Create, publish, and manage your equipment/rig listings.
       </p>
 
-      <MyListingsClient listings={(listings ?? []) as any} />
+      <MyListingsClient listings={(listings ?? []) as any} showCreate={false} />
         </div>
   </div>
 );

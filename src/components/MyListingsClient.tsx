@@ -84,7 +84,14 @@ function rateLabel(unit: string | null | undefined) {
   return unit === "hour" ? "/hr" : "/day";
 }
 
-export default function MyListingsClient({ listings }: { listings: Listing[] }) {
+export default function MyListingsClient({
+  listings,
+  showCreate = false,
+}: {
+  listings: Listing[];
+  showCreate?: boolean;
+}) {
+
   const router = useRouter();
   const supabase = createClient();
   
@@ -288,6 +295,7 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
   return (
     <div className="grid gap-6">
       {/* CREATE */} 
+      {showCreate && (
        <form
         className="rounded-lg border bg-white p-4 grid gap-3"
       action={(fd) => {
@@ -530,6 +538,7 @@ export default function MyListingsClient({ listings }: { listings: Listing[] }) 
 
         {msg ? <p className="text-sm">{msg}</p> : null}
       </form>
+     )}
 
       {/* LIST */}
       <div className="grid gap-3">

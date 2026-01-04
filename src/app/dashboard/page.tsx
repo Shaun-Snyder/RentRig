@@ -39,6 +39,13 @@ export default async function DashboardPage() {
     My Listings
   </a>
 
+<a
+  href="/dashboard/listings/new"
+  className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
+>
+  Create Listing
+</a>
+
   <a
     href="/dashboard/rentals"
     className="rounded-lg border bg-white px-4 py-2 shadow-sm hover:bg-slate-50"
