@@ -120,62 +120,82 @@ export default function MyListingsClient({
   }
 
 async function normalizeUploadFile(file: File): Promise<File> {
-  const name = (file.name || "").toLowerCase();
-  const type = (file.type || "").toLowerCase();
-
-  const isHeic =
-    name.endsWith(".heic") ||
-    name.endsWith(".heif") ||
-    type === "image/heic" ||
-    type === "image/heif" ||
-    type === "image/heic-sequence" ||
-    type === "image/heif-sequence";
-
-  // Not HEIC/HEIF -> pass through
-  if (!isHeic) return file;
-
-  // IMPORTANT: dynamic import so it only runs in the browser (prevents "window is not defined")
-  const mod: any = await import("heic2any");
-  const heic2any = mod?.default ?? mod;
-
-  // Convert to JPEG
-  const out = await heic2any({
-    blob: file,
-    toType: "image/jpeg",
-    quality: 0.9,
-  });
-
-  // heic2any can return Blob or Blob[]
-  const blob: Blob = Array.isArray(out) ? out[0] : out;
-
-  // Build a proper JPEG File with correct MIME type + .jpg extension
-  const base = file.name ? file.name.replace(/\.(heic|heif)$/i, "") : "photo";
-  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
-}
-
-
-async function normalizeImageFile(file: File): Promise<File> {
+  // 1) HEIC -> JPEG (if you already added this earlier, keep it here)
+  const nameLower = (file.name || "").toLowerCase();
   const isHeic =
     file.type === "image/heic" ||
     file.type === "image/heif" ||
-    file.name.toLowerCase().endsWith(".heic") ||
-    file.name.toLowerCase().endsWith(".heif");
+    nameLower.endsWith(".heic") ||
+    nameLower.endsWith(".heif");
 
-  if (!isHeic) return file;
+  if (isHeic) {
+    // IMPORTANT: keep this dynamic import so SSR never touches it
+    const heic2any = (await import("heic2any")).default;
 
-  const heic2any = (await import("heic2any")).default;
+    const out = (await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.92,
+    })) as Blob;
 
-  const converted = (await heic2any({
-    blob: file,
-    toType: "image/jpeg",
-    quality: 0.9,
-  })) as Blob;
+    return new File([out], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
+      type: "image/jpeg",
+    });
+  }
 
-  return new File(
-    [converted],
-    file.name.replace(/\.(heic|heif)$/i, ".jpg"),
-    { type: "image/jpeg" }
-  );
+  // 2) If it's already small, don't touch it
+  const isImage = file.type?.startsWith("image/");
+  if (!isImage) return file;
+
+  // Compress only if big (tweak if you want)
+  const MAX_BYTES = 6 * 1024 * 1024; // 6MB
+  const MAX_DIM = 2200; // max width/height
+  if (file.size <= MAX_BYTES) return file;
+
+  // 3) Resize + recompress (JPEG) using canvas
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("FileReader failed"));
+    r.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("Image decode failed"));
+    i.src = dataUrl;
+  });
+
+  let { width, height } = img;
+
+  // Downscale only if needed
+  const scale = Math.min(1, MAX_DIM / Math.max(width, height));
+  const outW = Math.max(1, Math.round(width * scale));
+  const outH = Math.max(1, Math.round(height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+
+  ctx.drawImage(img, 0, 0, outW, outH);
+
+  const blob = await new Promise<Blob>((resolve) => {
+    canvas.toBlob(
+      (b) => resolve(b || file),
+      "image/jpeg",
+      0.82 // quality
+    );
+  });
+
+  // If compression didn’t help, keep original
+  if (!(blob instanceof Blob) || blob.size >= file.size) return file;
+
+  const newName = file.name.replace(/\.[a-z0-9]+$/i, ".jpg");
+  return new File([blob], newName, { type: "image/jpeg" });
 }
 
 async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
