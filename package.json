@@ -9,6 +9,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.88.0",
+    "heic2any": "^0.0.4",
     "next": "14.2.35",
     "nodemailer": "^7.0.12",
     "pdf-lib": "^1.17.1",

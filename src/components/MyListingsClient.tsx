@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createListing, updateListing, deleteListing } from "@/app/dashboard/listings/actions";
 import Link from "next/link";
+import heic2any from "heic2any";
 
 type Listing = {
   id: string;
@@ -118,24 +119,99 @@ export default function MyListingsClient({
     return sorted[0]?.path ? storageUrl(sorted[0].path) : null;
   }
 
-  async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
+async function normalizeUploadFile(file: File): Promise<File> {
+  const name = (file.name || "").toLowerCase();
+  const type = (file.type || "").toLowerCase();
+
+  const isHeic =
+    name.endsWith(".heic") ||
+    name.endsWith(".heif") ||
+    type === "image/heic" ||
+    type === "image/heif" ||
+    type === "image/heic-sequence" ||
+    type === "image/heif-sequence";
+
+  // Not HEIC/HEIF -> pass through
+  if (!isHeic) return file;
+
+  // IMPORTANT: dynamic import so it only runs in the browser (prevents "window is not defined")
+  const mod: any = await import("heic2any");
+  const heic2any = mod?.default ?? mod;
+
+  // Convert to JPEG
+  const out = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  });
+
+  // heic2any can return Blob or Blob[]
+  const blob: Blob = Array.isArray(out) ? out[0] : out;
+
+  // Build a proper JPEG File with correct MIME type + .jpg extension
+  const base = file.name ? file.name.replace(/\.(heic|heif)$/i, "") : "photo";
+  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+}
+
+
+async function normalizeImageFile(file: File): Promise<File> {
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    file.name.toLowerCase().endsWith(".heic") ||
+    file.name.toLowerCase().endsWith(".heif");
+
+  if (!isHeic) return file;
+
+  const heic2any = (await import("heic2any")).default;
+
+  const converted = (await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  })) as Blob;
+
+  return new File(
+    [converted],
+    file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+    { type: "image/jpeg" }
+  );
+}
+
+async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
   if (!files || files.length === 0) return;
 
   for (const file of Array.from(files)) {
-    const fd = new FormData();
-    fd.set("listing_id", listingId);
-    fd.set("file", file);
+  const fd = new FormData();
+  fd.append("listing_id", listingId);
 
-    const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
-    if (!res.ok) {
-      let msg = `Upload failed (${res.status})`;
-      try {
-        const j = await res.json();
-        msg = j?.error || msg;
-      } catch {}
-      throw new Error(msg);
-    }
+  // IMPORTANT: convert HEIC -> JPEG (and keep jpg/png as-is)
+  const safeFile = await normalizeUploadFile(file);
+
+  // Keep API field name as "photo" (your server logs show it expects "photo")
+  fd.append("photo", safeFile, safeFile.name);
+
+  const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
+
+  // Handle JSON OR HTML error bodies safely
+  const text = await res.text();
+  let err = `Upload failed (${res.status})`;
+  let j: any = {};
+
+  try {
+    j = JSON.parse(text);
+    if (j?.error) err = j.error;
+  } catch {
+    // not JSON (often Next error HTML)
+    err = `${err}: ${text.slice(0, 120)}`;
   }
+
+  if (!res.ok) {
+    setPhotoMsgByListing((p) => ({ ...p, [listingId]: err }));
+    return;
+  }
+}
+
 }
 
   async function refreshPhotos(listingId: string) {
@@ -155,29 +231,37 @@ export default function MyListingsClient({
   }
 
   async function uploadPhotos(listingId: string, files: FileList | null) {
-    if (!files || files.length === 0) return;
+  if (!files || files.length === 0) return;
 
-    setPhotoMsgByListing((p) => ({ ...p, [listingId]: `Uploading ${files.length}...` }));
+  setPhotoMsgByListing((p) => ({ ...p, [listingId]: `Uploading ${files.length}...` }));
 
-    for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("listing_id", listingId);
-      fd.append("photo", file);
+  for (const file of Array.from(files)) {
+    const fd = new FormData();
+    fd.append("listing_id", listingId);
 
-      const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setPhotoMsgByListing((p) => ({
-          ...p,
-          [listingId]: `Upload failed (${res.status}) — ${j?.error ?? "Unknown error"}`,
-        }));
-        return;
+    const safeFile = await normalizeUploadFile(file);
+    fd.append("photo", safeFile); // <-- MUST be "photo"
+
+    const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
+
+    if (!res.ok) {
+      const text = await res.text(); // JSON or HTML
+      let msg = `Upload failed (${res.status})`;
+      try {
+        const j = JSON.parse(text);
+        msg = j?.error || msg;
+      } catch {
+        msg = `${msg}: ${text.slice(0, 120)}`;
       }
+      setPhotoMsgByListing((p) => ({ ...p, [listingId]: msg }));
+      return;
     }
-
-    await refreshPhotos(listingId);
-    setPhotoMsgByListing((p) => ({ ...p, [listingId]: "" }));
   }
+
+  await refreshPhotos(listingId);
+  setPhotoMsgByListing((p) => ({ ...p, [listingId]: "" }));
+}
+
 
   async function deletePhoto(photoId: string, listingId: string) {
     if (!confirm("Delete this photo?")) return;
@@ -691,7 +775,13 @@ export default function MyListingsClient({
                     <div className="text-sm text-slate-600">{photoMsgByListing[l.id]}</div>
                   ) : null}
 
-                  <input type="file" multiple accept="image/*" onChange={(e) => uploadPhotos(l.id, e.target.files)} />
+                  <input
+  type="file"
+  multiple
+  accept="image/*,.heic,.heif"
+  onChange={(e) => uploadPhotos(l.id, e.target.files)}
+/>
+
 
                   {(photosByListing[l.id] ?? []).length > 0 ? (
                     <>
