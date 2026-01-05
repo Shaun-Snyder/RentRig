@@ -27,11 +27,12 @@ type PhotoRow = {
 };
 
 const CATEGORIES: Array<{ key: string; label: string }> = [
-  { key: "heavy_equipment", label: "Heavy Equipment" },
-  { key: "lifts", label: "Lifts" },
-  { key: "trailers", label: "Trailers" },
-  { key: "vans_covered", label: "Vans / Covered" },
   { key: "trucks", label: "Trucks" },
+  { key: "trailers", label: "Trailers" },  
+  { key: "vans_covered", label: "Vans / Covered" },
+  { key: "lifts", label: "Lifts" },
+  { key: "heavy_equipment", label: "Heavy Equipment" },
+  { key: "agricultural", label: "Agricultural" },
   { key: "other", label: "Other" },
 ];
 

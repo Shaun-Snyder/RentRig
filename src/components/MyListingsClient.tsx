@@ -312,12 +312,6 @@ export default function MyListingsClient({
 }}
 
       >
-        <div className="flex items-center justify-between">
-  <h1 className="text-xl font-semibold">Dashboard</h1>
-  <Link href="/dashboard" className="rounded-lg border px-3 py-2">
-    Dashboard
-  </Link>
-</div>
 
         <div className="text-lg font-semibold">Create listing</div>
 
@@ -329,11 +323,12 @@ export default function MyListingsClient({
         <div className="grid gap-1">
           <label className="text-sm">Category</label>
           <select className="rounded-md border px-3 py-2" name="category" required defaultValue="other">
-            <option value="heavy_equipment">Heavy equipment</option>
-            <option value="lifts">Lifts</option>
+            <option value="trucks">Trucks</option>         
             <option value="trailers">Trailers</option>
             <option value="vans_covered">Vans_covered</option>
-            <option value="trucks">Trucks</option>
+            <option value="lifts">Lifts</option>
+            <option value="heavy_equipment">Heavy equipment</option>
+            <option value="agricultural">Agricultural</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -808,11 +803,13 @@ export default function MyListingsClient({
                   <div className="grid gap-1">
                     <label className="text-sm">Category</label>
                     <select className="rounded-md border px-3 py-2" name="category" defaultValue={l.category}>
-                      <option value="heavy_equipment">Heavy equipment</option>
-                      <option value="lifts">Lifts</option>
+                      
+                      <option value="trucks">Trucks</option>   
                       <option value="trailers">Trailers</option>
                       <option value="vans_covered">Vans_covered</option>
-                      <option value="trucks">Trucks</option>
+                      <option value="lifts">Lifts</option>
+                      <option value="heavy_equipment">Heavy equipment</option>
+                      <option value="agricultural">Agricultural</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
