@@ -120,39 +120,41 @@ export default function MyListingsClient({
   }
 
 async function normalizeUploadFile(file: File): Promise<File> {
-  // 1) HEIC -> JPEG (if you already added this earlier, keep it here)
   const nameLower = (file.name || "").toLowerCase();
+  const typeLower = (file.type || "").toLowerCase();
+
+  // ---------- HEIC/HEIF -> JPEG ----------
   const isHeic =
-    file.type === "image/heic" ||
-    file.type === "image/heif" ||
     nameLower.endsWith(".heic") ||
-    nameLower.endsWith(".heif");
+    nameLower.endsWith(".heif") ||
+    typeLower === "image/heic" ||
+    typeLower === "image/heif" ||
+    typeLower === "image/heic-sequence" ||
+    typeLower === "image/heif-sequence";
 
   if (isHeic) {
-    // IMPORTANT: keep this dynamic import so SSR never touches it
-    const heic2any = (await import("heic2any")).default;
+    const mod: any = await import("heic2any");
+    const heic2any = mod?.default ?? mod;
 
-    const out = (await heic2any({
+    const out = await heic2any({
       blob: file,
       toType: "image/jpeg",
-      quality: 0.92,
-    })) as Blob;
-
-    return new File([out], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
-      type: "image/jpeg",
+      quality: 0.9,
     });
+
+    const blob: Blob = Array.isArray(out) ? out[0] : out;
+    const base = file.name ? file.name.replace(/\.(heic|heif)$/i, "") : "photo";
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
   }
 
-  // 2) If it's already small, don't touch it
-  const isImage = file.type?.startsWith("image/");
-  if (!isImage) return file;
+  // ---------- Compress very large images (mostly iPhone JPEGs) ----------
+  if (!typeLower.startsWith("image/")) return file;
 
-  // Compress only if big (tweak if you want)
   const MAX_BYTES = 6 * 1024 * 1024; // 6MB
-  const MAX_DIM = 2200; // max width/height
+  const MAX_DIM = 2400; // cap longest edge
   if (file.size <= MAX_BYTES) return file;
 
-  // 3) Resize + recompress (JPEG) using canvas
+  // Read into an Image
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));
@@ -167,12 +169,13 @@ async function normalizeUploadFile(file: File): Promise<File> {
     i.src = dataUrl;
   });
 
-  let { width, height } = img;
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  if (!srcW || !srcH) return file;
 
-  // Downscale only if needed
-  const scale = Math.min(1, MAX_DIM / Math.max(width, height));
-  const outW = Math.max(1, Math.round(width * scale));
-  const outH = Math.max(1, Math.round(height * scale));
+  const scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
+  const outW = Math.max(1, Math.round(srcW * scale));
+  const outH = Math.max(1, Math.round(srcH * scale));
 
   const canvas = document.createElement("canvas");
   canvas.width = outW;
@@ -183,20 +186,25 @@ async function normalizeUploadFile(file: File): Promise<File> {
 
   ctx.drawImage(img, 0, 0, outW, outH);
 
+  // Choose output type: keep PNG as PNG, otherwise JPEG
+  const outType = typeLower.includes("png") ? "image/png" : "image/jpeg";
+  const quality = outType === "image/jpeg" ? 0.82 : undefined;
+
   const blob = await new Promise<Blob>((resolve) => {
     canvas.toBlob(
       (b) => resolve(b || file),
-      "image/jpeg",
-      0.82 // quality
+      outType,
+      quality
     );
   });
 
-  // If compression didn’t help, keep original
-  if (!(blob instanceof Blob) || blob.size >= file.size) return file;
+  if (!(blob instanceof Blob)) return file;
+  if (blob.size >= file.size) return file; // if it didn't help, keep original
 
-  const newName = file.name.replace(/\.[a-z0-9]+$/i, ".jpg");
-  return new File([blob], newName, { type: "image/jpeg" });
+  const newName = file.name.replace(/\.[a-z0-9]+$/i, outType === "image/png" ? ".png" : ".jpg");
+  return new File([blob], newName, { type: outType });
 }
+
 
 async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
   if (!files || files.length === 0) return;
