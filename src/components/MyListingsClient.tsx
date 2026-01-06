@@ -104,22 +104,42 @@ export default function MyListingsClient({
 
   const [photosByListing, setPhotosByListing] = useState<Record<string, ListingPhoto[]>>({});
   const [photoMsgByListing, setPhotoMsgByListing] = useState<Record<string, string>>({});
+  const [photoBusyByListing, setPhotoBusyByListing] = useState<Record<string, boolean>>({});
 
   // controlled so the unit label doesn’t feel stale in the edit UI
   const [editOperatorRateUnit, setEditOperatorRateUnit] = useState<Record<string, "day" | "hour">>({});
 
-  function storageUrl(path: string) {
-    const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
-    return data.publicUrl;
-  }
+function storageUrl(path: string) {
+  const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
+  return data.publicUrl;
+}
 
-  function getThumb(listingId: string) {
-    const arr = photosByListing[listingId] ?? [];
-    const sorted = arr.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    return sorted[0]?.path ? storageUrl(sorted[0].path) : null;
-  }
+function getThumb(listingId: string): string | null {
+  const arr = photosByListing[listingId];
+  if (!arr || arr.length === 0) return null;
 
-async function normalizeUploadFile(file: File): Promise<File> {
+  // Prefer primary photo when available, otherwise first
+  const p =
+    arr.find((x) => (x as any)?.is_primary === true) ??
+    arr.find((x) => (x as any)?.is_primary === "true") ??
+    arr[0];
+
+  const path =
+    (p as any)?.path ??
+    (p as any)?.storage_path ??
+    (p as any)?.file_path ??
+    (p as any)?.photo_path ??
+    null;
+
+  if (!path) return null;
+
+  return storageUrl(path);
+}
+
+  async function normalizeUploadFile(file: File): Promise<File> {
+  // Extra safety: if this ever runs somewhere unexpected
+  if (typeof window === "undefined") return file;
+
   const nameLower = (file.name || "").toLowerCase();
   const typeLower = (file.type || "").toLowerCase();
 
@@ -133,8 +153,17 @@ async function normalizeUploadFile(file: File): Promise<File> {
     typeLower === "image/heif-sequence";
 
   if (isHeic) {
-    const mod: any = await import("heic2any");
-    const heic2any = mod?.default ?? mod;
+    type Heic2AnyFn = (opts: {
+      blob: Blob;
+      toType: string;
+      quality?: number;
+    }) => Promise<Blob | Blob[]>;
+
+    const mod = (await import("heic2any")) as unknown as {
+      default?: Heic2AnyFn;
+    };
+
+    const heic2any = mod.default ?? (mod as unknown as Heic2AnyFn);
 
     const out = await heic2any({
       blob: file,
@@ -154,93 +183,95 @@ async function normalizeUploadFile(file: File): Promise<File> {
   const MAX_DIM = 2400; // cap longest edge
   if (file.size <= MAX_BYTES) return file;
 
-  // Read into an Image
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("FileReader failed"));
-    r.readAsDataURL(file);
-  });
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("Image decode failed"));
-    i.src = dataUrl;
-  });
-
-  const srcW = img.naturalWidth || img.width;
-  const srcH = img.naturalHeight || img.height;
-  if (!srcW || !srcH) return file;
-
-  const scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
-  const outW = Math.max(1, Math.round(srcW * scale));
-  const outH = Math.max(1, Math.round(srcH * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = outW;
-  canvas.height = outH;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return file;
-
-  ctx.drawImage(img, 0, 0, outW, outH);
-
-  // Choose output type: keep PNG as PNG, otherwise JPEG
+  // Keep PNG as PNG; otherwise JPEG (same as your current behavior)
   const outType = typeLower.includes("png") ? "image/png" : "image/jpeg";
   const quality = outType === "image/jpeg" ? 0.82 : undefined;
 
-  const blob = await new Promise<Blob>((resolve) => {
-    canvas.toBlob(
-      (b) => resolve(b || file),
-      outType,
-      quality
+  try {
+    // Decode efficiently (no FileReader / dataURL)
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
+
+    const srcW = bitmap.width;
+    const srcH = bitmap.height;
+    if (!srcW || !srcH) return file;
+
+    const scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
+    const outW = Math.max(1, Math.round(srcW * scale));
+    const outH = Math.max(1, Math.round(srcH * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = outW;
+    canvas.height = outH;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    ctx.drawImage(bitmap, 0, 0, outW, outH);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), outType, quality);
+    });
+
+    if (!blob) return file;
+
+    // if it didn't help, keep original
+    if (blob.size >= file.size) return file;
+
+    const newName = file.name.replace(
+      /\.[a-z0-9]+$/i,
+      outType === "image/png" ? ".png" : ".jpg"
     );
-  });
 
-  if (!(blob instanceof Blob)) return file;
-  if (blob.size >= file.size) return file; // if it didn't help, keep original
-
-  const newName = file.name.replace(/\.[a-z0-9]+$/i, outType === "image/png" ? ".png" : ".jpg");
-  return new File([blob], newName, { type: outType });
+    return new File([blob], newName, { type: outType, lastModified: Date.now() });
+  } catch (e) {
+    console.warn("Client compress failed; uploading original:", e);
+    return file;
+  }
 }
 
 
 async function uploadQueuedCreatePhotos(listingId: string, files: FileList | null) {
   if (!files || files.length === 0) return;
 
-  for (const file of Array.from(files)) {
-  const fd = new FormData();
-  fd.append("listing_id", listingId);
-
-  // IMPORTANT: convert HEIC -> JPEG (and keep jpg/png as-is)
-  const safeFile = await normalizeUploadFile(file);
-
-  // Keep API field name as "photo" (your server logs show it expects "photo")
-  fd.append("photo", safeFile, safeFile.name);
-
-  const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
-
-  // Handle JSON OR HTML error bodies safely
-  const text = await res.text();
-  let err = `Upload failed (${res.status})`;
-  let j: any = {};
-
+  setPhotoBusyByListing((m) => ({ ...m, [listingId]: true }));
   try {
-    j = JSON.parse(text);
-    if (j?.error) err = j.error;
-  } catch {
-    // not JSON (often Next error HTML)
-    err = `${err}: ${text.slice(0, 120)}`;
-  }
+    for (const file of Array.from(files)) {
+      const fd = new FormData();
+      fd.append("listing_id", listingId);
 
-  if (!res.ok) {
-    setPhotoMsgByListing((p) => ({ ...p, [listingId]: err }));
-    return;
+      // IMPORTANT: convert HEIC -> JPEG (and keep jpg/png as-is)
+      const safeFile = await normalizeUploadFile(file);
+
+      // Keep API field name as "photo" (your server logs show it expects "photo")
+      fd.append("photo", safeFile, safeFile.name);
+
+      const res = await fetch("/api/listing-photos", { method: "POST", body: fd });
+
+      // Handle JSON OR HTML error bodies safely
+      const text = await res.text();
+      let err = `Upload failed (${res.status})`;
+      let j: any = {};
+
+      try {
+        j = JSON.parse(text);
+        if (j?.error) err = j.error;
+      } catch {
+        // not JSON (often Next error HTML)
+        err = `${err}: ${text.slice(0, 120)}`;
+      }
+
+      if (!res.ok) {
+        setPhotoMsgByListing((p) => ({ ...p, [listingId]: err }));
+        return;
+      }
+    }
+  } finally {
+    setPhotoBusyByListing((m) => ({ ...m, [listingId]: false }));
   }
 }
 
-}
 
   async function refreshPhotos(listingId: string) {
     setPhotoMsgByListing((p) => ({ ...p, [listingId]: "Refreshing..." }));
@@ -683,17 +714,24 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
             <div key={l.id} className="rounded-lg border bg-white p-4 grid gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex gap-3">
-                  {thumb ? (
-                    <img src={thumb} alt="" className="h-16 w-24 rounded object-cover border" />
-                  ) : (
-                    <div className="h-16 w-24 rounded border bg-slate-100 grid place-items-center text-xs text-slate-500">
-                      No photo
-                    </div>
-                  )}
+  <div className="flex flex-col">
+    {thumb ? (
+      <img src={thumb} alt="" className="h-16 w-24 rounded object-cover border" />
+    ) : (
+      <div className="h-16 w-24 rounded border bg-slate-100 grid place-items-center text-xs text-slate-500">
+        No photo
+      </div>
+    )}
 
-                  <div>
-                    <div className="font-semibold">{l.title}</div>
-                    <div className="text-xs text-slate-500">Category: {l.category}</div>
+    {photoBusyByListing[l.id] && (
+      <div className="text-xs text-slate-500 mt-1">Optimizing photo…</div>
+    )}
+    </div>
+
+  <div>
+    <div className="font-semibold">{l.title}</div>
+    <div className="text-xs text-slate-500">Category: {l.category}</div>
+
 
                     {(l.city || l.state) ? (
                       <div className="text-xs text-slate-500">
