@@ -11,7 +11,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+  <div className="relative min-h-screen bg-orange-600 text-slate-900">
+    {/* Fixed background logo */}
+    <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
+      <img
+        src="/logo.png"
+        alt=""
+        className="opacity-100 w-[600px] max-w-[90vw]"
+      />
+    </div>
+
+    {/* App content */}
+    <div className="relative z-10">
+      {children}
+    </div>
+  </div>
+</body>
     </html>
   )
 }

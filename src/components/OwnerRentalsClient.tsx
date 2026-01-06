@@ -75,7 +75,7 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
           !r.hourly_finalized_at;
 
         return (
-          <div key={r.id} className="rounded-lg border bg-white p-5">
+          <div key={r.id} className="rr-card p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-lg font-semibold">{r.listing?.title ?? "Listing"}</div>
@@ -123,7 +123,7 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                   href={`/api/invoice?rental_id=${r.id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+                  className="rr-btn rr-btn-primary"
                 >
                   Invoice
                 </a>
@@ -132,7 +132,7 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                   <button
                     onClick={() => onApprove(r.id)}
                     disabled={isPending || isFinal}
-                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="rr-btn rr-btn-primary"
                   >
                     Approve & Email
                   </button>
@@ -140,7 +140,7 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                   <button
                     onClick={() => onReject(r.id)}
                     disabled={isPending || isFinal}
-                    className="rounded-md border px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+                    className="rr-btn rr-btn-danger"
                   >
                     Reject
                   </button>

@@ -440,7 +440,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
       {/* CREATE */} 
       {showCreate && (
        <form
-        className="rounded-lg border bg-white p-4 grid gap-3"
+        className="rounded-lg border rr-card p-4 grid gap-3" 
       action={(fd) => {
   setMsg("");
   startTransition(async () => {
@@ -711,7 +711,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
             : "Not offered";
 
           return (
-            <div key={l.id} className="rounded-lg border bg-white p-4 grid gap-3">
+            <div key={l.id} className="rounded-lg border rr-card p-4 grid gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex gap-3">
   <div className="flex flex-col">
@@ -765,7 +765,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded-lg border px-3 py-2"
+                    className="rr-btn rr-btn-secondary"
                     disabled={isPending}
                     onClick={() => {
                       setOpenId(isOpen ? null : l.id);
@@ -778,7 +778,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
                   <button
                     type="button"
-                    className="rounded-lg border px-3 py-2"
+                    className="rr-btn rr-btn-primary"
                     disabled={isPending}
                     onClick={() => {
                       setMsg("");
@@ -800,7 +800,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
                   <button
                     type="button"
-                    className="rounded-lg border px-3 py-2 text-red-600"
+                    className="rr-btn rr-btn-danger"
                     disabled={isPending}
                     onClick={() => {
                       if (!confirm("Delete this listing?")) return;
@@ -825,17 +825,17 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
               {/* PHOTOS (LOCKED unless Edit open) */}
               {isOpen ? (
-                <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Photos</div>
-                    <button
-                      type="button"
-                      className="rounded-md border px-3 py-1.5 text-sm hover:bg-white"
-                      onClick={() => refreshPhotos(l.id)}
-                    >
-                      Refresh
-                    </button>
-                  </div>
+  <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
+    <div className="flex items-center justify-between">
+      <div className="text-sm font-medium">Photos</div>
+      <button
+        type="button"
+        className="rr-btn rr-btn-secondary"
+        onClick={() => refreshPhotos(l.id)}
+      >
+        Refresh
+      </button>
+    </div>
 
                   {photoMsgByListing[l.id] ? (
                     <div className="text-sm text-slate-600">{photoMsgByListing[l.id]}</div>
@@ -856,14 +856,14 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                           .slice()
                           .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
                           .map((p, idx, arr) => (
-                            <div key={p.id} className="flex items-center gap-3 rounded-md border bg-white p-2">
+                            <div key={p.id} className="flex items-center gap-3 rounded-md border rr-card p-2">
                               <img src={storageUrl(p.path)} alt="" className="h-16 w-24 rounded object-cover border" />
                               <div className="flex-1 text-sm text-slate-600 break-all">{p.path}</div>
 
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  className="rounded-md border px-2 py-1 text-xs hover:bg-white"
+                                  className="rounded-md border px-2 py-1 text-xs hover:rr-card"
                                   onClick={() => {
                                     if (idx <= 0) return;
                                     setPhotosByListing((prev) => {
@@ -883,7 +883,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
                                 <button
                                   type="button"
-                                  className="rounded-md border px-2 py-1 text-xs hover:bg-white"
+                                  className="rounded-md border px-2 py-1 text-xs hover:rr-card"
                                   onClick={() => {
                                     if (idx >= arr.length - 1) return;
                                     setPhotosByListing((prev) => {
@@ -903,7 +903,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
                                 <button
                                   type="button"
-                                  className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-white"
+                                  className="rounded-md border px-2 py-1 text-xs text-red-600 hover:rr-card"
                                   onClick={() => deletePhoto(p.id, l.id)}
                                 >
                                   Delete
@@ -915,7 +915,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
 
                       <button
                         type="button"
-                        className="rounded-md border px-3 py-1.5 text-sm w-fit hover:bg-white"
+                        className="rounded-md border px-3 py-1.5 text-sm w-fit hover:rr-card"
                         onClick={() => savePhotoOrder(l.id)}
                       >
                         Save photo order
@@ -1012,7 +1012,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                   </label>
 
                   {/* Delivery */}
-                  <div className="rounded-lg border bg-white p-4 grid gap-2">
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Delivery</div>
                     <label className="flex items-center gap-2 text-sm">
                       <input type="checkbox" name="delivery_enabled" value="true" defaultChecked={Boolean(l.delivery_enabled)} /> Offer delivery
@@ -1030,7 +1030,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                   </div>
 
                   {/* Operator */}
-                  <div className="rounded-lg border bg-white p-4 grid gap-2">
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Operator</div>
                     <label className="flex items-center gap-2 text-sm">
                       <input type="checkbox" name="operator_enabled" value="true" defaultChecked={Boolean(l.operator_enabled)} /> Offer operator
@@ -1063,7 +1063,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                   </div>
 
                   {/* Driver */}
-                  <div className="rounded-lg border bg-white p-4 grid gap-2">
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Driver</div>
                     <label className="flex items-center gap-2 text-sm">
                       <input type="checkbox" name="driver_enabled" value="true" defaultChecked={Boolean(l.driver_enabled)} /> Offer driver
@@ -1095,7 +1095,7 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                   </div>
 
                   {/* Driver + Labor */}
-                  <div className="rounded-lg border bg-white p-4 grid gap-2">
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Driver + Labor</div>
                     <label className="flex items-center gap-2 text-sm">
                       <input type="checkbox" name="driver_labor_enabled" value="true" defaultChecked={Boolean(l.driver_labor_enabled)} /> Offer driver + labor

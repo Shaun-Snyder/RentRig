@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition } from "react";
@@ -22,42 +23,49 @@ export default function ProfileForm({
           setMsg(res.message);
         });
       }}
-      style={{
-        display: "grid",
-        gap: 12,
-        maxWidth: 520,
-        padding: 16,
-        border: "1px solid #e5e5e5",
-        borderRadius: 12,
-      }}
+      className="rr-card grid gap-4 max-w-xl p-6"
     >
-      <h2 style={{ margin: 0 }}>Profile</h2>
+      <h2 className="text-xl font-semibold">Profile</h2>
 
-      <label>
-        Full name
+      <div className="grid gap-1">
+        <label className="text-sm font-medium" htmlFor="full_name">
+          Full name
+        </label>
         <input
+          id="full_name"
           name="full_name"
           defaultValue={initialFullName}
           placeholder="Your name"
-          style={{ padding: 10, width: "100%" }}
+          className="rr-input w-full"
         />
-      </label>
+      </div>
 
-      <label>
-        Phone
+      <div className="grid gap-1">
+        <label className="text-sm font-medium" htmlFor="phone">
+          Phone
+        </label>
         <input
+          id="phone"
           name="phone"
           defaultValue={initialPhone}
           placeholder="(optional)"
-          style={{ padding: 10, width: "100%" }}
+          className="rr-input w-full"
         />
-      </label>
+      </div>
 
-      <button type="submit" disabled={isPending}>
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rr-btn rr-btn-primary w-full"
+      >
         {isPending ? "Saving..." : "Save profile"}
       </button>
 
-      {msg && <p>{msg}</p>}
+      {msg && (
+        <p className="text-sm text-slate-700 mt-1">
+          {msg}
+        </p>
+      )}
     </form>
   );
 }

@@ -539,9 +539,12 @@ export default function RentalRequestForm({
         <textarea name="message" className="border rounded-lg p-2" rows={4} />
       </label>
 
-      <button className="rounded-lg border px-4 py-2" disabled={isPending || !canSubmit}>
-        {isPending ? "Sending..." : "Request rental"}
-      </button>
+      <button
+  className="rr-btn rr-btn-primary w-full"
+  disabled={isPending || !canSubmit}
+>
+  {isPending ? "Sending..." : "Request rental"}
+</button>
 
       {!canSubmit && (
         <div className="text-xs text-amber-700">

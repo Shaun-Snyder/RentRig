@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MyListingsClient from "@/components/MyListingsClient";
 import ServerHeader from "@/components/ServerHeader";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -37,10 +38,10 @@ export default async function DashboardListingsPage() {
     <ServerHeader />
 
     <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>My Listings</h1>
-      <p style={{ marginTop: 6, color: "#64748b" }}>
-        Create, publish, and manage your equipment/rig listings.
-      </p>
+      <PageHeader
+  title="My Listings"
+  subtitle="Create, publish, and manage your equipment/rig listings."
+/>
 
       <MyListingsClient listings={(listings ?? []) as any} showCreate={false} />
         </div>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import OwnerRentalsClient from "@/components/OwnerRentalsClient";
+import PageHeader from "@/components/PageHeader";
 
 export default async function OwnerRentalsPage() {
   const supabase = await createClient();
@@ -69,12 +70,13 @@ export default async function OwnerRentalsPage() {
     <>
       <ServerHeader />
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <h1 className="text-3xl font-semibold">Owner Requests</h1>
-        <p className="mt-2 text-slate-600">
-          Approve or reject rental requests for your listings.
-        </p>
+        <PageHeader
+  title="Owner Requests"
+  subtitle="Approve or reject rental requests for your listings."
+/>
 
-        <OwnerRentalsClient rentals={enriched} />
+       <OwnerRentalsClient rentals={enriched} />
+
       </main>
     </>
   );

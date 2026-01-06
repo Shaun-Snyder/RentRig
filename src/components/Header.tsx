@@ -17,9 +17,12 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`rounded-md px-3 py-2 text-sm font-medium ${
-        active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
-      }`}
+      className={
+        active
+          ? "rr-btn rr-btn-primary"
+          : "rr-btn rr-btn-secondary"
+      }
+      aria-current={active ? "page" : undefined}
     >
       {label}
     </Link>
@@ -27,19 +30,58 @@ function NavLink({
 }
 
 export default function Header({ role }: { role?: string }) {
-  return (
-    <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="text-lg font-bold">RentRig</div>
-          <nav className="flex items-center gap-2">
-            <NavLink href="/dashboard" label="Dashboard" />
-            {role === "admin" && <NavLink href="/admin" label="Admin" />}
-          </nav>
-        </div>
+  const title = role === "admin" ? "Admin" : "Dashboard";
+  const subtitle =
+    role === "admin"
+      ? "Admin controls and system management"
+      : "Manage your listings and rentals";
+return (
+  <header className="border-b border-black/20 bg-transparent">
+    <div className="mx-auto max-w-5xl px-6 py-5 grid gap-4">
+      
+     {/* TOP ROW: Nav | Brand | Logout */}
+<div className="grid grid-cols-3 items-center">
+  {/* Left: Nav */}
+  <nav className="flex items-center gap-2 justify-start">
+    <NavLink href="/dashboard" label="Dashboard" />
+    {role === "admin" && <NavLink href="/admin" label="Admin" />}
+  </nav>
 
-        <LogoutButton />
+  {/* Center: Brand */}
+  <div className="flex justify-center">
+    <div
+      className="text-4xl font-extrabold tracking-tight text-black"
+      style={{
+        WebkitTextStroke: "1.5px white",
+        textShadow:
+          "0 1px 2px rgba(0,0,0,0.35), 0 4px 10px rgba(0,0,0,0.35)",
+      }}
+    >
+      RentRig
+    </div>
+  </div>
+
+  {/* Right: Logout */}
+  <div className="flex justify-end">
+    <LogoutButton />
+  </div>
+</div>
+
+
+
+      {/* PAGE TITLE */}
+      <div className="text-center">
+        <div className="text-2xl font-extrabold tracking-tight text-black drop-shadow-sm">
+          {title}
+        </div>
+        <div className="text-sm font-medium text-slate-800">
+          {subtitle}
+        </div>
       </div>
-    </header>
-  );
+
+    </div>
+  </header>
+);
+
+  
 }

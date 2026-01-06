@@ -270,13 +270,13 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
   return (
     <div className="mt-8 grid gap-4">
-      <div className="rounded-xl border bg-white p-4 shadow-sm grid gap-4">
+      <div className="rr-card p-6 grid gap-4">
         {/* Search + location */}
         <div className="grid gap-3 md:grid-cols-3">
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">Search</span>
             <input
-              className="border rounded-lg p-2"
+              className="w-full rr-input"
               placeholder='Try "ford", "Orlando", "FL"...'
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -358,7 +358,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           <div className="flex items-end">
             <button
               type="button"
-              className="rounded-lg border px-4 py-2 w-full"
+              className="rr-btn rr-btn-secondary rr-btn-sm w-full"
               onClick={() => {
                 setQ("");
                 setCity("");
@@ -382,7 +382,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
         </div>
 
         {/* Availability */}
-        <div className="rounded-lg border p-3 grid gap-3">
+        <div className="rr-card rr-card-sm p-4 grid gap-3">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -400,7 +400,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           </label>
 
           {availEnabled && (
-            <div className="rounded-lg border bg-white p-3">
+            <div className="rounded-lg border border-black/20 bg-white/60 p-3">
               <DayPicker
                 mode="range"
                 selected={range}
@@ -420,7 +420,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="rounded-lg border px-4 py-2"
+              className="rr-btn rr-btn-secondary rr-btn-sm"
               disabled={!availEnabled || checking || !range?.from || !range?.to}
               onClick={() => {
                 if (range?.from && range?.to) checkAvailabilityWithRange(range.from, range.to);
@@ -456,16 +456,16 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       {filteredSorted.length === 0 ? (
         <p className="text-slate-600">No matching listings.</p>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSorted.map((l) => {
   const st = checked ? availabilityStatus[l.id] : null;
   const thumb = (l as any).thumb_url || "";
 
   return (
     <div
-      key={l.id}
-      className="rounded-xl border bg-white p-4 shadow-sm hover:shadow transition grid gap-3"
-    >
+  key={l.id}
+  className="rr-card p-4 grid gap-3"
+>  
       {/* Thumbnail */}
       <a
   href={`/listings/${l.id}`}

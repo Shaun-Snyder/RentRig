@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MyListingsClient from "@/components/MyListingsClient";
 import ServerHeader from "@/components/ServerHeader";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function DashboardNewListingPage() {
       <div>
         <ServerHeader />
         <div style={{ padding: 24 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 600 }}>Create Listing</h1>
+          <PageHeader title="Create Listing" />
           <p style={{ marginTop: 12, color: "crimson" }}>
             Load failed: {error.message}
           </p>
@@ -47,26 +48,10 @@ export default async function DashboardNewListingPage() {
       <ServerHeader />
 
       <div style={{ padding: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            marginBottom: 12,
-            flexWrap: "wrap",
-          }}
-        >
-     
-
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>
-            Create Listing
-          </h1>
-        </div>
-
-        <p style={{ marginTop: 6, color: "#64748b" }}>
-          Create a new listing, then publish when ready. Drafts only show here.
-        </p>
-
+        <PageHeader
+  title="Create Listing"
+  subtitle="Create a new listing, then publish when ready. Drafts only show here."
+/>
         <MyListingsClient listings={(listings ?? []) as any} showCreate={true} />
       </div>
     </div>

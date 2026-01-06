@@ -4,6 +4,7 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import ListingsClient from "@/components/ListingsClient";
+import PageHeader from "@/components/PageHeader";
 
 type ListingRow = {
   id: string;
@@ -124,12 +125,12 @@ export default async function ListingsPage({
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex items-end justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-semibold">Browse Listings</h1>
-            <p className="mt-2 text-slate-600">
-              {selectedIsValid ? `Showing: ${catLabel(selected)}` : "Showing: All categories"}
-            </p>
-          </div>
+  <div>
+    <PageHeader
+      title="Browse Listings"
+      subtitle={selectedIsValid ? `Showing: ${catLabel(selected)}` : "Showing: All categories"}
+    />
+  </div>
 
           {/* Small server-side search box (keeps URL params). Sliders + availability UI stays in ListingsClient */}
           <form action="/listings" method="get" className="flex flex-wrap items-center gap-2">
@@ -142,17 +143,18 @@ export default async function ListingsPage({
               className="w-full max-w-md rounded-lg border px-3 py-2"
             />
 
-            <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-white">
-              Search
-            </button>
+            <button type="submit" className="rr-btn rr-btn-primary">
+  Search
+</button>
 
             {q ? (
               <a
-                href={selectedIsValid ? `/listings?category=${selected}` : "/listings"}
-                className="rounded-lg border px-4 py-2"
-              >
-                Clear
-              </a>
+  href={selectedIsValid ? `/listings?category=${selected}` : "/listings"}
+  className="rr-btn rr-btn-secondary"
+>
+  Clear
+</a>
+
             ) : null}
           </form>
         </div>
@@ -160,11 +162,8 @@ export default async function ListingsPage({
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/listings"
-            className={`rounded-full border px-4 py-2 text-sm ${
-              !selectedIsValid
-                ? "bg-slate-900 text-white border-slate-900"
-                : "bg-white hover:bg-slate-50"
-            }`}
+            className={`rr-pill ${!selectedIsValid ? "rr-pill-active" : ""}`}
+
           >
             All
           </Link>
@@ -175,9 +174,8 @@ export default async function ListingsPage({
               <Link
                 key={c.key}
                 href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  active ? "bg-slate-900 text-white border-slate-900" : "bg-white hover:bg-slate-50"
-                }`}
+                className={`rr-pill ${active ? "rr-pill-active" : ""}`}
+
               >
                 {c.label}
               </Link>

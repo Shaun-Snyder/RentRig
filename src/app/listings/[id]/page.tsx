@@ -1,4 +1,5 @@
 
+
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { notFound } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import RentalRequestForm from "@/components/RentalRequestForm";
 import { createClient } from "@/lib/supabase/server";
+import PageHeader from "@/components/PageHeader";
 
 export default async function ListingPage({
   params,
@@ -108,94 +110,54 @@ export default async function ListingPage({
   const licenseType = (listing.license_type as string) ?? "";
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       <ServerHeader />
 
-      {/* Back buttons */}
-      <div style={{ marginTop: 12, marginBottom: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Link
-          href="/listings"
-          style={{
-            display: "inline-block",
-            padding: "8px 12px",
-            borderRadius: 10,
-            border: "1px solid #e5e7eb",
-            textDecoration: "none",
-          }}
-        >
-          ← All listings
-        </Link>
-
-        <Link
-          href="/dashboard"
-          style={{
-            display: "inline-block",
-            padding: "8px 12px",
-            borderRadius: 10,
-            border: "1px solid #e5e7eb",
-            textDecoration: "none",
-          }}
-        >
-          Dashboard
-        </Link>
-      </div>
-
-      <div style={{ marginTop: 4 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>
-          {listing.title ?? "Listing"}
-        </h1>
-
-        <div style={{ opacity: 0.8, marginBottom: 16 }}>
-          Category: {listing.category ?? "n/a"}
+      <main className="mx-auto max-w-5xl px-6 py-10">
+        {/* Back (ONLY one button) */}
+        <div className="mb-4">
+          <Link href="/listings" className="rr-btn rr-btn-secondary rr-btn-sm">
+            ← All listings
+          </Link>
         </div>
 
+        {/* Page header */}
+        <PageHeader
+          title={listing.title ?? "Listing"}
+          subtitle={`Category: ${listing.category ?? "n/a"}`}
+        />
+
         {/* Listing details */}
-        <div
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: 12,
-            padding: 14,
-            background: "#fff",
-            maxWidth: 900,
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 10,
-            }}
-          >
+        <div className="rr-card p-5 mb-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Daily rate</div>
-              <div>${pricePerDay.toFixed(2)} / day</div>
+              <div className="font-extrabold rr-outline-section">Daily rate</div>
+              <div className="mt-1 font-semibold">${pricePerDay.toFixed(2)} / day</div>
             </div>
 
             <div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Deposit</div>
-              <div>${securityDeposit.toFixed(2)}</div>
+              <div className="font-extrabold rr-outline-section">Deposit</div>
+              <div className="mt-1 font-semibold">${securityDeposit.toFixed(2)}</div>
             </div>
 
             <div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Min / Max days</div>
-              <div>
+              <div className="font-extrabold rr-outline-section">Min / Max days</div>
+              <div className="mt-1 font-semibold">
                 {minRentalDays ?? "—"} / {maxRentalDays ?? "—"}
               </div>
             </div>
 
             <div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Delivery</div>
-              <div>
+              <div className="font-extrabold rr-outline-section">Delivery</div>
+              <div className="mt-1 font-semibold">
                 {deliveryMode}
                 {deliveryMode !== "pickup_only" ? ` ($${deliveryFee.toFixed(2)})` : ""}
               </div>
             </div>
 
-            {/* REQUIRED LICENSE (this is what you asked for) */}
             <div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Required license</div>
-              <div>
+              <div className="font-extrabold rr-outline-section">Required license</div>
+              <div className="mt-1 font-semibold">
                 {licenseRequired ? "Yes" : "No"}
                 {licenseRequired && licenseType ? ` — ${licenseType}` : ""}
               </div>
@@ -203,69 +165,54 @@ export default async function ListingPage({
           </div>
         </div>
 
+        {/* Photos */}
         {photos?.length ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
-              marginBottom: 18,
-            }}
-          >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             {photos.map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  background: "#fff",
-                }}
-              >
+              <div key={p.id} className="rr-card p-2 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photoUrl(p.path)}
                   alt="Listing photo"
-                  style={{ width: "100%", height: 180, objectFit: "cover" }}
+                  className="w-full h-44 object-cover rounded-lg border border-black/20"
                 />
               </div>
             ))}
           </div>
         ) : null}
 
+        {/* Description */}
         {listing.description ? (
-          <p style={{ marginBottom: 18, maxWidth: 900 }}>{listing.description}</p>
+          <div className="rr-card p-5 mb-6">
+            <div className="rr-outline-section text-lg mb-2">Description</div>
+            <p className="rr-subtext whitespace-pre-wrap">{listing.description}</p>
+          </div>
         ) : null}
 
         {/* Rental form */}
-        <div style={{ marginTop: 12 }}>
+        <div className="rr-card p-5">
           <RentalRequestForm
             listingId={id}
             blocked={approvedRentals ?? []}
-
             /* pricing + rules (fixes NaN + missing totals) */
             pricePerDay={pricePerDay}
             securityDeposit={securityDeposit}
             minRentalDays={minRentalDays}
             maxRentalDays={maxRentalDays}
-
             /* delivery */
             deliveryMode={deliveryMode}
             deliveryFee={deliveryFee}
             deliveryDiscountEnabled={Boolean(listing.delivery_service_discount_enabled)}
             deliveryDiscountAmount={Number(listing.delivery_service_discount_amount ?? 0)}
-
             /* category/license */
             category={(listing.category as string) ?? ""}
             licenseRequired={licenseRequired}
             licenseType={licenseType || null}
-
             /* operator */
             operatorEnabled={Boolean(listing.operator_enabled)}
             operatorRate={Number(listing.operator_rate ?? 0)}
             operatorRateUnit={(listing.operator_rate_unit as "day" | "hour") ?? "day"}
             operatorMaxHours={Number(listing.operator_max_hours ?? 0)}
-
             /* driver */
             driverEnabled={Boolean(listing.driver_enabled)}
             driverDailyEnabled={Boolean(listing.driver_daily_enabled)}
@@ -273,7 +220,6 @@ export default async function ListingPage({
             driverDayRate={Number(listing.driver_day_rate ?? 0)}
             driverHourRate={Number(listing.driver_hour_rate ?? 0)}
             driverMaxHours={Number(listing.driver_max_hours ?? 0)}
-
             /* driver labor */
             driverLaborEnabled={Boolean(listing.driver_labor_enabled)}
             driverLaborDailyEnabled={Boolean(listing.driver_labor_daily_enabled)}
@@ -283,7 +229,7 @@ export default async function ListingPage({
             driverLaborMaxHours={Number(listing.driver_labor_max_hours ?? 0)}
           />
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
