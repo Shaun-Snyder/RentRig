@@ -16,11 +16,11 @@ export default async function DashboardPage() {
 
   const user = data.user;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name, phone")
-    .eq("id", user.id)
-    .single();
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role, full_name, phone, avatar_url, profile_summary")
+  .eq("id", user.id)
+  .single();
 
   const role = profile?.role ?? "user";
   const email = user.email ?? "(no email)";
@@ -94,11 +94,23 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+{profile?.profile_summary ? (
+  <div className="mt-6 rr-card p-5">
+    <div className="text-sm text-slate-500">Profile summary</div>
+    <p className="mt-2 text-sm text-slate-800 whitespace-pre-wrap">
+      {profile.profile_summary}
+    </p>
+  </div>
+) : null}
+
+
         <div className="mt-10">
-          <ProfileForm
-            initialFullName={profile?.full_name ?? ""}
-            initialPhone={profile?.phone ?? ""}
-          />
+         <ProfileForm
+  initialFullName={profile?.full_name ?? ""}
+  initialPhone={profile?.phone ?? ""}
+  initialAvatarUrl={profile?.avatar_url ?? ""}
+  initialSummary={profile?.profile_summary ?? ""}
+/>
         </div>
       </main>
     </>
