@@ -284,62 +284,60 @@ export async function requestRental(formData: FormData) {
   }
 
   const rentalInsert = {
-  listing_id,
-  renter_id: user.id,
-  start_date,
-  end_date,
-  buffer_days,
-  message,
-  status: "pending",
+    listing_id,
+    renter_id: user.id,
+    start_date,
+    end_date,
+    buffer_days,
+    message,
+    status: "pending",
 
-  delivery_selected,
-  delivery_fee: delivery_fee_final,
+    delivery_selected,
+    delivery_fee: delivery_fee_final,
 
-  // operator snapshot (kept for existing invoice + finalize)
-  operator_selected: operatorSelectedFinal,
-  operator_rate: operatorRate,
-  operator_rate_unit: operatorUnit,
-  operator_days,
-  operator_hours: operatorUnit === "hour" ? operator_hours : 0,
-  operator_total,
+    // operator snapshot (kept for existing invoice + finalize)
+    operator_selected: operatorSelectedFinal,
+    operator_rate: operatorRate,
+    operator_rate_unit: operatorUnit,
+    operator_days,
+    operator_hours: operatorUnit === "hour" ? operator_hours : 0,
+    operator_total,
 
-  // hourly finalize support (existing)
-  hourly_is_estimate,
-  hourly_estimated_hours,
-  hourly_final_hours: null,
-  hourly_final_total: null,
-  hourly_finalized_at: null,
-};
+    // hourly finalize support (existing)
+    hourly_is_estimate,
+    hourly_estimated_hours,
+    hourly_final_hours: null,
+    hourly_final_total: null,
+    hourly_finalized_at: null,
+  };
 
-assertAllowedInsertKeys("rentals", rentalInsert, [
-  "listing_id",
-  "renter_id",
-  "start_date",
-  "end_date",
-  "buffer_days",
-  "message",
-  "status",
+  assertAllowedInsertKeys("rentals", rentalInsert, [
+    "listing_id",
+    "renter_id",
+    "start_date",
+    "end_date",
+    "buffer_days",
+    "message",
+    "status",
 
-  "delivery_selected",
-  "delivery_fee",
+    "delivery_selected",
+    "delivery_fee",
 
-  "operator_selected",
-  "operator_rate",
-  "operator_rate_unit",
-  "operator_days",
-  "operator_hours",
-  "operator_total",
+    "operator_selected",
+    "operator_rate",
+    "operator_rate_unit",
+    "operator_days",
+    "operator_hours",
+    "operator_total",
 
-  "hourly_is_estimate",
-  "hourly_estimated_hours",
-  "hourly_final_hours",
-  "hourly_final_total",
-  "hourly_finalized_at",
-]);
+    "hourly_is_estimate",
+    "hourly_estimated_hours",
+    "hourly_final_hours",
+    "hourly_final_total",
+    "hourly_finalized_at",
+  ]);
 
-const { error: insertError } = await supabase
-  .from("rentals")
-  .insert(rentalInsert);
+  const { error: insertError } = await supabase.from("rentals").insert(rentalInsert);
 
   if (insertError) return { ok: false, message: insertError.message };
 
@@ -409,4 +407,175 @@ export async function ownerFinalizeHourly(rentalId: string, finalHoursInput: num
   revalidatePath("/dashboard/rentals");
 
   return { ok: true, message: "Hourly service finalized." };
+}
+
+// ---------- Rental condition inspections (check-in / check-out) ----------
+
+export type CreateRentalInspectionResult = {
+  ok: boolean;
+  message: string;
+};
+
+export async function createRentalInspection(
+  formData: FormData
+): Promise<CreateRentalInspectionResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { ok: false, message: "Not authenticated" };
+  }
+
+  const rentalId = formData.get("rental_id");
+  const role = formData.get("role");
+  const phase = formData.get("phase");
+  const odometerStr = (formData.get("odometer") ?? "").toString().trim();
+  const hoursStr = (formData.get("hours_used") ?? "").toString().trim();
+  const fuelStr = (formData.get("fuel_percent") ?? "").toString().trim();
+  const notes = (formData.get("notes") ?? "").toString().trim();
+
+  // Basic required fields
+  if (!rentalId || typeof rentalId !== "string") {
+    return { ok: false, message: "Missing rental_id" };
+  }
+
+  if (role !== "owner" && role !== "renter") {
+    return { ok: false, message: "Invalid role" };
+  }
+
+  if (phase !== "checkin" && phase !== "checkout") {
+    return { ok: false, message: "Invalid phase" };
+  }
+
+  // Optional numeric fields – only set if provided & valid
+  let odometer: number | null = null;
+  if (odometerStr !== "") {
+    const parsed = Number(odometerStr);
+    if (!Number.isNaN(parsed)) {
+      odometer = parsed;
+    }
+  }
+
+  let hoursUsed: number | null = null;
+  if (hoursStr !== "") {
+    const parsed = Number(hoursStr);
+    if (!Number.isNaN(parsed)) {
+      hoursUsed = parsed;
+    }
+  }
+
+  let fuelPercent: number | null = null;
+  if (fuelStr !== "") {
+    const parsed = Number(fuelStr);
+    if (!Number.isNaN(parsed)) {
+      // Clamp to 0–100 to satisfy the CHECK constraint
+      fuelPercent = Math.min(100, Math.max(0, parsed));
+    }
+  }
+
+  // Insert inspection record
+  const { data: inspectionRows, error: insertError } = await supabase
+    .from("rental_inspections")
+    .insert({
+      rental_id: rentalId,
+      role,
+      phase,
+      odometer,
+      hours_used: hoursUsed,
+      fuel_percent: fuelPercent,
+      notes: notes === "" ? null : notes,
+    })
+    .select("id")
+    .limit(1);
+
+  if (insertError || !inspectionRows || inspectionRows.length === 0) {
+    console.error("createRentalInspection error:", insertError?.message);
+    return {
+      ok: false,
+      message: "Could not save inspection. Please try again.",
+    };
+  }
+
+  const inspectionId = inspectionRows[0].id;
+
+  // ---------- Upload any attached photo files ----------
+  const photoFilesRaw = formData.getAll("photos");
+  const uploadedUrls: string[] = [];
+
+  if (photoFilesRaw.length > 0) {
+    for (const value of photoFilesRaw) {
+      // Only care about non-empty File objects
+      if (!(value instanceof File) || value.size === 0) continue;
+
+      // Build a reasonably safe file path
+      const originalName = value.name || "photo";
+      const safeBase =
+        originalName
+          .replace(/\.[a-z0-9]+$/i, "")
+          .replace(/[^a-z0-9]+/gi, "-")
+          .toLowerCase() || "photo";
+
+      const extMatch = originalName.match(/\.([a-z0-9]{1,5})$/i);
+      const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
+      const safeExt = ext.match(/^[a-z0-9]{1,5}$/) ? ext : "jpg";
+
+      const path = `${user.id}/${inspectionId}/${Date.now()}-${safeBase}.${safeExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("rental-inspection-photos")
+        .upload(path, value, {
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Inspection photo upload error:", uploadError.message);
+        continue;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from("rental-inspection-photos")
+        .getPublicUrl(path);
+
+      if (publicData?.publicUrl) {
+        uploadedUrls.push(publicData.publicUrl);
+      }
+    }
+  }
+
+  // Also support any pre-provided URLs (if ever used)
+  const photoUrlsRaw = formData.getAll("photo_urls");
+  const manualUrls = photoUrlsRaw
+    .map((v) => v?.toString().trim())
+    .filter((v) => !!v) as string[];
+
+  const allUrls = [...uploadedUrls, ...manualUrls];
+
+  if (allUrls.length > 0) {
+    const photoInserts = allUrls.map((url) => ({
+      inspection_id: inspectionId,
+      url,
+      uploaded_by: user.id,
+    }));
+
+    const { error: photoError } = await supabase
+      .from("rental_inspection_photos")
+      .insert(photoInserts);
+
+    if (photoError) {
+      console.error(
+        "createRentalInspection photo insert error:",
+        photoError.message
+      );
+      // We don't fail the whole action here; the main inspection saved.
+    }
+  }
+
+  return {
+    ok: true,
+    message: "Inspection saved.",
+  };
 }

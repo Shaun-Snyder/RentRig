@@ -28,32 +28,40 @@ export default async function OwnerRentalsPage() {
         "message",
         "created_at",
 
-        // Step 3.3 fields (hourly estimate -> finalize)
+        // ✅ Step 3.3 fields (hourly estimate -> finalize)
         "hourly_is_estimate",
         "hourly_estimated_hours",
         "hourly_final_hours",
         "hourly_final_total",
         "hourly_finalized_at",
 
-        // Operator snapshot
+        // Operator snapshot (needed for finalize UI + display)
         "operator_selected",
         "operator_rate_unit",
         "operator_rate",
         "operator_hours",
         "operator_total",
+
+        // ✅ NEW: inspections + photos nested under each rental
+        "inspections:rental_inspections(id, role, phase, odometer, hours_used, fuel_percent, notes, created_at, photos:rental_inspection_photos(id, url))",
       ].join(", ")
     )
     .order("created_at", { ascending: false });
 
-  // Filter server-side using listings ownership
+  // Filter server-side using listings ownership (since RLS already prevents non-owner from seeing)
   const listingIds = Array.from(new Set((rentals ?? []).map((r) => r.listing_id)));
 
   const { data: listings } = await supabase
     .from("listings")
     .select("id, title, owner_id")
-    .in("id", listingIds.length ? listingIds : ["00000000-0000-0000-0000-000000000000"]);
+    .in(
+      "id",
+      listingIds.length
+        ? listingIds
+        : ["00000000-0000-0000-0000-000000000000"]
+    );
 
-  // Extra safety
+  // Extra safety: ensure listing belongs to current owner (in case RLS policy changes)
   const ownedListings = (listings ?? []).filter((l) => l.owner_id === user.id);
   const listingMap = new Map(ownedListings.map((l) => [l.id, l]));
 
@@ -72,7 +80,8 @@ export default async function OwnerRentalsPage() {
           title="Owner Requests"
           subtitle="Approve or reject rental requests for your listings."
         />
-        <OwnerRentalsClient rentals={enriched} />
+
+        <OwnerRentalsClient rentals={enriched as any} />
       </main>
     </>
   );

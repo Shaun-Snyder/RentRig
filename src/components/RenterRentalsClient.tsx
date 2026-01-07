@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState } from "react";
+import React from "react";
 
 type Rental = {
   id: string;
@@ -18,16 +17,17 @@ type Rental = {
 };
 
 export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) {
-  const [msg, setMsg] = useState("");
-
-  if (rentals.length === 0) {
+  if (!rentals || rentals.length === 0) {
     return <p className="text-slate-600">You have no rental requests yet.</p>;
   }
 
   return (
     <div className="mt-6 grid gap-4">
       {rentals.map((r) => (
-        <div key={r.id} className="rounded-xl border bg-white p-5 shadow-sm grid gap-3">
+        <div
+          key={r.id}
+          className="rounded-xl border bg-white p-5 shadow-sm grid gap-3"
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="font-semibold">
@@ -40,31 +40,43 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
 
               <div className="text-xs text-slate-500 mt-1">
                 Status: {r.status}
-                {typeof r.buffer_days === "number" ? ` • Buffer: ${r.buffer_days}d` : ""}
+                {typeof r.buffer_days === "number"
+                  ? ` • Buffer: ${r.buffer_days}d`
+                  : ""}
               </div>
+
+              {r.message && (
+                <div className="mt-2 text-sm text-slate-700">
+                  <span className="font-medium">Your message:</span>{" "}
+                  {r.message}
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col items-end gap-2">
+              {/* Invoice button (unchanged) */}
               <a
                 href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border px-3 py-2 text-sm hover:bg-slate-50"
+                className="rr-btn rr-btn-primary"
               >
                 Download invoice
               </a>
+
+              {/* NEW: condition page button */}
+              <a
+                href={`/dashboard/rentals/${encodeURIComponent(
+                  r.id
+                )}/inspection`}
+                className="rr-btn rr-btn-secondary text-xs"
+              >
+                Record / view condition
+              </a>
             </div>
           </div>
-
-          {r.message && (
-            <div className="text-sm text-slate-700">
-              <span className="font-medium">Your message:</span> {r.message}
-            </div>
-          )}
         </div>
       ))}
-
-      {msg && <p className="text-sm">{msg}</p>}
     </div>
   );
 }

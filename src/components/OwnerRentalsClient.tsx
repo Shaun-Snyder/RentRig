@@ -1,7 +1,11 @@
+
 "use client";
 
 import React, { useTransition } from "react";
-import { approveRentalAndEmail, rejectRental } from "@/app/dashboard/owner-rentals/actions";
+import {
+  approveRentalAndEmail,
+  rejectRental,
+} from "@/app/dashboard/owner-rentals/actions";
 import FinalizeHourlyService from "@/components/FinalizeHourlyService";
 
 type RentalRow = {
@@ -15,7 +19,7 @@ type RentalRow = {
   created_at?: string | null;
   listing?: { id: string; title: string } | null;
 
-  // ✅ Step 3.3 fields (from page.tsx select)
+  // Step 3.3 fields (from page.tsx select)
   hourly_is_estimate?: boolean | null;
   hourly_estimated_hours?: number | null;
   hourly_final_hours?: number | null;
@@ -37,7 +41,9 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
     startTransition(async () => {
       const res = await approveRentalAndEmail(rentalId);
       if (!res.ok) alert(res.error);
-      else if (res.ok && "emailed" in res && !res.emailed && res.error) alert(res.error);
+      else if (res.ok && "emailed" in res && !res.emailed && res.error) {
+        alert(res.error);
+      }
     });
   }
 
@@ -61,12 +67,6 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
       {rentals.map((r) => {
         const isFinal = r.status === "approved" || r.status === "rejected";
 
-        // ✅ show finalize UI only when:
-        // - approved
-        // - operator selected
-        // - hourly operator
-        // - marked as estimate
-        // - not finalized yet
         const showFinalize =
           r.status === "approved" &&
           Boolean(r.operator_selected) &&
@@ -78,7 +78,9 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
           <div key={r.id} className="rr-card p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-lg font-semibold">{r.listing?.title ?? "Listing"}</div>
+                <div className="text-lg font-semibold">
+                  {r.listing?.title ?? "Listing"}
+                </div>
 
                 <div className="mt-1 text-sm text-slate-600">
                   {r.start_date} → {r.end_date}
@@ -92,27 +94,6 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                 {r.message ? (
                   <div className="mt-2 text-sm text-slate-700">
                     <span className="font-medium">Message:</span> {r.message}
-                  </div>
-                ) : null}
-
-                {/* Hourly estimate vs finalized info */}
-                {Boolean(r.operator_selected) && String(r.operator_rate_unit) === "hour" ? (
-                  <div className="mt-3 text-sm text-slate-700">
-                    <span className="font-medium">Hourly service:</span>{" "}
-                    {r.hourly_finalized_at ? (
-                      <>
-                        Finalized —{" "}
-                        <span className="font-semibold">{r.hourly_final_hours ?? r.operator_hours ?? "—"}</span> hrs
-                      </>
-                    ) : (
-                      <>
-                        Estimate —{" "}
-                        <span className="font-semibold">
-                          {r.hourly_estimated_hours ?? r.operator_hours ?? "—"}
-                        </span>{" "}
-                        hrs
-                      </>
-                    )}
                   </div>
                 ) : null}
               </div>
@@ -145,15 +126,28 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
                     Reject
                   </button>
                 </div>
+
+                {/* Link to dedicated inspection page */}
+                <a
+                  href={`/dashboard/owner-rentals/${encodeURIComponent(
+                    r.id
+                  )}/inspection`}
+                  className="rr-btn rr-btn-secondary text-xs mt-1"
+                >
+                  Record / view condition
+                </a>
               </div>
             </div>
 
-            {/* ✅ Step 3.3 Finalize component */}
+            {/* Finalize hourly operator if needed */}
             {showFinalize ? (
               <div className="mt-4">
                 <FinalizeHourlyService
                   rentalId={r.id}
-                  defaultHours={Math.max(1, Number(r.hourly_estimated_hours ?? r.operator_hours ?? 1))}
+                  defaultHours={Math.max(
+                    1,
+                    Number(r.hourly_estimated_hours ?? r.operator_hours ?? 1)
+                  )}
                 />
               </div>
             ) : null}
