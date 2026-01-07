@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from "react";
@@ -140,7 +139,7 @@ export default function ProfileForm({
       <div className="grid gap-6 md:grid-cols-[auto,1fr] items-start">
         {/* Avatar preview + upload */}
         <div className="flex flex-col items-center gap-3">
-          <div className="h-24 w-24 rounded-full border-4 border-black overflow-hidden bg-slate-200 flex items-center justify-center">
+          <div className="h-24 w-24 rounded-xl border-4 border-black overflow-hidden bg-slate-200 flex items-center justify-center">
             {avatarUrl ? (
               <img
                 src={avatarUrl}

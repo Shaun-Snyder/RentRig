@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -29,14 +28,14 @@ export default async function OwnerRentalsPage() {
         "message",
         "created_at",
 
-        // ✅ Step 3.3 fields (hourly estimate -> finalize)
+        // Step 3.3 fields (hourly estimate -> finalize)
         "hourly_is_estimate",
         "hourly_estimated_hours",
         "hourly_final_hours",
         "hourly_final_total",
         "hourly_finalized_at",
 
-        // Operator snapshot (needed for finalize UI + display)
+        // Operator snapshot
         "operator_selected",
         "operator_rate_unit",
         "operator_rate",
@@ -46,8 +45,7 @@ export default async function OwnerRentalsPage() {
     )
     .order("created_at", { ascending: false });
 
-  // Filter server-side using listings ownership (since RLS already prevents non-owner from seeing)
-  // But Supabase will still only return allowed rows due to RLS.
+  // Filter server-side using listings ownership
   const listingIds = Array.from(new Set((rentals ?? []).map((r) => r.listing_id)));
 
   const { data: listings } = await supabase
@@ -55,7 +53,7 @@ export default async function OwnerRentalsPage() {
     .select("id, title, owner_id")
     .in("id", listingIds.length ? listingIds : ["00000000-0000-0000-0000-000000000000"]);
 
-  // Extra safety: ensure listing belongs to current owner (in case RLS policy changes)
+  // Extra safety
   const ownedListings = (listings ?? []).filter((l) => l.owner_id === user.id);
   const listingMap = new Map(ownedListings.map((l) => [l.id, l]));
 
@@ -71,12 +69,10 @@ export default async function OwnerRentalsPage() {
       <ServerHeader />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <PageHeader
-  title="Owner Requests"
-  subtitle="Approve or reject rental requests for your listings."
-/>
-
-       <OwnerRentalsClient rentals={enriched} />
-
+          title="Owner Requests"
+          subtitle="Approve or reject rental requests for your listings."
+        />
+        <OwnerRentalsClient rentals={enriched} />
       </main>
     </>
   );
