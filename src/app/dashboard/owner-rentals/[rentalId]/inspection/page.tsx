@@ -21,6 +21,13 @@ type RentalRow = {
   } | null;
 };
 
+type RentalAgreementRow = {
+  id: string;
+  url: string;
+  file_name: string | null;
+  created_at: string | null;
+};
+
 type InspectionWithPhotos = {
   id: string;
   role: "owner" | "renter";
@@ -181,6 +188,27 @@ export default async function OwnerInspectionPage({
     }));
   }
 
+  // ---- Load rental agreements for this rental (owner history) ----
+  const { data: agreements, error: agreementsError } = await supabase
+    .from("rental_agreements")
+    .select("id, url, file_name, created_at")
+    .eq("rental_id", rentalId)
+    .order("created_at", { ascending: false });
+
+  if (agreementsError) {
+    console.error(
+      "OwnerInspectionPage agreements load error:",
+      agreementsError.message
+    );
+  }
+
+  const agreementList: RentalAgreementRow[] = (agreements ?? []).map((a) => ({
+    id: a.id as string,
+    url: (a as any).url as string,
+    file_name: (a as any).file_name ?? null,
+    created_at: (a as any).created_at ?? null,
+  }));
+
   return (
     <>
       <ServerHeader />
@@ -201,11 +229,12 @@ export default async function OwnerInspectionPage({
           <div className="rr-card p-4">
             <h2 className="text-sm font-semibold">Rental agreement</h2>
             <p className="mt-1 text-xs text-slate-600">
-              Upload your signed rental agreement (PDF, DocuSign export, etc.). This
-              will be stored with this rental so you can reference it later.
+              Upload your signed rental agreement (PDF, DocuSign export, etc.).
+              This will be stored with this rental so you can reference it
+              later.
             </p>
 
-            {typedRental.rental_agreement_url && (
+            {(typedRental.rental_agreement_url || agreementList.length > 0) && (
               <div className="mt-3 flex items-center justify-between gap-3 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
@@ -220,14 +249,17 @@ export default async function OwnerInspectionPage({
                   >
                     Agreement on file
                   </span>
-                  <a
-                    href={typedRental.rental_agreement_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline text-slate-800"
-                  >
-                    View current agreement
-                  </a>
+
+                  {typedRental.rental_agreement_url && (
+                    <a
+                      href={typedRental.rental_agreement_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline text-slate-800"
+                    >
+                      View current agreement
+                    </a>
+                  )}
                 </div>
               </div>
             )}
@@ -249,8 +281,8 @@ export default async function OwnerInspectionPage({
                 className="text-xs"
               />
               <p className="text-[10px] text-slate-500">
-                Upload a signed PDF, DocuSign download, or clear image of a signed
-                paper agreement.
+                Upload a signed PDF, DocuSign download, or clear image of a
+                signed paper agreement.
               </p>
 
               <button
@@ -260,8 +292,91 @@ export default async function OwnerInspectionPage({
                 Save agreement
               </button>
             </form>
+
+            {/* Agreement history list */}
+            <div className="mt-4 border-t pt-3">
+              <h3 className="text-[11px] font-semibold uppercase text-slate-600">
+                Agreement history
+              </h3>
+
+              {agreementList.length === 0 ? (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  No rental agreements uploaded yet for this rental.
+                </p>
+              ) : (
+                <div className="mt-2 space-y-2 text-xs text-slate-700">
+                  {agreementList.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between rounded-lg border bg-slate-50 px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {a.file_name || "Agreement"}
+                        </div>
+                        {a.created_at && (
+                          <div className="text-[11px] text-slate-500">
+                            Uploaded {new Date(a.created_at).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rr-btn rr-btn-secondary text-xs"
+                      >
+                        View / download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
+
+        {/* Rental agreement history (owner view only) */}
+        {agreementList.length > 0 && (
+          <section className="mb-6">
+            <div className="rr-card p-4">
+              <h2 className="text-sm font-semibold">Agreement history</h2>
+              <p className="mt-1 text-xs text-slate-600">
+                Previous agreements that were uploaded for this rental.
+              </p>
+
+              <div className="mt-3 grid gap-2 text-xs">
+                {agreementList.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-col gap-1 rounded-lg border bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="font-medium">
+                        {a.file_name || "Agreement file"}
+                      </div>
+                      {a.created_at && (
+                        <div className="text-[11px] text-slate-500">
+                          Uploaded {new Date(a.created_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rr-btn rr-btn-secondary rr-btn-sm mt-2 sm:mt-0 whitespace-nowrap"
+                    >
+                      View / download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Owner form */}
         <OwnerInspectionForm rental={typedRental as any} />

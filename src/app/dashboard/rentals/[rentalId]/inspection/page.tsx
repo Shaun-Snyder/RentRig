@@ -197,8 +197,36 @@ export default async function RenterInspectionPage({
           </a>
         </div>
 
-        {/* Renter form */}
-        <RenterInspectionForm rental={typedRental} />
+  {/* Rental agreement – only if owner uploaded one */}
+{typedRental.rental_agreement_url && (
+  <section className="mb-6">
+    <div className="rr-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      
+      {/* LEFT TEXT */}
+      <div>
+        <h2 className="text-sm font-semibold">Rental agreement</h2>
+        <p className="mt-1 text-xs text-slate-600 max-w-md">
+          Your owner attached a rental agreement for this booking. Open it to
+          review or sign (for example via DocuSign).
+        </p>
+      </div>
+
+      {/* RIGHT BUTTON */}
+      <a
+        href={typedRental.rental_agreement_url}
+        target="_blank"
+        rel="noreferrer"
+        className="rr-btn rr-btn-secondary rr-btn-sm whitespace-nowrap"
+      >
+        View rental agreement
+      </a>
+    </div>
+  </section>
+)}
+
+
+  {/* Existing renter form (unchanged) */}
+  <RenterInspectionForm rental={typedRental} />
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
