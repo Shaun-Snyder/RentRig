@@ -1,12 +1,12 @@
-
 "use client";
 
-import React, { useTransition } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import {
   approveRentalAndEmail,
   rejectRental,
 } from "@/app/dashboard/owner-rentals/actions";
 import FinalizeHourlyService from "@/components/FinalizeHourlyService";
+import { createClient } from "@/lib/supabase/client";
 
 type RentalRow = {
   id: string;
@@ -34,14 +34,93 @@ type RentalRow = {
   operator_total?: number | null;
 };
 
-export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }) {
+type ListingPhoto = {
+  id: string;
+  listing_id: string;
+  path: string;
+  sort_order: number | null;
+  created_at?: string;
+};
+
+export default function OwnerRentalsClient({
+  rentals,
+}: {
+  rentals: RentalRow[];
+}) {
   const [isPending, startTransition] = useTransition();
+  const supabase = createClient();
+
+  const [photosByListing, setPhotosByListing] = useState<
+    Record<string, ListingPhoto[]>
+  >({});
+
+  function storageUrl(path: string) {
+    const { data } = supabase.storage
+      .from("listing-photos")
+      .getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  function getThumb(listingId: string | undefined | null): string | null {
+    if (!listingId) return null;
+    const arr = photosByListing[listingId];
+    if (!arr || arr.length === 0) return null;
+
+    const p =
+      (arr as any[]).find((x) => x.is_primary === true) ??
+      (arr as any[]).find((x) => x.is_primary === "true") ??
+      arr[0];
+
+    const path =
+      (p as any)?.path ??
+      (p as any)?.storage_path ??
+      (p as any)?.file_path ??
+      (p as any)?.photo_path ??
+      null;
+
+    if (!path) return null;
+    return storageUrl(path);
+  }
+
+  // Preload thumbnails for all listing_ids in owner rentals
+  useEffect(() => {
+    (async () => {
+      try {
+        const ids = Array.from(
+          new Set(
+            (rentals ?? [])
+              .map((r) => r.listing_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        );
+        if (!ids.length) return;
+
+        const obj: Record<string, ListingPhoto[]> = {};
+        await Promise.all(
+          ids.map(async (id) => {
+            const res = await fetch(
+              `/api/listing-photos?listing_id=${encodeURIComponent(id)}`,
+              { cache: "no-store" }
+            );
+            const j = await res.json().catch(() => ({}));
+            if (res.ok) {
+              obj[id] = (j.photos ?? []) as ListingPhoto[];
+            }
+          })
+        );
+        setPhotosByListing((prev) => ({ ...prev, ...obj }));
+      } catch {
+        // ignore
+      }
+    })();
+  }, [rentals]);
 
   async function onApprove(rentalId: string) {
     startTransition(async () => {
       const res = await approveRentalAndEmail(rentalId);
-      if (!res.ok) alert(res.error);
-      else if (res.ok && "emailed" in res && !res.emailed && res.error) {
+      if (!res.ok) {
+        alert(res.error);
+      } else if ("emailed" in res && !res.emailed && res.error) {
         alert(res.error);
       }
     });
@@ -50,7 +129,9 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
   async function onReject(rentalId: string) {
     startTransition(async () => {
       const res = await rejectRental(rentalId);
-      if (!res.ok) alert(res.error);
+      if (!res.ok) {
+        alert(res.error);
+      }
     });
   }
 
@@ -66,6 +147,7 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
     <div className="mt-6 space-y-4">
       {rentals.map((r) => {
         const isFinal = r.status === "approved" || r.status === "rejected";
+        const isApproved = r.status === "approved";
 
         const showFinalize =
           r.status === "approved" &&
@@ -74,69 +156,95 @@ export default function OwnerRentalsClient({ rentals }: { rentals: RentalRow[] }
           Boolean(r.hourly_is_estimate) &&
           !r.hourly_finalized_at;
 
+        const thumb = getThumb(r.listing_id);
+
         return (
-          <div key={r.id} className="rr-card p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-lg font-semibold">
-                  {r.listing?.title ?? "Listing"}
+          <div key={r.id} className="rr-card grid gap-4 p-5">
+            {/* TOP ROW: thumbnail + main info */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              {/* LEFT: Thumbnail + info */}
+              <div className="flex gap-4">
+                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-black/60 bg-slate-50 shadow-sm">
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                      Photo
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-1 text-sm text-slate-600">
-                  {r.start_date} → {r.end_date}
-                </div>
-
-                <div className="mt-1 text-sm">
-                  <span className="font-medium">Status:</span>{" "}
-                  <span className="capitalize">{r.status}</span>
-                </div>
-
-                {r.message ? (
-                  <div className="mt-2 text-sm text-slate-700">
-                    <span className="font-medium">Message:</span> {r.message}
+                <div>
+                  <div className="text-lg font-semibold">
+                    {r.listing?.title ?? "Listing"}
                   </div>
-                ) : null}
-              </div>
 
-              <div className="flex flex-col items-end gap-2">
-                {/* Invoice (already works for owners) */}
-                <a
-                  href={`/api/invoice?rental_id=${r.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rr-btn rr-btn-primary"
-                >
-                  Invoice
-                </a>
+                  <div className="mt-1 text-sm text-slate-600">
+                    {r.start_date} → {r.end_date}
+                  </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onApprove(r.id)}
-                    disabled={isPending || isFinal}
-                    className="rr-btn rr-btn-primary"
-                  >
-                    Approve & Email
-                  </button>
+                  <div className="mt-1 text-sm">
+                    <span className="font-medium">Status:</span>{" "}
+                    <span className="capitalize">{r.status}</span>
+                  </div>
 
-                  <button
-                    onClick={() => onReject(r.id)}
-                    disabled={isPending || isFinal}
-                    className="rr-btn rr-btn-danger"
-                  >
-                    Reject
-                  </button>
+                  {r.message ? (
+                    <div className="mt-2 text-sm text-slate-700">
+                      <span className="font-medium">Message:</span>{" "}
+                      {r.message}
+                    </div>
+                  ) : null}
                 </div>
-
-                {/* Link to dedicated inspection page */}
-                <a
-                  href={`/dashboard/owner-rentals/${encodeURIComponent(
-                    r.id
-                  )}/inspection`}
-                  className="rr-btn rr-btn-secondary text-xs mt-1"
-                >
-                  Record / view condition
-                </a>
               </div>
+            </div>
+
+            {/* BUTTON ROW (bottom) */}
+            <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
+              {/* Invoice */}
+              <a
+                href={`/api/invoice?rental_id=${r.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rr-btn rr-btn-primary"
+              >
+                Invoice
+              </a>
+
+              {/* Approve – turns green after approved */}
+              <button
+                onClick={() => onApprove(r.id)}
+                disabled={isPending || isFinal}
+                className={`rr-btn rr-btn-primary ${
+                  isApproved
+                    ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700"
+                    : ""
+                }`}
+              >
+                {isApproved ? "Approved" : "Approve & Email"}
+              </button>
+
+              {/* Reject */}
+              <button
+                onClick={() => onReject(r.id)}
+                disabled={isPending || isFinal}
+                className="rr-btn rr-btn-danger"
+              >
+                Reject
+              </button>
+
+              {/* Inspection page link */}
+              <a
+                href={`/dashboard/owner-rentals/${encodeURIComponent(
+                  r.id
+                )}/inspection`}
+                className="rr-btn rr-btn-secondary text-xs"
+              >
+                Record / view condition
+              </a>
             </div>
 
             {/* Finalize hourly operator if needed */}

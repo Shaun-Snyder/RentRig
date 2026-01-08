@@ -1,3 +1,4 @@
+
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -15,6 +16,7 @@ type RentalRow = {
   message: string | null;
   created_at: string;
   renter_id: string;
+  rental_agreement_url: string | null;
   listing: {
     id: string;
     title: string;
@@ -69,6 +71,7 @@ export default async function RenterInspectionPage({
       message,
       created_at,
       renter_id,
+      rental_agreement_url,
       listing:listings ( id, title )
     `
     )
@@ -93,6 +96,7 @@ export default async function RenterInspectionPage({
     message: rental.message,
     created_at: rental.created_at,
     renter_id: rental.renter_id,
+    rental_agreement_url: rental.rental_agreement_url ?? null,
     listing: rental.listing
       ? {
           id: rental.listing.id,
@@ -304,4 +308,3 @@ export default async function RenterInspectionPage({
     </>
   );
 }
-

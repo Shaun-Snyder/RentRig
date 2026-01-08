@@ -14,6 +14,7 @@ type RentalRow = {
   buffer_days: number | null;
   message: string | null;
   created_at: string;
+  rental_agreement_url: string | null;
   listing: {
     id: string;
     title: string;
@@ -69,6 +70,7 @@ export default async function OwnerInspectionPage({
       buffer_days,
       message,
       created_at,
+      rental_agreement_url,
       listing:listings ( id, title, owner_id )
     `
     )
@@ -93,6 +95,7 @@ export default async function OwnerInspectionPage({
     buffer_days: rental.buffer_days,
     message: rental.message,
     created_at: rental.created_at,
+    rental_agreement_url: rental.rental_agreement_url ?? null,
     listing: rental.listing
       ? {
           id: rental.listing.id,
@@ -184,7 +187,7 @@ export default async function OwnerInspectionPage({
       <main className="mx-auto max-w-5xl px-6 py-10">
         <PageHeader
           title="Rental condition (owner)"
-          subtitle="Record check-in / check-out condition for this rental."
+          subtitle="Record check-in / check-out condition and manage the rental agreement."
         />
 
         <div className="mt-2 mb-6 flex items-center justify-between gap-3">
@@ -193,8 +196,75 @@ export default async function OwnerInspectionPage({
           </a>
         </div>
 
+        {/* Rental agreement upload / view (owner only) */}
+        <section className="mb-6 space-y-2">
+          <div className="rr-card p-4">
+            <h2 className="text-sm font-semibold">Rental agreement</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Upload your signed rental agreement (PDF, DocuSign export, etc.). This
+              will be stored with this rental so you can reference it later.
+            </p>
+
+            {typedRental.rental_agreement_url && (
+              <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="
+                      inline-flex items-center
+                      rounded-full border border-black
+                      bg-white
+                      px-3 py-1
+                      text-[11px] font-semibold uppercase
+                      shadow-sm
+                    "
+                  >
+                    Agreement on file
+                  </span>
+                  <a
+                    href={typedRental.rental_agreement_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline text-slate-800"
+                  >
+                    View current agreement
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <form
+              action="/api/rental-agreement"
+              method="POST"
+              encType="multipart/form-data"
+              className="mt-3 space-y-2 text-xs"
+            >
+              <input type="hidden" name="rental_id" value={typedRental.id} />
+              <label className="font-medium">
+                Upload / replace rental agreement
+              </label>
+              <input
+                name="agreement"
+                type="file"
+                accept=".pdf,.doc,.docx,image/*"
+                className="text-xs"
+              />
+              <p className="text-[10px] text-slate-500">
+                Upload a signed PDF, DocuSign download, or clear image of a signed
+                paper agreement.
+              </p>
+
+              <button
+                type="submit"
+                className="rr-btn rr-btn-secondary rr-btn-sm mt-1"
+              >
+                Save agreement
+              </button>
+            </form>
+          </div>
+        </section>
+
         {/* Owner form */}
-        <OwnerInspectionForm rental={typedRental} />
+        <OwnerInspectionForm rental={typedRental as any} />
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">

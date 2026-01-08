@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useTransition } from "react";
@@ -12,6 +13,7 @@ type RentalRow = {
   message: string | null;
   created_at: string;
   renter_id: string;
+  rental_agreement_url: string | null;
   listing: {
     id: string;
     title: string;
@@ -237,6 +239,23 @@ export default function RenterInspectionForm({
                 </span>
               )}
             </div>
+
+            {/* Renter view of agreement: only if owner uploaded one */}
+            {rental.rental_agreement_url && (
+              <div className="mt-2 text-xs">
+                <a
+                  href={rental.rental_agreement_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-slate-800"
+                >
+                  View rental agreement
+                </a>
+                <span className="ml-2 text-[11px] text-slate-500">
+                  (Sign via DocuSign or as directed by the owner.)
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">
@@ -330,7 +349,7 @@ export default function RenterInspectionForm({
               </div>
             </div>
 
-            {/* NEW: Damages field (renter) */}
+            {/* Damages field (renter) */}
             <div className="grid gap-1">
               <label className="text-xs font-medium text-rose-800">
                 Damages (scratches, dents, broken parts, etc.)
