@@ -29,6 +29,7 @@ type InspectionWithPhotos = {
   hours_used: number | null;
   fuel_percent: number | null;
   notes: string | null;
+  damages: string | null;
   created_at: string | null;
   photos: {
     id: string;
@@ -104,7 +105,17 @@ export default async function RenterInspectionPage({
   const { data: inspectionsRaw, error: inspectionsError } = await supabase
     .from("rental_inspections")
     .select(
-      "id, role, phase, odometer, hours_used, fuel_percent, notes, created_at"
+      `
+      id,
+      role,
+      phase,
+      odometer,
+      hours_used,
+      fuel_percent,
+      notes,
+      damages,
+      created_at
+    `
     )
     .eq("rental_id", rentalId)
     .order("created_at", { ascending: false }); // NEWEST FIRST
@@ -161,6 +172,7 @@ export default async function RenterInspectionPage({
       hours_used: (row as any).hours_used ?? null,
       fuel_percent: (row as any).fuel_percent ?? null,
       notes: (row as any).notes ?? null,
+      damages: (row as any).damages ?? null,
       created_at: (row as any).created_at ?? null,
       photos: photosByInspection[row.id as string] ?? [],
     }));
@@ -181,12 +193,12 @@ export default async function RenterInspectionPage({
           </a>
         </div>
 
-        {/* Existing renter form (unchanged) */}
+        {/* Renter form */}
         <RenterInspectionForm rental={typedRental} />
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
-          <h2 className="text-sm font-semibold mb-3">Existing inspections</h2>
+          <h2 className="mb-3 text-sm font-semibold">Existing inspections</h2>
 
           {inspections.length === 0 ? (
             <p className="text-sm text-slate-600">
@@ -198,13 +210,39 @@ export default async function RenterInspectionPage({
               {inspections.map((insp) => (
                 <div
                   key={insp.id}
-                  className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-700 space-y-1"
+                  className="rr-card space-y-2 p-3 text-xs text-slate-700"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-semibold">
-                      {insp.role === "owner" ? "Owner" : "Renter"} •{" "}
-                      {insp.phase === "checkin" ? "Check-in" : "Check-out"}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Role bubble */}
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-[11px] font-semibold uppercase
+                          shadow-sm
+                        "
+                      >
+                        {insp.role === "owner" ? "Owner" : "Renter"}
+                      </span>
+
+                      {/* Phase bubble */}
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-[11px]
+                          shadow-sm
+                        "
+                      >
+                        {insp.phase === "checkin" ? "Check-in" : "Check-out"}
+                      </span>
                     </div>
+
                     {insp.created_at && (
                       <div className="text-[11px] text-slate-500">
                         {new Date(insp.created_at).toLocaleString()}
@@ -228,6 +266,13 @@ export default async function RenterInspectionPage({
                     <div className="text-[11px]">
                       <span className="font-medium">Notes:</span>{" "}
                       {insp.notes}
+                    </div>
+                  )}
+
+                  {insp.damages && (
+                    <div className="text-[11px] text-rose-700">
+                      <span className="font-medium">Damages:</span>{" "}
+                      {insp.damages}
                     </div>
                   )}
 
@@ -259,3 +304,4 @@ export default async function RenterInspectionPage({
     </>
   );
 }
+

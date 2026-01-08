@@ -35,11 +35,13 @@ type InspectionRow = {
   hours_used: number | null;
   fuel_percent: number | null;
   notes: string | null;
+  damages: string | null;
   photos?: InspectionPhoto[] | null;
 };
 
-// Same HEIC/large-image normalizer
+// HEIC + large-image normalization (fixed and cleaned up)
 async function normalizeUploadFile(file: File): Promise<File> {
+  // Extra safety: only run this in the browser
   if (typeof window === "undefined") return file;
 
   const nameLower = (file.name || "").toLowerCase();
@@ -53,6 +55,7 @@ async function normalizeUploadFile(file: File): Promise<File> {
     typeLower === "image/heic-sequence" ||
     typeLower === "image/heif-sequence";
 
+  // ---------- HEIC/HEIF -> JPEG ----------
   if (isHeic) {
     type Heic2AnyFn = (opts: {
       blob: Blob;
@@ -76,10 +79,13 @@ async function normalizeUploadFile(file: File): Promise<File> {
     return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
   }
 
+  // Not an image -> pass through
   if (!typeLower.startsWith("image/")) return file;
 
-  const MAX_BYTES = 6 * 1024 * 1024;
+  // ---------- Large image compress ----------
+  const MAX_BYTES = 6 * 1024 * 1024; // 6MB
   const MAX_DIM = 2400;
+
   if (file.size <= MAX_BYTES) return file;
 
   const outType = typeLower.includes("png") ? "image/png" : "image/jpeg";
@@ -114,12 +120,13 @@ async function normalizeUploadFile(file: File): Promise<File> {
     if (!blob) return file;
     if (blob.size >= file.size) return file;
 
-    const newName = file.name.replace(
-      /\.[a-z0-9]+$/i,
-      outType === "image/png" ? ".png" : ".jpg"
-    );
+    // Keep or correct extension
+    let newName = file.name || "photo";
+    if (!/\.(jpe?g|png)$/i.test(newName)) {
+      newName += outType === "image/png" ? ".png" : ".jpg";
+    }
 
-    return new File([blob], {
+    return new File([blob], newName, {
       type: outType,
       lastModified: Date.now(),
     });
@@ -185,7 +192,8 @@ export default function OwnerInspectionForm({
 
   return (
     <>
-      <div className="rounded-xl border bg-white p-5 shadow-sm grid gap-3">
+      {/* Rental + form card */}
+      <div className="rr-card grid gap-3 p-5">
         {/* Rental summary */}
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -197,15 +205,39 @@ export default function OwnerInspectionForm({
               {rental.start_date} → {rental.end_date}
             </div>
 
-            <div className="text-xs text-slate-500 mt-1">
-              Status: {rental.status}
-              {typeof rental.buffer_days === "number"
-                ? ` • Buffer: ${rental.buffer_days}d`
-                : ""}
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              {/* Status bubble */}
+              <span
+                className="
+                  inline-flex items-center
+                  rounded-full border border-black
+                  bg-white
+                  px-3 py-1
+                  text-[11px] font-semibold uppercase
+                  shadow-sm
+                "
+              >
+                {rental.status}
+              </span>
+
+              {typeof rental.buffer_days === "number" && (
+                <span
+                  className="
+                    inline-flex items-center
+                    rounded-full border border-black
+                    bg-white
+                    px-3 py-1
+                    text-[11px]
+                    shadow-sm
+                  "
+                >
+                  Buffer: {rental.buffer_days}d
+                </span>
+              )}
             </div>
 
             {rental.renter?.email && (
-              <div className="text-xs text-slate-500 mt-1">
+              <div className="mt-1 text-xs text-slate-500">
                 Renter: {rental.renter.email}
               </div>
             )}
@@ -253,56 +285,75 @@ export default function OwnerInspectionForm({
             <input type="hidden" name="rental_id" value={rental.id} />
             <input type="hidden" name="role" value="owner" />
 
-<div className="grid gap-1">
-  <label className="text-xs font-medium">Phase</label>
-  <select
-    name="phase"
-    className="rr-input w-full text-sm"
-    defaultValue="checkin"
-  >
-    <option value="checkin">Check-in (before rental)</option>
-    <option value="checkout">Check-out (after rental)</option>
-  </select>
-</div>
+            <div className="grid gap-1">
+              <label className="text-xs font-medium">Phase</label>
+              <select
+                name="phase"
+                className="rr-input w-full text-sm"
+                defaultValue="checkin"
+              >
+                <option value="checkin">Check-in (before rental)</option>
+                <option value="checkout">Check-out (after rental)</option>
+              </select>
+            </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-  <div className="grid gap-1">
-    <label className="text-xs font-medium">Odometer (miles)</label>
-    <input
-      name="odometer"
-      type="number"
-      step="0.1"
-      className="rr-input w-full text-sm"
-    />
-  </div>
+              <div className="grid gap-1">
+                <label className="text-xs font-medium">Odometer (miles)</label>
+                <input
+                  name="odometer"
+                  type="number"
+                  step="0.1"
+                  className="rr-input w-full text-sm"
+                />
+              </div>
 
-  <div className="grid gap-1">
-    <label className="text-xs font-medium">Hours used (equipment)</label>
-    <input
-      name="hours_used"
-      type="number"
-      step="0.1"
-      className="rr-input w-full text-sm"
-    />
-  </div>
+              <div className="grid gap-1">
+                <label className="text-xs font-medium">
+                  Hours used (equipment)
+                </label>
+                <input
+                  name="hours_used"
+                  type="number"
+                  step="0.1"
+                  className="rr-input w-full text-sm"
+                />
+              </div>
 
-  <div className="grid gap-1">
-    <label className="text-xs font-medium">Fuel level</label>
-    <select
-      name="fuel_percent"
-      className="rr-input w-full text-sm"
-      defaultValue=""
-    >
-      <option value="" disabled>Select</option>
-      <option value="100">Full</option>
-      <option value="75">3/4</option>
-      <option value="50">Half</option>
-      <option value="25">1/4</option>
-      <option value="0">Empty</option>
-    </select>
-  </div>
-</div>
+              <div className="grid gap-1">
+                <label className="text-xs font-medium">Fuel level</label>
+                <select
+                  name="fuel_percent"
+                  className="rr-input w-full text-sm"
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Select
+                  </option>
+                  <option value="100">Full</option>
+                  <option value="75">3/4</option>
+                  <option value="50">Half</option>
+                  <option value="25">1/4</option>
+                  <option value="0">Empty</option>
+                </select>
+              </div>
+            </div>
 
+            {/* NEW: Damages field */}
+            <div className="grid gap-1">
+              <label className="text-xs font-medium text-rose-800">
+                Damages (scratches, dents, broken parts, etc.)
+              </label>
+              <textarea
+                name="damages"
+                className="rr-input w-full min-h-[64px] text-sm"
+                placeholder="Describe any damage or issues noticed at this phase."
+              />
+              <p className="text-[10px] text-slate-500">
+                Be as specific as possible (location, size, severity) so both
+                parties have a clear record.
+              </p>
+            </div>
 
             <div className="grid gap-1">
               <label className="text-xs font-medium">
@@ -325,9 +376,9 @@ export default function OwnerInspectionForm({
             <div className="grid gap-1">
               <label className="text-xs font-medium">Notes</label>
               <textarea
-  name="notes"
-  className="rr-input w-full text-sm min-h-[64px]"
-/>
+                name="notes"
+                className="rr-input w-full min-h-[64px] text-sm"
+                placeholder="Any extra notes about condition, usage limits, or expectations."
               />
             </div>
 
@@ -339,39 +390,60 @@ export default function OwnerInspectionForm({
               {isPending ? "Saving..." : "Save inspection"}
             </button>
 
-            {msg && <p className="text-sm mt-2">{msg}</p>}
+            {msg && <p className="mt-2 text-sm">{msg}</p>}
           </form>
         </div>
       </div>
 
-      {/* Inspection history – bubbles, newest first */}
+      {/* Inspection history – rr-card + bubbles, newest first */}
       {inspectionList.length > 0 && (
         <section className="mt-4">
-          <h2 className="text-sm font-semibold text-slate-800 mb-2">
+          <h2 className="mb-2 text-sm font-semibold text-slate-800">
             Inspection history
           </h2>
 
           <div className="space-y-3">
             {inspectionList.map((ins) => (
-              <article
-                key={ins.id}
-                className="rounded-xl border bg-white p-4 shadow-sm"
-              >
+              <article key={ins.id} className="rr-card p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">
-                      {ins.role === "owner" ? "Owner" : "Renter"} •{" "}
-                      {ins.phase === "checkin"
-                        ? "Check-in"
-                        : "Check-out"}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {ins.created_at
-                        ? new Date(ins.created_at).toLocaleString()
-                        : ""}
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Role bubble */}
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-[11px] font-semibold uppercase
+                          shadow-sm
+                        "
+                      >
+                        {ins.role === "owner" ? "Owner" : "Renter"}
+                      </span>
+
+                      {/* Phase bubble */}
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-[11px]
+                          shadow-sm
+                        "
+                      >
+                        {ins.phase === "checkin" ? "Check-in" : "Check-out"}
+                      </span>
+
+                      {ins.created_at && (
+                        <span className="text-[11px] text-slate-500">
+                          {new Date(ins.created_at).toLocaleString()}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="mt-2 grid gap-1 text-xs text-slate-700">
+                    <div className="grid gap-1">
                       {ins.odometer != null && (
                         <div>Odometer: {ins.odometer} mi</div>
                       )}
@@ -385,6 +457,12 @@ export default function OwnerInspectionForm({
                         <div className="mt-1">
                           <span className="font-medium">Notes:</span>{" "}
                           {ins.notes}
+                        </div>
+                      )}
+                      {ins.damages && (
+                        <div className="mt-1 text-rose-700">
+                          <span className="font-medium">Damages:</span>{" "}
+                          {ins.damages}
                         </div>
                       )}
                     </div>
@@ -422,7 +500,7 @@ export default function OwnerInspectionForm({
           onClick={() => setPhotoModalUrl(null)}
         >
           <div
-            className="relative max-w-3xl w-full px-4"
+            className="relative w-full max-w-3xl px-4"
             onClick={(e) => e.stopPropagation()}
           >
             <button

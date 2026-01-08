@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -22,39 +23,73 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
   }
 
   return (
-    <div className="mt-6 grid gap-4">
+    <div className="mt-6 space-y-4">
       {rentals.map((r) => (
         <div
           key={r.id}
-          className="rounded-xl border bg-white p-5 shadow-sm grid gap-3"
+          className="rr-card grid gap-4 p-5"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="font-semibold">
-                {r.listing?.title ?? "Listing"}
-              </div>
-
-              <div className="text-sm text-slate-600">
-                {r.start_date} → {r.end_date}
-              </div>
-
-              <div className="text-xs text-slate-500 mt-1">
-                Status: {r.status}
-                {typeof r.buffer_days === "number"
-                  ? ` • Buffer: ${r.buffer_days}d`
-                  : ""}
-              </div>
-
-              {r.message && (
-                <div className="mt-2 text-sm text-slate-700">
-                  <span className="font-medium">Your message:</span>{" "}
-                  {r.message}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            {/* LEFT: Thumbnail + info */}
+            <div className="flex gap-4">
+              {/* Thumbnail placeholder – we’ll hook up real photo later */}
+              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-black/60 bg-slate-50 shadow-sm">
+                <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+                  Photo
                 </div>
-              )}
+              </div>
+
+              <div>
+                <div className="font-semibold">
+                  {r.listing?.title ?? "Listing"}
+                </div>
+
+                <div className="text-sm text-slate-600">
+                  {r.start_date} → {r.end_date}
+                </div>
+
+                {/* BUBBLES: black outline + shadow */}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span
+                    className="
+                      inline-flex items-center
+                      rounded-full border border-black
+                      bg-white
+                      px-3 py-1
+                      text-xs font-semibold uppercase
+                      shadow-sm
+                    "
+                  >
+                    {r.status}
+                  </span>
+
+                  {typeof r.buffer_days === "number" && (
+                    <span
+                      className="
+                        inline-flex items-center
+                        rounded-full border border-black
+                        bg-white
+                        px-3 py-1
+                        text-xs
+                        shadow-sm
+                      "
+                    >
+                      Buffer: {r.buffer_days}d
+                    </span>
+                  )}
+                </div>
+
+                {r.message && (
+                  <div className="mt-2 text-sm text-slate-700">
+                    <span className="font-medium">Your message:</span>{" "}
+                    {r.message}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
-              {/* Invoice button (unchanged) */}
+            {/* RIGHT: buttons (unchanged) */}
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
               <a
                 href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
                 target="_blank"
@@ -64,7 +99,6 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
                 Download invoice
               </a>
 
-              {/* NEW: condition page button */}
               <a
                 href={`/dashboard/rentals/${encodeURIComponent(
                   r.id
