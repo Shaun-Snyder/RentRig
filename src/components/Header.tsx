@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -17,11 +18,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={
-        active
-          ? "rr-btn rr-btn-primary"
-          : "rr-btn rr-btn-secondary"
-      }
+      className={active ? "rr-btn rr-btn-primary" : "rr-btn rr-btn-secondary"}
       aria-current={active ? "page" : undefined}
     >
       {label}
@@ -35,53 +32,71 @@ export default function Header({ role }: { role?: string }) {
     role === "admin"
       ? "Admin controls and system management"
       : "Manage your listings and rentals";
-return (
-  <header className="border-b border-black/20 bg-transparent">
-    <div className="mx-auto max-w-5xl px-6 py-5 grid gap-4">
-      
-     {/* TOP ROW: Nav | Brand | Logout */}
-<div className="grid grid-cols-3 items-center">
-  {/* Left: Nav */}
-  <nav className="flex items-center gap-2 justify-start">
-    <NavLink href="/dashboard" label="Dashboard" />
-    {role === "admin" && <NavLink href="/admin" label="Admin" />}
-  </nav>
 
-  {/* Center: Brand */}
-  <div className="flex justify-center">
-    <div
-      className="text-4xl font-extrabold tracking-tight text-black"
-      style={{
-        WebkitTextStroke: "1.5px white",
-        textShadow:
-          "0 1px 2px rgba(0,0,0,0.35), 0 4px 10px rgba(0,0,0,0.35)",
-      }}
+  return (
+    <header
+      className="
+        sticky top-0 z-30 
+        border-b border-slate-900/40
+        bg-gradient-to-b from-slate-900/80 via-slate-800/70 to-slate-700/70
+        backdrop-blur-sm
+      "
     >
-      RentRig
-    </div>
-  </div>
+      {/* Light header bar on top of dark strip */}
+      <div className="mx-auto max-w-5xl px-6 py-1">
+        <div
+  className="
+    rounded-b-xl
+    bg-gradient-to-b from-slate-50 via-white to-slate-100
+    shadow-[0_18px_40px_rgba(15,23,42,0.45)]
+    px-6 py-2.5
+    flex flex-col gap-2
+  "
+>
+          {/* TOP ROW: NAV | BRAND | LOGOUT */}
+          <div className="grid items-center gap-2 md:grid-cols-[1fr_auto_1fr]">
+            {/* Left: Nav */}
+            <nav className="flex items-center gap-2 justify-start">
+              <NavLink href="/dashboard" label="Dashboard" />
+              {role === "admin" && <NavLink href="/admin" label="Admin" />}
+            </nav>
 
-  {/* Right: Logout */}
-  <div className="flex justify-end">
-    <LogoutButton />
-  </div>
-</div>
+            {/* Center: Brand */}
+            <div className="relative flex flex-col items-center justify-center">
+              <div
+                className="
+                  text-4xl md:text-5xl 
+                  font-extrabold 
+                  tracking-tight
+                  text-black
+                "
+                style={{
+                  WebkitTextStroke: "1px white",
+                  textShadow:
+                    "0 1px 3px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.25)",
+                }}
+              >
+                RentRig
+              </div>
 
+              <div className="text-[0.70rem] md:text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+                Heavy Equipment Rentals
+              </div>
+            </div>
 
+            {/* Right: Logout */}
+            <div className="flex justify-end">
+              <LogoutButton />
+            </div>
+          </div>
 
-      {/* PAGE TITLE */}
-      <div className="text-center">
-        <div className="text-2xl font-extrabold tracking-tight text-black drop-shadow-sm">
-          {title}
-        </div>
-        <div className="text-sm font-medium text-slate-800">
-          {subtitle}
+          {/* PAGE TITLE + SUBTITLE (small, clean, modern) */}
+          <div className="flex flex-col gap-0.5 text-sm md:flex-row md:items-baseline md:justify-between mt-1">
+            <div className="text-base font-semibold text-slate-900">{title}</div>
+            <div className="text-xs font-medium text-slate-600">{subtitle}</div>
+          </div>
         </div>
       </div>
-
-    </div>
-  </header>
-);
-
-  
+    </header>
+  );
 }

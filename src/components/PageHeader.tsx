@@ -6,18 +6,13 @@ export default function PageHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="mb-6">
-      <h1
-  className="
-  text-4xl font-extrabold text-black
-  [text-shadow:_3px_3px_0_#fff,_-3px_3px_0_#fff,_3px_-3px_0_#fff,_-3px_-3px_0_#fff]
-"
->
-  {title}
-</h1>
+    <div className="mb-4 pb-3 border-b border-slate-200">
+      <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+        {title}
+      </h1>
 
       {subtitle && (
-        <p className="mt-1 rr-subtext">
+        <p className="mt-0.5 text-sm text-slate-500">
           {subtitle}
         </p>
       )}

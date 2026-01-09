@@ -678,11 +678,12 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
       </form>
      )}
 
-      {/* LIST */}
-      <div className="grid gap-3">
+           {/* LIST */}
+      <div className="grid gap-2">
         <h2 className="text-lg font-semibold">My listings</h2>
 
         {listings.map((l) => {
+
           const isOpen = openId === l.id;
           const thumb = getThumb(l.id);
 
@@ -710,8 +711,8 @@ async function uploadQueuedCreatePhotos(listingId: string, files: FileList | nul
                 .join(" • ")
             : "Not offered";
 
-          return (
-            <div key={l.id} className="rounded-lg border rr-card p-4 grid gap-3">
+                    return (
+            <div key={l.id} className="rounded-lg border rr-card px-4 py-3 grid gap-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex gap-3">
   <div className="flex flex-col">
