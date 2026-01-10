@@ -13,7 +13,36 @@ export default async function DashboardNewListingPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Not logged in → go to login
   if (!user) redirect("/login");
+
+  // ---------- PROFILE COMPLETENESS GATE ----------
+  // Enforce this for ANY user based on their own profile row.
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("full_name, phone, summary, avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const hasFullName = !!profile?.full_name?.trim();
+  const hasPhone = !!profile?.phone?.trim();
+  const hasSummary = !!profile?.summary?.trim();
+  const hasPhoto = !!profile?.avatar_url?.trim();
+
+  const isProfileComplete =
+    !profileError &&
+    !!profile &&
+    hasFullName &&
+    hasPhone &&
+    hasSummary &&
+    hasPhoto;
+
+  // If profile is missing OR any required field is empty,
+  // send them back to the dashboard profile form.
+  if (!isProfileComplete) {
+    redirect("/dashboard");
+  }
+  // ------------------------------------------------
 
   // Show ONLY drafts here (create + publish from this page)
   // IMPORTANT: select("*") so operator/driver fields make it to the client
@@ -49,9 +78,9 @@ export default async function DashboardNewListingPage() {
 
       <div style={{ padding: 24 }}>
         <PageHeader
-  title="Create Listing"
-  subtitle="Create a new listing, then publish when ready. Drafts only show here."
-/>
+          title="Create Listing"
+          subtitle="Create a new listing, then publish when ready. Drafts only show here."
+        />
         <MyListingsClient listings={(listings ?? []) as any} showCreate={true} />
       </div>
     </div>

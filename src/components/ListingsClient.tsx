@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -88,7 +87,10 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       .map((l) => Number(l.price_per_day))
       .filter((n) => Number.isFinite(n));
     if (prices.length === 0) return { min: 0, max: 0 };
-    return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+    return {
+      min: Math.floor(Math.min(...prices)),
+      max: Math.ceil(Math.max(...prices)),
+    };
   }, [listings]);
 
   const [minPrice, setMinPrice] = useState<number>(0);
@@ -107,12 +109,16 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
   const [checking, setChecking] = useState(false);
   const [checked, setChecked] = useState(false);
-  const [checkedRange, setCheckedRange] = useState<{ from: string; to: string } | null>(null);
+  const [checkedRange, setCheckedRange] = useState<{ from: string; to: string } | null>(
+    null
+  );
 
-  const [blockedByListing, setBlockedByListing] = useState<Record<string, BlockedRange[]>>({});
-  const [availabilityStatus, setAvailabilityStatus] = useState<Record<string, "available" | "booked">>(
+  const [blockedByListing, setBlockedByListing] = useState<Record<string, BlockedRange[]>>(
     {}
   );
+  const [availabilityStatus, setAvailabilityStatus] = useState<
+    Record<string, "available" | "booked">
+  >({});
 
   const lastAutoKey = useRef<string | null>(null);
 
@@ -154,8 +160,10 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     }
 
     const sorted = [...out].sort((a, b) => {
-      if (sort === "price_asc") return Number(a.price_per_day) - Number(b.price_per_day);
-      if (sort === "price_desc") return Number(b.price_per_day) - Number(a.price_per_day);
+      if (sort === "price_asc")
+        return Number(a.price_per_day) - Number(b.price_per_day);
+      if (sort === "price_desc")
+        return Number(b.price_per_day) - Number(a.price_per_day);
 
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
@@ -180,8 +188,12 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     setAvailError(null);
 
     // Normalize to UTC dates (strip time)
-    const from = new Date(Date.UTC(fromLocal.getFullYear(), fromLocal.getMonth(), fromLocal.getDate()));
-    const to = new Date(Date.UTC(toLocal.getFullYear(), toLocal.getMonth(), toLocal.getDate()));
+    const from = new Date(
+      Date.UTC(fromLocal.getFullYear(), fromLocal.getMonth(), fromLocal.getDate())
+    );
+    const to = new Date(
+      Date.UTC(toLocal.getFullYear(), toLocal.getMonth(), toLocal.getDate())
+    );
 
     if (to < from) {
       setAvailError("End date must be on or after start date.");
@@ -205,9 +217,12 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       if (idsToFetch.length > 0) {
         const results = await Promise.all(
           idsToFetch.map(async (id) => {
-            const res = await fetch(`/api/availability?listing_id=${encodeURIComponent(id)}`, {
-              cache: "no-store",
-            });
+            const res = await fetch(
+              `/api/availability?listing_id=${encodeURIComponent(id)}`,
+              {
+                cache: "no-store",
+              }
+            );
             const json = await res.json();
             if (!res.ok) throw new Error(json?.error || "Failed to load availability");
             return [id, (json.blocked ?? []) as BlockedRange[]] as const;
@@ -258,7 +273,9 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     const from = range.from;
     const to = range.to;
 
-    const key = `${toISODateUTC(new Date(Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())))}_${toISODateUTC(
+    const key = `${toISODateUTC(
+      new Date(Date.UTC(from.getFullYear(), from.getMonth(), from.getDate()))
+    )}_${toISODateUTC(
       new Date(Date.UTC(to.getFullYear(), to.getMonth(), to.getDate()))
     )}`;
 
@@ -306,23 +323,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
         {/* Price sliders + Sort + Clear */}
         <div className="grid gap-3 md:grid-cols-4">
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">
-              Min $/day: <span className="font-medium">{minPrice}</span>
-            </span>
-            <input
-              type="range"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              step={1}
-              value={minPrice}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setMinPrice(v);
-                if (v > maxPrice) setMaxPrice(v);
-              }}
-            />
-          </label>
+          
 
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">
@@ -458,75 +459,157 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSorted.map((l) => {
-  const st = checked ? availabilityStatus[l.id] : null;
-  const thumb = (l as any).thumb_url || "";
+            const st = checked ? availabilityStatus[l.id] : null;
+            const thumb = (l as any).thumb_url || "";
+            const ll: any = l;
 
-  return (
-    <div
-  key={l.id}
-  className="rr-card p-4 grid gap-3"
->  
-      {/* Thumbnail */}
-      <a
-  href={`/listings/${l.id}`}
-  className="block w-24 h-24 rounded-lg border bg-slate-50 overflow-hidden flex-shrink-0"
->
-  {thumb ? (
-    <img
-      src={thumb}
-      alt="Listing thumbnail"
-      className="h-full w-full object-contain"
-    />
-  ) : (
-    <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-      No photo
-    </div>
-  )}
-</a>
+            // --- Build detail lines similar to your My Listings mock ---
 
-      {/* Info */}
-      <div className="grid gap-1">
-        <a className="font-semibold text-lg underline" href={`/listings/${l.id}`}>
-          {l.title}
-        </a>
+            // Category label
+            const categoryText =
+              ll.category != null ? catLabel(ll.category) : null;
 
-        <div className="text-sm text-slate-600">
-          ${Number(l.price_per_day).toFixed(2)}/day
-          {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
+            // Location
+            const locationParts = [l.city, l.state].filter(Boolean);
+            const locationText =
+              locationParts.length > 0 ? locationParts.join(", ") : null;
 
-          {st === "available" && (
-            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
-              Available
-            </span>
-          )}
+            // Price + deposit
+            const hasDayPrice = Number.isFinite(Number(l.price_per_day));
+            const perDayText = hasDayPrice
+              ? `$${Number(l.price_per_day).toFixed(2)}/day`
+              : null;
 
-          {st === "booked" && (
-            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
-              Booked
-            </span>
-          )}
-        </div>
+            const hourlyRaw = ll.price_per_hour ?? ll.hourly_rate ?? null;
+            const hasHourlyPrice = Number.isFinite(Number(hourlyRaw));
+            const perHourText = hasHourlyPrice
+              ? `$${Number(hourlyRaw).toFixed(2)}/hour`
+              : null;
 
-        {l.category && (
-          <div className="text-xs text-slate-500">Category: {catLabel(l.category)}</div>
-        )}
+            // Deposit: try a couple of common field names
+            const depositRaw =
+              ll.deposit ?? ll.deposit_amount ?? ll.security_deposit ?? null;
+            const hasDeposit = Number.isFinite(Number(depositRaw));
+            const depositText = hasDeposit
+              ? `$${Number(depositRaw).toFixed(2)}`
+              : null;
 
-        {l.license_required ? (
-          <div className="text-xs text-amber-700">
-            License required{l.license_type ? `: ${l.license_type}` : ""}
-          </div>
-        ) : null}
+            let priceLine: string | null = null;
+            if (perDayText || perHourText || depositText) {
+              const pieces: string[] = [];
+              if (perDayText) pieces.push(perDayText);
+              if (perHourText) pieces.push(perHourText);
+              let base = `Price: ${pieces.join(" • ") || ""}`.trim();
+              if (depositText) {
+                base += `${pieces.length ? " • " : ""}Deposit: ${depositText}`;
+              }
+              priceLine = base;
+            }
 
-        {l.description && (
-          <div className="mt-1 text-sm text-slate-700">{l.description}</div>
-        )}
-      </div>
-    </div>
-  );
-})}
+            // Operator line (based on operator_enabled)
+            let operatorLine: string | null = null;
+            if (typeof ll.operator_enabled === "boolean") {
+              operatorLine = ll.operator_enabled
+                ? "Operator: Available"
+                : "Operator: Not included";
+            }
 
+            // Driver line (based on license_required / license_type)
+            let driverLine: string | null = null;
+            if (typeof ll.license_required === "boolean") {
+              if (ll.license_required) {
+                driverLine = `Driver: Must have ${ll.license_type || "CDL"}`;
+              } else {
+                driverLine = "Driver: No CDL required";
+              }
+            }
+
+            return (
+              <div
+                key={l.id}
+                className="rr-card overflow-hidden flex flex-col bg-white"
+              >
+                {/* Thumbnail: full card width at the top */}
+                <a
+                  href={`/listings/${l.id}`}
+                  className="block w-full aspect-[4/3] border-b bg-slate-50 overflow-hidden"
+                >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt="Listing thumbnail"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                      No photo
+                    </div>
+                  )}
+                </a>
+
+                {/* Details under the photo */}
+                <div className="p-4 flex flex-col gap-1 flex-1">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <a
+                      className="font-semibold text-base sm:text-lg hover:underline"
+                      href={`/listings/${l.id}`}
+                    >
+                      {l.title}
+                    </a>
+
+                    {st === "available" && (
+                      <span className="ml-2 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+                        Available
+                      </span>
+                    )}
+
+                    {st === "booked" && (
+                      <span className="ml-2 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700">
+                        Booked
+                      </span>
+                    )}
+                  </div>
+
+                  {categoryText && (
+                    <div className="text-sm text-slate-700">
+                      <span className="font-medium">Category:</span>{" "}
+                      <span className="text-slate-700">{categoryText}</span>
+                    </div>
+                  )}
+
+                  {locationText && (
+                    <div className="text-sm text-slate-700">
+                      <span className="font-medium">Location:</span>{" "}
+                      <span className="text-slate-700">{locationText}</span>
+                    </div>
+                  )}
+
+                  {priceLine && (
+                    <div className="text-sm text-slate-700">{priceLine}</div>
+                  )}
+
+                  {operatorLine && (
+                    <div className="text-sm text-slate-700">
+                      {operatorLine}
+                    </div>
+                  )}
+
+                  {driverLine && (
+                    <div className="text-sm text-slate-700">{driverLine}</div>
+                  )}
+
+                  {l.description && (
+                    <p className="mt-1 text-sm text-slate-700">
+                      {l.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+

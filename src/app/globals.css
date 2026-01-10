@@ -186,8 +186,11 @@
       0 4px 10px rgba(15, 23, 42, 0.32);
   }
 
-  .rr-btn-primary {
-    background: linear-gradient(to bottom, #ffe066 0%, #f2c94c 100%);
+    .rr-btn-primary {
+    /* Dark, near-black button like the mock for Publish / Unpublish */
+    background: linear-gradient(to bottom, #4b5563 0%, #111827 100%);
+    color: #ffffff;
+    border-color: #000000;
   }
 
   .rr-btn-secondary {

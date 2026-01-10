@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import ListingsClient from "@/components/ListingsClient";
@@ -17,6 +18,8 @@ type ListingRow = {
   category: string | null;
   license_required: boolean | null;
   license_type: string | null;
+  // NOTE: additional fields (delivery / driver / operator / hourly, etc.)
+  // are still present at runtime via select("*") and used in ListingsClient via `any`.
 };
 
 type PhotoRow = {
@@ -29,7 +32,7 @@ type PhotoRow = {
 
 const CATEGORIES: Array<{ key: string; label: string }> = [
   { key: "trucks", label: "Trucks" },
-  { key: "trailers", label: "Trailers" },  
+  { key: "trailers", label: "Trailers" },
   { key: "vans_covered", label: "Vans / Covered" },
   { key: "lifts", label: "Lifts" },
   { key: "heavy_equipment", label: "Heavy Equipment" },
@@ -55,16 +58,24 @@ export default async function ListingsPage({
 }) {
   const supabase = await createClient();
 
+  // --- AUTH (login required, but NO profile gate here) ---
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  // --- END AUTH ---
+
   const selected = (searchParams?.category || "").toString().trim();
   const selectedIsValid = CATEGORIES.some((c) => c.key === selected);
 
   const q = (searchParams?.q || "").toString().trim();
 
+  // IMPORTANT: select("*") so driver/operator/delivery/hourly fields
+  // are available to ListingsClient cards.
   let query = supabase
     .from("listings")
-    .select(
-      "id, title, description, city, state, price_per_day, created_at, category, license_required, license_type"
-    )
+    .select("*")
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
@@ -73,7 +84,7 @@ export default async function ListingsPage({
   }
 
   if (q) {
-    // Keep it simple for now: title match. (zip comes next step)
+    // Simple: title match for now (ZIP search comes later)
     query = query.ilike("title", `%${q}%`);
   }
 
@@ -84,8 +95,11 @@ export default async function ListingsPage({
       <>
         <ServerHeader />
         <main className="mx-auto max-w-6xl px-6 py-10">
-          <h1 className="text-3xl font-semibold">Browse Listings</h1>
-          <p className="mt-4 text-red-600">Load failed: {error.message}</p>
+          <PageHeader
+            title="Browse Listings"
+            subtitle="Something went wrong loading listings."
+          />
+          <p className="mt-4 text-sm text-red-600">Load failed: {error.message}</p>
         </main>
       </>
     );
@@ -109,7 +123,9 @@ export default async function ListingsPage({
 
   const firstPhotoByListing = new Map<string, PhotoRow>();
   for (const p of photos) {
-    if (!firstPhotoByListing.has(p.listing_id)) firstPhotoByListing.set(p.listing_id, p);
+    if (!firstPhotoByListing.has(p.listing_id)) {
+      firstPhotoByListing.set(p.listing_id, p);
+    }
   }
 
   // Add thumb_url for ListingsClient cards
@@ -124,64 +140,75 @@ export default async function ListingsPage({
       <ServerHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-  <div>
-    <PageHeader
-      title="Browse Listings"
-      subtitle={selectedIsValid ? `Showing: ${catLabel(selected)}` : "Showing: All categories"}
-    />
-  </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <PageHeader
+              title="Browse Listings"
+              subtitle={
+                selectedIsValid
+                  ? `Showing: ${catLabel(selected)}`
+                  : "Showing: All categories"
+              }
+            />
+          </div>
 
-          {/* Small server-side search box (keeps URL params). Sliders + availability UI stays in ListingsClient */}
-          <form action="/listings" method="get" className="flex flex-wrap items-center gap-2">
-            {selectedIsValid ? <input type="hidden" name="category" value={selected} /> : null}
+          {/* Small server-side search box (keeps URL params).
+              Sliders + availability UI stays in ListingsClient */}
+          <form
+            action="/listings"
+            method="get"
+            className="flex flex-wrap items-center gap-2"
+          >
+            {selectedIsValid ? (
+              <input type="hidden" name="category" value={selected} />
+            ) : null}
 
             <input
               name="q"
               defaultValue={q}
-              placeholder="Search by name (zip next)..."
+              placeholder="Search by name (ZIP soon)..."
               className="w-full max-w-md rounded-lg border px-3 py-2"
             />
 
             <button type="submit" className="rr-btn rr-btn-primary">
-  Search
-</button>
+              Search
+            </button>
 
             {q ? (
               <a
-  href={selectedIsValid ? `/listings?category=${selected}` : "/listings"}
-  className="rr-btn rr-btn-secondary"
->
-  Clear
-</a>
-
+                href={
+                  selectedIsValid ? `/listings?category=${selected}` : "/listings"
+                }
+                className="rr-btn rr-btn-secondary"
+              >
+                Clear
+              </a>
             ) : null}
           </form>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/listings"
-            className={`rr-pill ${!selectedIsValid ? "rr-pill-active" : ""}`}
+  <Link
+    href="/listings"
+    className={`rr-btn rr-btn-secondary ${!selectedIsValid ? "rr-btn-primary" : ""}`}
+  >
+    All
+  </Link>
 
-          >
-            All
-          </Link>
+  {CATEGORIES.map((c) => {
+    const active = selected === c.key;
+    return (
+      <Link
+        key={c.key}
+        href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+        className={`rr-btn rr-btn-secondary ${active ? "rr-btn-primary text-white" : ""}`}
+      >
+        {c.label}
+      </Link>
+    );
+  })}
+</div>
 
-          {CATEGORIES.map((c) => {
-            const active = selected === c.key;
-            return (
-              <Link
-                key={c.key}
-                href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`rr-pill ${active ? "rr-pill-active" : ""}`}
-
-              >
-                {c.label}
-              </Link>
-            );
-          })}
-        </div>
 
         <div className="mt-8">
           <ListingsClient listings={listingListForClient as any} />
