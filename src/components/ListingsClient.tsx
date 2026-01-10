@@ -16,7 +16,7 @@ type Listing = {
   created_at: string;
 };
 
-type SortMode = "newest" | "price_asc" | "price_desc";
+type SortMode = "newest" | "price_asc" | "price_desc" | "distance";
 
 const CATEGORIES = [
   { key: "heavy_equipment", label: "Heavy Equipment" },
@@ -69,6 +69,7 @@ export default function ListingsClient({
   const [q, setQ] = useState(initialQ);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
   const [sort, setSort] = useState<SortMode>("newest");
   const supabase = createClient();
 
@@ -142,9 +143,11 @@ export default function ListingsClient({
     const query = q.trim().toLowerCase();
     const cityQ = city.trim().toLowerCase();
     const stateQ = state.trim().toLowerCase();
+    const zipQ = zip.trim();
 
     let out = listings;
 
+    // Text search (title, description, city, state)
     if (query) {
       out = out.filter((l) => {
         const haystack = [l.title, l.city ?? "", l.state ?? "", l.description ?? ""]
@@ -154,24 +157,100 @@ export default function ListingsClient({
       });
     }
 
-    if (cityQ) out = out.filter((l) => (l.city ?? "").toLowerCase().includes(cityQ));
-    if (stateQ) out = out.filter((l) => (l.state ?? "").toLowerCase().includes(stateQ));
+    // City filter
+    if (cityQ) {
+      out = out.filter((l) => (l.city ?? "").toLowerCase().includes(cityQ));
+    }
 
+    // State filter
+    if (stateQ) {
+      out = out.filter((l) => (l.state ?? "").toLowerCase().includes(stateQ));
+    }
+
+    // ZIP filter (match beginning of zip: "3280" matches "32801")
+    if (zipQ) {
+      out = out.filter((l) => {
+        const ll: any = l;
+        const listingZip = String(
+          ll.zip ?? ll.zip_code ?? ll.postal_code ?? ""
+        ).trim();
+        if (!listingZip) return false;
+        return listingZip.startsWith(zipQ);
+      });
+    }
+
+    // Price range filter (using only max slider in UI but keeping min guard)
     out = out.filter((l) => {
       const p = Number(l.price_per_day);
       return p >= minPrice && p <= maxPrice;
     });
 
+    // Availability filter
     if (availEnabled && checked) {
       out = out.filter((l) => availableIds.has(l.id));
     }
 
-    const sorted = [...out].sort((a, b) => {
-      if (sort === "price_asc")
-        return Number(a.price_per_day) - Number(b.price_per_day);
-      if (sort === "price_desc")
-        return Number(b.price_per_day) - Number(a.price_per_day);
+    // Sorting
+    const sorted = [...out];
 
+    // Distance sort (based on ZIP numeric closeness)
+    if (sort === "distance") {
+      const zipNum = parseInt(zipQ, 10);
+      if (!zipQ || Number.isNaN(zipNum)) {
+        // If no valid ZIP entered, fall back to newest
+        sorted.sort((a, b) => {
+          const ta = new Date(a.created_at).getTime();
+          const tb = new Date(b.created_at).getTime();
+          return tb - ta;
+        });
+        return sorted;
+      }
+
+      sorted.sort((a, b) => {
+        const la: any = a;
+        const lb: any = b;
+
+        const azStr = String(
+          la.zip ?? la.zip_code ?? la.postal_code ?? ""
+        ).trim();
+        const bzStr = String(
+          lb.zip ?? lb.zip_code ?? lb.postal_code ?? ""
+        ).trim();
+
+        const az = parseInt(azStr, 10);
+        const bz = parseInt(bzStr, 10);
+
+        const aDist = Number.isNaN(az) ? Number.POSITIVE_INFINITY : Math.abs(az - zipNum);
+        const bDist = Number.isNaN(bz) ? Number.POSITIVE_INFINITY : Math.abs(bz - zipNum);
+
+        if (aDist === bDist) {
+          const ta = new Date(a.created_at).getTime();
+          const tb = new Date(b.created_at).getTime();
+          return tb - ta;
+        }
+
+        return aDist - bDist;
+      });
+
+      return sorted;
+    }
+
+    if (sort === "price_asc") {
+      sorted.sort(
+        (a, b) => Number(a.price_per_day) - Number(b.price_per_day)
+      );
+      return sorted;
+    }
+
+    if (sort === "price_desc") {
+      sorted.sort(
+        (a, b) => Number(b.price_per_day) - Number(a.price_per_day)
+      );
+      return sorted;
+    }
+
+    // Default: newest first
+    sorted.sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
       return tb - ta;
@@ -182,6 +261,7 @@ export default function ListingsClient({
     q,
     city,
     state,
+    zip,
     sort,
     listings,
     minPrice,
@@ -295,8 +375,8 @@ export default function ListingsClient({
   return (
     <div className="mt-8 grid gap-4">
       <div className="rr-card p-6 grid gap-4">
-        {/* Search + location */}
-        <div className="grid gap-3 md:grid-cols-3">
+        {/* Search + location + ZIP */}
+        <div className="grid gap-3 md:grid-cols-4">
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">Search</span>
             <input
@@ -326,67 +406,94 @@ export default function ListingsClient({
               onChange={(e) => setState(e.target.value)}
             />
           </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm text-slate-600">ZIP (optional)</span>
+            <input
+              className="border rounded-lg p-2"
+              placeholder="32801"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+            />
+          </label>
         </div>
 
         {/* Price sliders + Sort + Clear */}
         <div className="grid gap-3 md:grid-cols-4">
-          {/* If you already removed the min slider, only keep the max + sort + clear blocks here */}
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">
-              Max $/day: <span className="font-medium">{maxPrice}</span>
-            </span>
-            <input
-              type="range"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              step={1}
-              value={maxPrice}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setMaxPrice(v);
-                if (v < minPrice) setMinPrice(v);
-              }}
-            />
-          </label>
+  <label className="grid gap-2">
+    <span className="text-sm text-slate-600">
+      Max $/day: <span className="font-medium">{maxPrice}</span>
+    </span>
+    <input
+      type="range"
+      min={priceBounds.min}
+      max={priceBounds.max}
+      step={1}
+      value={maxPrice}
+      onChange={(e) => {
+        const v = Number(e.target.value);
+        setMaxPrice(v);
+        if (v < minPrice) setMinPrice(v);
+      }}
+    />
+  </label>
 
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">Sort</span>
-            <select
-              className="border rounded-lg p-2"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortMode)}
-            >
-              <option value="newest">Newest</option>
-              <option value="price_asc">Price: low → high</option>
-              <option value="price_desc">Price: high → low</option>
-            </select>
-          </label>
+  <label className="grid gap-2">
+    <span className="text-sm text-slate-600">Sort</span>
+    <select
+      className="border rounded-lg p-2"
+      value={sort}
+      onChange={(e) => setSort(e.target.value as SortMode)}
+    >
+      <option value="newest">Newest</option>
+      <option value="price_asc">Price: low → high</option>
+      <option value="price_desc">Price: high → low</option>
+      <option value="distance">Distance: closest first</option>
+    </select>
+  </label>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              className="rr-btn rr-btn-secondary rr-btn-sm w-full"
-              onClick={() => {
-                setQ(initialQ || "");
-                setCity("");
-                setState("");
-                setSort("newest");
-                setMinPrice(priceBounds.min);
-                setMaxPrice(priceBounds.max);
+  <div className="flex items-end">
+    <button
+      type="button"
+      className="rr-btn rr-btn-primary rr-btn-sm w-full"
+      // Filtering already reacts as you type, so this is mainly UX.
+      onClick={() => {
+        // No-op: state `q`, `city`, `state`, `zip` already drives filters.
+        // Kept for user expectation of a "Search" action.
+        setQ((current) => current.trim());
+      }}
+    >
+      Search
+    </button>
+  </div>
 
-                setAvailEnabled(false);
-                setRange(undefined);
-                setAvailError(null);
-                setChecked(false);
-                setCheckedRange(null);
-                setAvailabilityStatus({});
-                lastAutoKey.current = null;
-              }}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
+  <div className="flex items-end">
+    <button
+      type="button"
+      className="rr-btn rr-btn-secondary rr-btn-sm w-full"
+      onClick={() => {
+        setQ(initialQ || "");
+        setCity("");
+        setState("");
+        setZip("");
+        setSort("newest");
+        setMinPrice(priceBounds.min);
+        setMaxPrice(priceBounds.max);
+
+        setAvailEnabled(false);
+        setRange(undefined);
+        setAvailError(null);
+        setChecked(false);
+        setCheckedRange(null);
+        setAvailabilityStatus({});
+        lastAutoKey.current = null;
+      }}
+    >
+      Clear
+    </button>
+  </div>
+</div>
+
 
         {/* Availability */}
         <div className="rr-card rr-card-sm p-4 grid gap-3">
@@ -436,7 +543,7 @@ export default function ListingsClient({
               {checking ? "Checking..." : "Re-check"}
             </button>
 
-            {checkedRange ? (
+          {checkedRange ? (
               <p className="text-sm text-slate-500">
                 Availability checked for:{" "}
                 <span className="font-medium">

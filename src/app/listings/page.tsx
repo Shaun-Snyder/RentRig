@@ -145,79 +145,18 @@ export default async function ListingsPage({
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <PageHeader
-              title="Browse Listings"
-              subtitle={
-                selectedIsValid
-                  ? `Showing: ${catLabel(selected)}`
-                  : "Showing: All categories"
-              }
-            />
-          </div>
+  <div>
+    <PageHeader
+      title="Browse Listings"
+      subtitle={
+        selectedIsValid
+          ? `Showing: ${catLabel(selected)}`
+          : "Showing: All categories"
+      }
+    />
+  </div>
+</div>
 
-          {/* Small server-side search box (keeps URL params).
-              Sliders + availability UI stays in ListingsClient */}
-          <form
-            action="/listings"
-            method="get"
-            className="flex flex-wrap items-center gap-2"
-          >
-            {selectedIsValid ? (
-              <input type="hidden" name="category" value={selected} />
-            ) : null}
-
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder='Search by name, city, or state...'
-              className="w-full max-w-md rounded-lg border px-3 py-2"
-            />
-
-            <button type="submit" className="rr-btn rr-btn-primary">
-              Search
-            </button>
-
-            {q ? (
-              <a
-                href={
-                  selectedIsValid ? `/listings?category=${selected}` : "/listings"
-                }
-                className="rr-btn rr-btn-secondary"
-              >
-                Clear
-              </a>
-            ) : null}
-          </form>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/listings"
-            className={`rr-btn rr-btn-secondary ${
-              !selectedIsValid ? "rr-btn-primary text-white" : ""
-            }`}
-          >
-            All
-          </Link>
-
-          {CATEGORIES.map((c) => {
-            const active = selected === c.key;
-            return (
-              <Link
-                key={c.key}
-                href={`/listings?category=${c.key}${
-                  q ? `&q=${encodeURIComponent(q)}` : ""
-                }`}
-                className={`rr-btn rr-btn-secondary ${
-                  active ? "rr-btn-primary text-white" : ""
-                }`}
-              >
-                {c.label}
-              </Link>
-            );
-          })}
-        </div>
 
         <div className="mt-8">
           <ListingsClient listings={listingListForClient as any} initialQ={q} />
