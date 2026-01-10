@@ -18,7 +18,7 @@ type ListingRow = {
   category: string | null;
   license_required: boolean | null;
   license_type: string | null;
-  // NOTE: additional fields (delivery / driver / operator / hourly, etc.)
+  // Other fields (delivery / operator / driver / hourly / deposit, etc.)
   // are still present at runtime via select("*") and used in ListingsClient via `any`.
 };
 
@@ -84,8 +84,12 @@ export default async function ListingsPage({
   }
 
   if (q) {
-    // Simple: title match for now (ZIP search comes later)
-    query = query.ilike("title", `%${q}%`);
+    // Search across title, description, city, and state
+    // PostgREST OR syntax: field.ilike.%value%
+    const safe = q.replace(/,/g, " "); // avoid comma issues
+    query = query.or(
+      `title.ilike.%${safe}%,description.ilike.%${safe}%,city.ilike.%${safe}%,state.ilike.%${safe}%`
+    );
   }
 
   const { data: listings, error } = await query;
@@ -166,7 +170,7 @@ export default async function ListingsPage({
             <input
               name="q"
               defaultValue={q}
-              placeholder="Search by name (ZIP soon)..."
+              placeholder='Search by name, city, or state...'
               className="w-full max-w-md rounded-lg border px-3 py-2"
             />
 
@@ -188,30 +192,35 @@ export default async function ListingsPage({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-  <Link
-    href="/listings"
-    className={`rr-btn rr-btn-secondary ${!selectedIsValid ? "rr-btn-primary" : ""}`}
-  >
-    All
-  </Link>
+          <Link
+            href="/listings"
+            className={`rr-btn rr-btn-secondary ${
+              !selectedIsValid ? "rr-btn-primary text-white" : ""
+            }`}
+          >
+            All
+          </Link>
 
-  {CATEGORIES.map((c) => {
-    const active = selected === c.key;
-    return (
-      <Link
-        key={c.key}
-        href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-        className={`rr-btn rr-btn-secondary ${active ? "rr-btn-primary text-white" : ""}`}
-      >
-        {c.label}
-      </Link>
-    );
-  })}
-</div>
-
+          {CATEGORIES.map((c) => {
+            const active = selected === c.key;
+            return (
+              <Link
+                key={c.key}
+                href={`/listings?category=${c.key}${
+                  q ? `&q=${encodeURIComponent(q)}` : ""
+                }`}
+                className={`rr-btn rr-btn-secondary ${
+                  active ? "rr-btn-primary text-white" : ""
+                }`}
+              >
+                {c.label}
+              </Link>
+            );
+          })}
+        </div>
 
         <div className="mt-8">
-          <ListingsClient listings={listingListForClient as any} />
+          <ListingsClient listings={listingListForClient as any} initialQ={q} />
         </div>
       </main>
     </>

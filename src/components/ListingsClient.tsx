@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -58,8 +59,14 @@ function toISODateUTC(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-export default function ListingsClient({ listings }: { listings: Listing[] }) {
-  const [q, setQ] = useState("");
+export default function ListingsClient({
+  listings,
+  initialQ = "",
+}: {
+  listings: Listing[];
+  initialQ?: string;
+}) {
+  const [q, setQ] = useState(initialQ);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [sort, setSort] = useState<SortMode>("newest");
@@ -323,8 +330,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
         {/* Price sliders + Sort + Clear */}
         <div className="grid gap-3 md:grid-cols-4">
-          
-
+          {/* If you already removed the min slider, only keep the max + sort + clear blocks here */}
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">
               Max $/day: <span className="font-medium">{maxPrice}</span>
@@ -361,7 +367,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               type="button"
               className="rr-btn rr-btn-secondary rr-btn-sm w-full"
               onClick={() => {
-                setQ("");
+                setQ(initialQ || "");
                 setCity("");
                 setState("");
                 setSort("newest");
@@ -463,8 +469,6 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
             const thumb = (l as any).thumb_url || "";
             const ll: any = l;
 
-            // --- Build detail lines similar to your My Listings mock ---
-
             // Category label
             const categoryText =
               ll.category != null ? catLabel(ll.category) : null;
@@ -486,7 +490,6 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               ? `$${Number(hourlyRaw).toFixed(2)}/hour`
               : null;
 
-            // Deposit: try a couple of common field names
             const depositRaw =
               ll.deposit ?? ll.deposit_amount ?? ll.security_deposit ?? null;
             const hasDeposit = Number.isFinite(Number(depositRaw));
@@ -612,4 +615,3 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     </div>
   );
 }
-
