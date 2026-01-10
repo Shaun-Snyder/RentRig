@@ -634,7 +634,7 @@ export default function ListingsClient({
               }
             }
 
-            return (
+                        return (
               <div
                 key={l.id}
                 className="rr-card overflow-hidden flex flex-col bg-white"
@@ -658,8 +658,9 @@ export default function ListingsClient({
                 </a>
 
                 {/* Details under the photo */}
-                <div className="p-4 flex flex-col gap-1 flex-1">
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                  {/* Title + availability badge */}
+                  <div className="flex items-start justify-between gap-2">
                     <a
                       className="font-semibold text-base sm:text-lg hover:underline"
                       href={`/listings/${l.id}`}
@@ -668,36 +669,48 @@ export default function ListingsClient({
                     </a>
 
                     {st === "available" && (
-                      <span className="ml-2 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+                      <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
                         Available
                       </span>
                     )}
 
                     {st === "booked" && (
-                      <span className="ml-2 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700">
+                      <span className="rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs text-rose-700">
                         Booked
                       </span>
                     )}
                   </div>
 
-                  {categoryText && (
-                    <div className="text-sm text-slate-700">
-                      <span className="font-medium">Category:</span>{" "}
-                      <span className="text-slate-700">{categoryText}</span>
-                    </div>
-                  )}
+                  {/* Category + location (with ZIP if present) */}
+                  <div className="text-sm text-slate-700 space-y-0.5">
+                    {categoryText && (
+                      <div>
+                        <span className="font-medium">Category:</span>{" "}
+                        <span>{categoryText}</span>
+                      </div>
+                    )}
 
-                  {locationText && (
-                    <div className="text-sm text-slate-700">
-                      <span className="font-medium">Location:</span>{" "}
-                      <span className="text-slate-700">{locationText}</span>
-                    </div>
-                  )}
+                    {(() => {
+                      const zipStr = String(
+                        ll.zip ?? ll.zip_code ?? ll.postal_code ?? ""
+                      ).trim();
+                      const parts = [l.city, l.state, zipStr].filter(Boolean);
+                      if (!parts.length) return null;
+                      return (
+                        <div>
+                          <span className="font-medium">Location:</span>{" "}
+                          <span>{parts.join(", ")}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
 
+                  {/* Price + deposit line */}
                   {priceLine && (
                     <div className="text-sm text-slate-700">{priceLine}</div>
                   )}
 
+                  {/* Operator / Driver lines */}
                   {operatorLine && (
                     <div className="text-sm text-slate-700">
                       {operatorLine}
@@ -708,6 +721,43 @@ export default function ListingsClient({
                     <div className="text-sm text-slate-700">{driverLine}</div>
                   )}
 
+                  {/* Feature chips: Delivery / Hourly / Driver / Operator */}
+                  {(() => {
+                    const chips: string[] = [];
+
+                    if (typeof ll.delivery_enabled === "boolean" && ll.delivery_enabled) {
+                      chips.push("Delivery available");
+                    }
+
+                    if (typeof ll.operator_enabled === "boolean" && ll.operator_enabled) {
+                      chips.push("Operator add-on");
+                    }
+
+                    if (typeof ll.driver_enabled === "boolean" && ll.driver_enabled) {
+                      chips.push("Driver add-on");
+                    }
+
+                    if (perHourText) {
+                      chips.push("Hourly option");
+                    }
+
+                    if (!chips.length) return null;
+
+                    return (
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {chips.map((chip) => (
+                          <span
+                            key={chip}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600"
+                          >
+                            {chip}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Description */}
                   {l.description && (
                     <p className="mt-1 text-sm text-slate-700">
                       {l.description}
@@ -716,6 +766,7 @@ export default function ListingsClient({
                 </div>
               </div>
             );
+
           })}
         </div>
       )}
