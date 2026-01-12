@@ -8,25 +8,41 @@ import LogoutButton from "./LogoutButton";
 function NavLink({
   href,
   label,
+  badge,
 }: {
   href: string;
   label: string;
+  badge?: number;
 }) {
   const pathname = usePathname();
   const active = pathname === href;
 
+  const baseClasses = active ? "rr-btn rr-btn-primary" : "rr-btn rr-btn-secondary";
+
   return (
     <Link
       href={href}
-      className={active ? "rr-btn rr-btn-primary" : "rr-btn rr-btn-secondary"}
+      className={`${baseClasses} flex items-center gap-2`}
       aria-current={active ? "page" : undefined}
     >
-      {label}
+      <span>{label}</span>
+      {badge && badge > 0 && (
+        <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1 text-[0.65rem] font-semibold text-white">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }
 
-export default function Header({ role }: { role?: string }) {
+export default function Header({
+  role,
+  pendingCount,
+}: {
+  role?: string;
+  pendingCount?: number;
+}) {
+
   const title = role === "admin" ? "Admin" : "Dashboard";
   const subtitle =
     role === "admin"
@@ -95,6 +111,19 @@ export default function Header({ role }: { role?: string }) {
             <div className="text-base font-semibold text-slate-900">{title}</div>
             <div className="text-xs font-medium text-slate-600">{subtitle}</div>
           </div>
+          {/* GLOBAL NAV ROW: visible on every page that uses ServerHeader */}
+          <div className="mt-2 flex flex-wrap gap-2 text-xs md:text-sm">
+            <NavLink href="/dashboard/listings" label="My Listings" />
+            <NavLink href="/dashboard/listings/new" label="Create Listing" />
+            <NavLink href="/dashboard/rentals" label="My Rentals" />
+            <NavLink
+              href="/dashboard/owner-rentals"
+              label="Owner Requests"
+              badge={pendingCount}
+            />
+            <NavLink href="/listings" label="Browse Listings" />
+          </div>
+
         </div>
       </div>
     </header>

@@ -159,108 +159,154 @@ export default function OwnerRentalsClient({
         const thumb = getThumb(r.listing_id);
 
         return (
-          <div key={r.id} className="rr-card grid gap-4 p-5">
-            {/* TOP ROW: thumbnail + main info */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              {/* LEFT: Thumbnail + info */}
-              <div className="flex gap-4">
-                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-black/60 bg-slate-50 shadow-sm">
-                  {thumb ? (
-                    <img
-                      src={thumb}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
-                      Photo
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-lg font-semibold">
-                    {r.listing?.title ?? "Listing"}
-                  </div>
-
-                  <div className="mt-1 text-sm text-slate-600">
-                    {r.start_date} → {r.end_date}
-                  </div>
-
-                  <div className="mt-1 text-sm">
-                    <span className="font-medium">Status:</span>{" "}
-                    <span className="capitalize">{r.status}</span>
-                  </div>
-
-                  {r.message ? (
-                    <div className="mt-2 text-sm text-slate-700">
-                      <span className="font-medium">Message:</span>{" "}
-                      {r.message}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
+  <div
+    key={r.id}
+    className="
+      rr-card
+      border border-slate-300
+      rounded-none
+      px-4 py-4
+      grid gap-3
+      shadow-[0_18px_40px_rgba(15,23,42,0.18)]
+      bg-white
+    "
+  >
+    {/* TOP ROW: big thumbnail + summary + actions */}
+    <div className="flex items-start justify-between gap-4">
+      {/* LEFT: Large thumbnail and main text */}
+      <div className="flex gap-4">
+        <div className="flex-shrink-0">
+          {thumb ? (
+            <img
+              src={thumb}
+              alt=""
+              className="
+                w-40 md:w-56
+                aspect-[16/9]
+                object-cover
+                border border-slate-300
+                rounded-none
+              "
+            />
+          ) : (
+            <div
+              className="
+                w-40 md:w-56
+                aspect-[16/9]
+                border border-dashed border-slate-300
+                bg-slate-50
+                grid place-items-center
+                text-xs text-slate-500
+                rounded-none
+              "
+            >
+              No photo
             </div>
+          )}
+        </div>
 
-            {/* BUTTON ROW (bottom) */}
-            <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
-              {/* Invoice */}
-              <a
-                href={`/api/invoice?rental_id=${r.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="rr-btn rr-btn-primary"
-              >
-                Invoice
-              </a>
-
-              {/* Approve – turns green after approved */}
-              <button
-                onClick={() => onApprove(r.id)}
-                disabled={isPending || isFinal}
-                className={`rr-btn rr-btn-primary ${
-                  isApproved
-                    ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700"
-                    : ""
-                }`}
-              >
-                {isApproved ? "Approved" : "Approve & Email"}
-              </button>
-
-              {/* Reject */}
-              <button
-                onClick={() => onReject(r.id)}
-                disabled={isPending || isFinal}
-                className="rr-btn rr-btn-danger"
-              >
-                Reject
-              </button>
-
-              {/* Inspection page link */}
-              <a
-                href={`/dashboard/owner-rentals/${encodeURIComponent(
-                  r.id
-                )}/inspection`}
-                className="rr-btn rr-btn-secondary text-xs"
-              >
-                Record / view condition
-              </a>
-            </div>
-
-            {/* Finalize hourly operator if needed */}
-            {showFinalize ? (
-              <div className="mt-4">
-                <FinalizeHourlyService
-                  rentalId={r.id}
-                  defaultHours={Math.max(
-                    1,
-                    Number(r.hourly_estimated_hours ?? r.operator_hours ?? 1)
-                  )}
-                />
-              </div>
-            ) : null}
+        <div className="flex flex-col gap-1">
+          <div className="text-2xl md:text-xl font-extrabold text-slate-900">
+            {r.listing?.title ?? "Listing"}
           </div>
-        );
+
+          <div className="text-sm text-slate-700">
+            <span className="font-semibold">Dates:</span>{" "}
+            <span className="font-medium">
+              {r.start_date} → {r.end_date}
+            </span>
+          </div>
+
+          <div className="text-sm text-slate-700">
+            <span className="font-semibold">Status:</span>{" "}
+            <span className="capitalize">{r.status}</span>
+          </div>
+
+          {r.message && (
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">Message:</span>{" "}
+              {r.message}
+            </div>
+          )}
+
+          {/* Optional quick hourly/operator info so it feels like the listings summary rows */}
+          {r.operator_selected && (
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">Operator:</span>{" "}
+              {r.operator_rate != null
+                ? `${r.operator_rate} / ${r.operator_rate_unit ?? "hour"}`
+                : "Selected"}
+              {r.hourly_is_estimate && !r.hourly_finalized_at ? (
+                <span className="text-amber-600 font-semibold ml-1">
+                  (Estimate – needs finalize)
+                </span>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT: button stack aligns like My Listings actions */}
+      <div className="flex flex-col items-end gap-2">
+       <div className="flex flex-wrap justify-end gap-2">
+  {/* Invoice – secondary button style */}
+  <a
+    href={`/api/invoice?rental_id=${r.id}`}
+    target="_blank"
+    rel="noreferrer"
+    className="rr-btn rr-btn-secondary"
+  >
+    Invoice
+  </a>
+
+  {/* Approve – same base as listings, with green override when approved */}
+  <button
+    onClick={() => onApprove(r.id)}
+    disabled={isPending || isFinal}
+    className={`rr-btn rr-btn-primary ${
+      isApproved
+        ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700"
+        : ""
+    }`}
+  >
+    {isApproved ? "Approved" : "Approve & Email"}
+  </button>
+
+  {/* Reject – same danger style as Delete on listings */}
+  <button
+    onClick={() => onReject(r.id)}
+    disabled={isPending || isFinal}
+    className="rr-btn rr-btn-danger"
+  >
+    Reject
+  </button>
+</div>
+
+<a
+  href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}/inspection`}
+  className="rr-btn rr-btn-secondary"
+>
+  Record / view condition
+</a>
+
+      </div>
+    </div>
+
+    {/* Finalize hourly operator if needed (unchanged logic) */}
+    {showFinalize ? (
+      <div className="mt-4 border-t pt-3">
+        <FinalizeHourlyService
+          rentalId={r.id}
+          defaultHours={Math.max(
+            1,
+            Number(r.hourly_estimated_hours ?? r.operator_hours ?? 1)
+          )}
+        />
+      </div>
+    ) : null}
+  </div>
+);
+
       })}
     </div>
   );
