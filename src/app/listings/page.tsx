@@ -14,10 +14,33 @@ type ListingRow = {
   state: string | null;
   price_per_day: number;
   created_at: string;
+
   category: string | null;
   license_required: boolean | null;
   license_type: string | null;
+
+  security_deposit: number | null;
+
+  operator_enabled: boolean | null;
+  operator_rate: number | null;
+  operator_rate_unit: "day" | "hour" | string | null;
+  operator_max_hours: number | null;
+
+  driver_enabled: boolean | null;
+  driver_daily_enabled: boolean | null;
+  driver_hourly_enabled: boolean | null;
+  driver_day_rate: number | null;
+  driver_hour_rate: number | null;
+  driver_max_hours: number | null;
+
+  driver_labor_enabled: boolean | null;
+  driver_labor_daily_enabled: boolean | null;
+  driver_labor_hourly_enabled: boolean | null;
+  driver_labor_day_rate: number | null;
+  driver_labor_hour_rate: number | null;
+  driver_labor_max_hours: number | null;
 };
+
 
 type PhotoRow = {
   id: string;
@@ -63,8 +86,37 @@ export default async function ListingsPage({
   let query = supabase
     .from("listings")
     .select(
-      "id, title, description, city, state, price_per_day, created_at, category, license_required, license_type"
-    )
+  `
+    id,
+    title,
+    description,
+    city,
+    state,
+    price_per_day,
+    created_at,
+    category,
+    license_required,
+    license_type,
+    security_deposit,
+    operator_enabled,
+    operator_rate,
+    operator_rate_unit,
+    operator_max_hours,
+    driver_enabled,
+    driver_daily_enabled,
+    driver_hourly_enabled,
+    driver_day_rate,
+    driver_hour_rate,
+    driver_max_hours,
+    driver_labor_enabled,
+    driver_labor_daily_enabled,
+    driver_labor_hourly_enabled,
+    driver_labor_day_rate,
+    driver_labor_hour_rate,
+    driver_labor_max_hours
+  `
+)
+
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
@@ -124,64 +176,48 @@ export default async function ListingsPage({
       <ServerHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-  <div>
-    <PageHeader
-      title="Browse Listings"
-      subtitle={selectedIsValid ? `Showing: ${catLabel(selected)}` : "Showing: All categories"}
-    />
-  </div>
-
-          {/* Small server-side search box (keeps URL params). Sliders + availability UI stays in ListingsClient */}
-          <form action="/listings" method="get" className="flex flex-wrap items-center gap-2">
-            {selectedIsValid ? <input type="hidden" name="category" value={selected} /> : null}
-
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Search by name (zip next)..."
-              className="w-full max-w-md rounded-lg border px-3 py-2"
-            />
-
-            <button type="submit" className="rr-btn rr-btn-primary">
-  Search
-</button>
-
-            {q ? (
-              <a
-  href={selectedIsValid ? `/listings?category=${selected}` : "/listings"}
-  className="rr-btn rr-btn-secondary"
->
-  Clear
-</a>
-
-            ) : null}
-          </form>
+                <div className="flex items-end justify-between gap-4 flex-wrap">
+          <PageHeader
+            title="Browse Listings"
+            subtitle={
+              selectedIsValid
+                ? `Showing: ${catLabel(selected)}`
+                : "Showing: All categories"
+            }
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/listings"
-            className={`rr-pill ${!selectedIsValid ? "rr-pill-active" : ""}`}
+  {/* ALL button */}
+  <Link
+    href="/listings"
+    className={
+      !selectedIsValid
+        ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
+        : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
+    }
+  >
+    All
+  </Link>
 
-          >
-            All
-          </Link>
-
-          {CATEGORIES.map((c) => {
-            const active = selected === c.key;
-            return (
-              <Link
-                key={c.key}
-                href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`rr-pill ${active ? "rr-pill-active" : ""}`}
-
-              >
-                {c.label}
-              </Link>
-            );
-          })}
-        </div>
+  {/* Category buttons */}
+  {CATEGORIES.map((c) => {
+    const active = selected === c.key;
+    return (
+      <Link
+        key={c.key}
+        href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+        className={
+          active
+            ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
+            : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
+        }
+      >
+        {c.label}
+      </Link>
+    );
+  })}
+</div>
 
         <div className="mt-8">
           <ListingsClient listings={listingListForClient as any} />

@@ -14,7 +14,33 @@ type Listing = {
   state: string | null;
   price_per_day: number;
   created_at: string;
+
+  category?: string | null;
+  license_required?: boolean | null;
+  license_type?: string | null;
+
+  security_deposit?: number | null;
+
+  operator_enabled?: boolean | null;
+  operator_rate?: number | null;
+  operator_rate_unit?: "day" | "hour" | string | null;
+  operator_max_hours?: number | null;
+
+  driver_enabled?: boolean | null;
+  driver_daily_enabled?: boolean | null;
+  driver_hourly_enabled?: boolean | null;
+  driver_day_rate?: number | null;
+  driver_hour_rate?: number | null;
+  driver_max_hours?: number | null;
+
+  driver_labor_enabled?: boolean | null;
+  driver_labor_daily_enabled?: boolean | null;
+  driver_labor_hourly_enabled?: boolean | null;
+  driver_labor_day_rate?: number | null;
+  driver_labor_hour_rate?: number | null;
+  driver_labor_max_hours?: number | null;
 };
+
 
 type SortMode = "newest" | "price_asc" | "price_desc";
 
@@ -36,6 +62,16 @@ type BlockedRange = {
   start: string; // YYYY-MM-DD inclusive
   end_exclusive: string; // YYYY-MM-DD exclusive
 };
+
+function money(v: any) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "$0";
+  return `$${n.toFixed(0)}`;
+}
+
+function rateLabel(unit: string | null | undefined) {
+  return unit === "hour" ? "/hr" : "/day";
+}
 
 function parseISODateUTC(value: string) {
   const [y, m, d] = value.split("-").map(Number);
@@ -66,20 +102,6 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
   const [sort, setSort] = useState<SortMode>("newest");
   const supabase = createClient();
 
-  type ListingPhoto = {
-    id: string;
-    listing_id: string;
-    path: string;
-    sort_order: number | null;
-    created_at?: string;
-  };
-
-  function storageUrl(path: string) {
-    const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
-    return data.publicUrl;
-  }
-
-  const [thumbById, setThumbById] = useState<Record<string, string>>({});
 
   // ---------- Price sliders ----------
   const priceBounds = useMemo(() => {
@@ -132,17 +154,34 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
     let out = listings;
 
+    // Single search bar: title, city, state, description, ZIP
     if (query) {
       out = out.filter((l) => {
-        const haystack = [l.title, l.city ?? "", l.state ?? "", l.description ?? ""]
+        const haystack = [
+          l.title,
+          l.city ?? "",
+          l.state ?? "",
+          l.description ?? "",
+          (l as any).zip ?? "",
+        ]
           .join(" ")
           .toLowerCase();
+
         return haystack.includes(query);
       });
     }
 
-    if (cityQ) out = out.filter((l) => (l.city ?? "").toLowerCase().includes(cityQ));
-    if (stateQ) out = out.filter((l) => (l.state ?? "").toLowerCase().includes(stateQ));
+    if (cityQ) {
+      out = out.filter((l) =>
+        (l.city ?? "").toLowerCase().includes(cityQ),
+      );
+    }
+
+    if (stateQ) {
+      out = out.filter((l) =>
+        (l.state ?? "").toLowerCase().includes(stateQ),
+      );
+    }
 
     out = out.filter((l) => {
       const p = Number(l.price_per_day);
@@ -154,8 +193,12 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     }
 
     const sorted = [...out].sort((a, b) => {
-      if (sort === "price_asc") return Number(a.price_per_day) - Number(b.price_per_day);
-      if (sort === "price_desc") return Number(b.price_per_day) - Number(a.price_per_day);
+      if (sort === "price_asc") {
+        return Number(a.price_per_day) - Number(b.price_per_day);
+      }
+      if (sort === "price_desc") {
+        return Number(b.price_per_day) - Number(a.price_per_day);
+      }
 
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
@@ -175,6 +218,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     checked,
     availableIds,
   ]);
+
 
   async function checkAvailabilityWithRange(fromLocal: Date, toLocal: Date) {
     setAvailError(null);
@@ -271,59 +315,45 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
   return (
     <div className="mt-8 grid gap-4">
       <div className="rr-card p-6 grid gap-4">
-        {/* Search + location */}
+                              {/* Search + location */}
+      <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <label className="grid gap-2">
+          <span className="text-sm text-slate-600">Search by keyword or ZIP</span>
+          
+      <input
+  className="border rounded-lg p-2"
+  placeholder='Try "ford", "Orlando", "32817"...'
+  value={q}
+  onChange={(e) => setQ(e.target.value)}
+/>
+
+
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-sm text-slate-600">City (optional)</span>
+          <input
+            className="border rounded-lg p-2"
+            placeholder="Orlando"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-sm text-slate-600">State (optional)</span>
+          <input
+            className="border rounded-lg p-2"
+            placeholder="FL"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+          />
+        </label>
+      </div>
+
+
+                {/* Price slider + Sort + Clear */}
         <div className="grid gap-3 md:grid-cols-3">
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">Search</span>
-            <input
-              className="w-full rr-input"
-              placeholder='Try "ford", "Orlando", "FL"...'
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">City (optional)</span>
-            <input
-              className="border rounded-lg p-2"
-              placeholder="Orlando"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">State (optional)</span>
-            <input
-              className="border rounded-lg p-2"
-              placeholder="FL"
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-            />
-          </label>
-        </div>
-
-        {/* Price sliders + Sort + Clear */}
-        <div className="grid gap-3 md:grid-cols-4">
-          <label className="grid gap-2">
-            <span className="text-sm text-slate-600">
-              Min $/day: <span className="font-medium">{minPrice}</span>
-            </span>
-            <input
-              type="range"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              step={1}
-              value={minPrice}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setMinPrice(v);
-                if (v > maxPrice) setMaxPrice(v);
-              }}
-            />
-          </label>
-
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">
               Max $/day: <span className="font-medium">{maxPrice}</span>
@@ -381,8 +411,9 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           </div>
         </div>
 
-        {/* Availability */}
-        <div className="rr-card rr-card-sm p-4 grid gap-3">
+
+                {/* Availability */}
+        <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -447,6 +478,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           {availError && <p className="text-sm text-red-600">{availError}</p>}
         </div>
 
+
         <div className="text-sm text-slate-500">
           Showing <span className="font-medium">{filteredSorted.length}</span> of{" "}
           <span className="font-medium">{listings.length}</span>
@@ -457,73 +489,152 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
         <p className="text-slate-600">No matching listings.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredSorted.map((l) => {
-  const st = checked ? availabilityStatus[l.id] : null;
-  const thumb = (l as any).thumb_url || "";
+              {filteredSorted.map((l) => {
+      const st = checked ? availabilityStatus[l.id] : null;
+      const thumb = (l as any).thumb_url || "";
 
-  return (
-    <div
-  key={l.id}
-  className="rr-card p-4 grid gap-3"
->  
-      {/* Thumbnail */}
-      <a
-  href={`/listings/${l.id}`}
-  className="block w-24 h-24 rounded-lg border bg-slate-50 overflow-hidden flex-shrink-0"
->
-  {thumb ? (
-    <img
-      src={thumb}
-      alt="Listing thumbnail"
-      className="h-full w-full object-contain"
-    />
-  ) : (
-    <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-      No photo
-    </div>
-  )}
-</a>
+      // Driver summaries (same idea as My Listings)
+      const driverSummary = l.driver_enabled
+        ? [
+            l.driver_daily_enabled
+              ? `Daily ${money(l.driver_day_rate)}`
+              : null,
+            l.driver_hourly_enabled
+              ? `Hourly ${money(l.driver_hour_rate)} (cap ${
+                  l.driver_max_hours ?? 24
+                })`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" • ")
+        : "Not offered";
 
-      {/* Info */}
-      <div className="grid gap-1">
-        <a className="font-semibold text-lg underline" href={`/listings/${l.id}`}>
-          {l.title}
-        </a>
+      const driverLaborSummary = l.driver_labor_enabled
+        ? [
+            l.driver_labor_daily_enabled
+              ? `Daily ${money(l.driver_labor_day_rate)}`
+              : null,
+            l.driver_labor_hourly_enabled
+              ? `Hourly ${money(l.driver_labor_hour_rate)} (cap ${
+                  l.driver_labor_max_hours ?? 24
+                })`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" • ")
+        : "Not offered";
 
-        <div className="text-sm text-slate-600">
-          ${Number(l.price_per_day).toFixed(2)}/day
-          {l.city || l.state ? ` • ${[l.city, l.state].filter(Boolean).join(", ")}` : ""}
+      return (
+        <div
+          key={l.id}
+          className="rr-card overflow-hidden flex flex-col p-0"
+        >
+          {/* BIG thumbnail across top */}
+          <a
+            href={`/listings/${l.id}`}
+            className="block w-full aspect-[4/3] bg-slate-50 border-b border-slate-200 overflow-hidden"
+          >
+            {thumb ? (
+              <img
+                src={thumb}
+                alt="Listing thumbnail"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                No photo
+              </div>
+            )}
+          </a>
 
-          {st === "available" && (
-            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
-              Available
-            </span>
-          )}
+          {/* Details below, styled like My Listings */}
+          <div className="p-4 grid gap-1">
+            <a
+              href={`/listings/${l.id}`}
+              className="text-lg font-extrabold text-slate-900 hover:underline"
+            >
+              {l.title}
+            </a>
 
-          {st === "booked" && (
-            <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
-              Booked
-            </span>
-          )}
-        </div>
+            {l.description && (
+              <div className="text-sm text-slate-700">
+                {l.description}
+              </div>
+            )}
 
-        {l.category && (
-          <div className="text-xs text-slate-500">Category: {catLabel(l.category)}</div>
-        )}
+            {l.category && (
+              <div className="text-sm text-slate-600">
+                <span className="font-semibold">Category:</span>{" "}
+                {catLabel(l.category)}
+              </div>
+            )}
 
-        {l.license_required ? (
-          <div className="text-xs text-amber-700">
-            License required{l.license_type ? `: ${l.license_type}` : ""}
+            {(l.city || l.state) && (
+              <div className="text-sm text-slate-600">
+                <span className="font-semibold">Location:</span>{" "}
+                {[l.city, l.state].filter(Boolean).join(", ")}
+              </div>
+            )}
+
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">
+                Price: {money(l.price_per_day)} /day
+              </span>{" "}
+              <span className="text-slate-500">
+                • Deposit: {money(l.security_deposit)}
+              </span>
+              {st === "available" && (
+                <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
+                  Available
+                </span>
+              )}
+              {st === "booked" && (
+                <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
+                  Booked
+                </span>
+              )}
+            </div>
+
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">Operator:</span>{" "}
+              {l.operator_enabled
+                ? `Available (${money(l.operator_rate)}${rateLabel(
+                    l.operator_rate_unit ?? "day",
+                  )})`
+                : "Not included"}
+              {l.operator_enabled &&
+              (l.operator_rate_unit ?? "day") === "hour" ? (
+                <span>
+                  {" "}
+                  • Hour cap:{" "}
+                  <span className="font-semibold">
+                    {l.operator_max_hours ?? 24}
+                  </span>
+                </span>
+              ) : null}
+            </div>
+
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">Driver:</span>{" "}
+              {driverSummary || "Not offered"}
+            </div>
+
+            <div className="text-sm text-slate-700">
+              <span className="font-semibold">Driver + Labor:</span>{" "}
+              {driverLaborSummary || "Not offered"}
+            </div>
+
+            {l.license_required && (
+              <div className="mt-1 text-xs text-amber-700">
+                License required
+                {l.license_type ? `: ${l.license_type}` : ""}
+              </div>
+            )}
           </div>
-        ) : null}
+        </div>
+      );
+    })}
 
-        {l.description && (
-          <div className="mt-1 text-sm text-slate-700">{l.description}</div>
-        )}
-      </div>
-    </div>
-  );
-})}
 
         </div>
       )}
