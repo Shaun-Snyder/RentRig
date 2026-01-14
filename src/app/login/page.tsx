@@ -76,21 +76,47 @@ export default function AuthPage() {
   const cta = mode === "signin" ? "Sign in" : "Sign up";
 
   return (
-    <div className="min-h-screen bg-[#f97316] flex flex-col items-center justify-center px-4">
-      {/* Brand header */}
-      <div className="mb-6 text-center">
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
+      {/* Full-screen background image */}
+      <div
+        className="absolute inset-0 bg-center bg-cover"
+        style={{ backgroundImage: "url('/background.PNG')" }}
+      />
+      {/* Dark overlay so the form is readable */}
+      <div className="absolute inset-0 bg-black/50" />
+
+      {/* Content layer */}
+      <div className="relative z-10 flex flex-col items-center w-full">
+
+            {/* Brand header */}
+      <div className="mb-8 text-center">
         <div
           className="
-            text-5xl font-extrabold text-black
-            [text-shadow:_3px_3px_0_#fff,_-3px_3px_0_#fff,_3px_-3px_0_#fff,_-3px_-3px_0_#fff]
+            inline-block px-6 py-3
+            border-4 border-black/90
+            bg-gradient-to-b from-slate-100 to-slate-300
+            shadow-[0_10px_0_#000]
           "
         >
-          RentRig
+          <div
+  className="
+    text-6xl md:text-7xl font-extrabold tracking-tight uppercase text-black
+    [text-shadow:_4px_4px_0_#9ca3af,_-4px_4px_0_#9ca3af,_4px_-4px_0_#9ca3af,_-4px_-4px_0_#9ca3af]
+  "
+>
+  RentRig
+</div>
+
+          <div className="mt-1 text-[10px] md:text-xs font-bold tracking-[0.32em] text-slate-800 uppercase">
+  HEAVY EQUIPMENT RENTALS
+</div>
         </div>
-        <p className="mt-2 text-sm text-black/80">
-          Heavy equipment & rig rentals made simple.
+
+        <p className="mt-4 text-xs md:text-sm text-slate-100">
+          Heavy equipment &amp; rig rentals made simple.
         </p>
       </div>
+
 
       {/* Auth card */}
       <div className="w-full max-w-md rounded-2xl border border-black bg-gradient-to-b from-white to-slate-100 shadow-[0_8px_0_#000] p-6 rr-card">
@@ -188,12 +214,13 @@ export default function AuthPage() {
           )}
         </form>
 
-        <p className="mt-4 text-[11px] text-slate-500">
+                <p className="mt-4 text-[11px] text-slate-500">
           By continuing, you agree that all rentals are subject to your own rental
           agreement and local regulations. RentRig is a marketplace-style tool;
           you control your listings and contracts.
         </p>
-      </div>
+      </div> {/* Auth card */}
+      </div> {/* end content layer */}
     </div>
   );
 }
