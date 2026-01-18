@@ -113,16 +113,18 @@ export default function Header({
           </div>
           {/* GLOBAL NAV ROW: visible on every page that uses ServerHeader */}
           <div className="mt-2 flex flex-wrap gap-2 text-xs md:text-sm">
-            <NavLink href="/dashboard/listings" label="My Listings" />
-            <NavLink href="/dashboard/listings/new" label="Create Listing" />
-            <NavLink href="/dashboard/rentals" label="My Rentals" />
-            <NavLink
-              href="/dashboard/owner-rentals"
-              label="Owner Requests"
-              badge={pendingCount}
-            />
-            <NavLink href="/listings" label="Browse Listings" />
-          </div>
+  <NavLink href="/dashboard/listings" label="My Listings" />
+  <NavLink href="/dashboard/listings/new" label="Create Listing" />
+  <NavLink href="/dashboard/rentals" label="My Rentals" />
+  <NavLink href="/dashboard/messages" label="Messages" />
+  <NavLink
+    href="/dashboard/owner-rentals"
+    label="Owner Requests"
+    badge={pendingCount}
+  />
+  <NavLink href="/listings" label="Browse Listings" />
+</div>
+
 
         </div>
       </div>
