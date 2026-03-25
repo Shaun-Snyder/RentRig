@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type ThreadRental = {
@@ -9,8 +9,20 @@ type ThreadRental = {
   start_date?: string | null;
   end_date?: string | null;
   status?: string | null;
-  listing?: { id: string; title: string; owner_id?: string | null; thumb_url?: string | null } | null;
-  renter?: { id: string; email?: string | null } | null;
+  listing?: {
+  id: string;
+  title: string;
+  owner_id?: string | null;
+  owner_name?: string | null;
+  owner_avatar_url?: string | null;
+  thumb_url?: string | null;
+} | null;
+renter?: {
+  id: string;
+  email?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
+} | null;
 };
 
 type MsgRow = {
@@ -34,7 +46,7 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
   const [msgs, setMsgs] = useState<MsgRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendText, setSendText] = useState("");
-
+const bottomRef = useRef<HTMLDivElement | null>(null);
   const title = rental?.listing?.title ?? "Thread";
   const thumb = rental?.listing?.thumb_url ?? "";
 
@@ -47,28 +59,81 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
   }, []);
 
   async function loadMessages() {
-    if (!rental?.id) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("rental_messages")
-        .select("id, rental_id, sender_id, body, created_at")
-        .eq("rental_id", rental.id)
-        .order("created_at", { ascending: true });
+  if (!rental?.id) return;
+  setLoading(true);
 
-      if (error) throw error;
-      setMsgs((data ?? []) as MsgRow[]);
-    } catch (e: any) {
-      alert(e?.message ?? "Failed to load messages.");
-    } finally {
-      setLoading(false);
+  try {
+    // 1. Get thread messages
+    const { data: msgsData, error: msgsError } = await supabase
+      .from("rental_messages")
+      .select("id, rental_id, sender_id, body, created_at")
+      .eq("rental_id", rental.id)
+      .order("created_at", { ascending: true });
+
+    if (msgsError) throw msgsError;
+
+    // 2. Get original rental message
+    const { data: rentalData, error: rentalError } = await supabase
+      .from("rentals")
+      .select("id, message, renter_id, created_at")
+      .eq("id", rental.id)
+      .single();
+
+    if (rentalError) throw rentalError;
+
+    let combined: MsgRow[] = (msgsData ?? []) as MsgRow[];
+
+    // 3. If original message exists, prepend it
+    if (rentalData?.message) {
+      const firstMsg: MsgRow = {
+        id: `rental-${rentalData.id}`,
+        rental_id: rentalData.id,
+        sender_id: rentalData.renter_id,
+        body: rentalData.message,
+        created_at: rentalData.created_at,
+      };
+
+      combined = [firstMsg, ...combined];
     }
-  }
 
-  useEffect(() => {
-    loadMessages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rental?.id]);
+        setMsgs(combined);
+    if (me) {
+      await markThreadRead();
+    }
+  } catch (e: any) {
+    alert(e?.message ?? "Failed to load messages.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+ useEffect(() => {
+  if (!rental?.id || !me) return;
+  loadMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [rental?.id, me]);
+
+useEffect(() => {
+  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [msgs]);
+async function markThreadRead() {
+  if (!rental?.id || !me) return;
+
+  const { error } = await supabase.from("rental_message_reads").upsert(
+    {
+      rental_id: rental.id,
+      user_id: me,
+      last_read_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "rental_id,user_id",
+    }
+  );
+
+  if (error) {
+    console.error("Failed to mark thread read:", error.message);
+  }
+}
 
   async function sendMessage() {
     const body = sendText.trim();
@@ -95,7 +160,12 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
       }
     });
   }
-
+const isOwner = rental?.listing?.owner_id === me;
+const isRenter = rental?.renter?.id === me;
+const ownerName = rental?.listing?.owner_name?.trim() || "Owner";
+const renterName = rental?.renter?.full_name?.trim() || "Renter";
+const ownerAvatar = rental?.listing?.owner_avatar_url;
+const renterAvatar = rental?.renter?.avatar_url;
   const headerLine = useMemo(() => {
     const d = `${fmtDate(rental.start_date)} → ${fmtDate(rental.end_date)}`;
     return rental.status ? `${d} • ${rental.status}` : d;
@@ -147,16 +217,35 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
             <div className="text-sm text-slate-500">No messages yet.</div>
           ) : (
             <div className="grid gap-2">
-              {msgs.map((m) => {
-                const mine = me && m.sender_id === me;
-                return (
+              {msgs.map((m, i) => {
+  const mine = me && m.sender_id === me;
+  const prev = i > 0 ? msgs[i - 1] : null;
+  const showSenderMeta = !prev || prev.sender_id !== m.sender_id;
+
+  return (
                   <div key={m.id} className={mine ? "flex justify-end" : "flex justify-start"}>
                     <div className="flex items-end gap-2 max-w-[85%]">
-                      {!mine ? (
-                        <div className="h-7 w-7 rounded-full bg-slate-200 border flex items-center justify-center text-[10px] text-slate-700">
-                          U
-                        </div>
-                      ) : null}
+                     {!mine && showSenderMeta ? (
+  <div className="flex items-center gap-1">
+    {m.sender_id === rental.renter?.id && renterAvatar ? (
+      <img
+        src={renterAvatar}
+        className="h-7 w-7 rounded-full object-cover border"
+      />
+    ) : m.sender_id !== rental.renter?.id && ownerAvatar ? (
+      <img
+        src={ownerAvatar}
+        className="h-7 w-7 rounded-full object-cover border"
+      />
+    ) : null}
+
+    <div className="text-[10px] text-slate-600 whitespace-nowrap">
+      {m.sender_id === rental.renter?.id ? renterName : ownerName}
+    </div>
+  </div>
+) : !mine ? (
+  <div className="w-2" />
+) : null}
 
                       <div
                         className={[
@@ -172,15 +261,27 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
                         </div>
                       </div>
 
-                      {mine ? (
-                        <div className="h-7 w-7 rounded-full bg-slate-900 border border-slate-900 flex items-center justify-center text-[10px] text-white">
-                          Me
-                        </div>
-                      ) : null}
+                      {mine && showSenderMeta ? (
+  <div className="flex items-center gap-1">
+    {(isOwner && ownerAvatar) || (!isOwner && renterAvatar) ? (
+      <img
+        src={isOwner ? ownerAvatar! : renterAvatar!}
+        className="h-7 w-7 rounded-full object-cover border"
+      />
+    ) : null}
+
+    <div className="text-[10px] text-slate-500 whitespace-nowrap">
+      {isOwner ? ownerName : "You"}
+    </div>
+  </div>
+) : mine ? (
+  <div className="w-2" />
+) : null}
                     </div>
                   </div>
                 );
               })}
+             <div ref={bottomRef} />
             </div>
           )}
         </div>

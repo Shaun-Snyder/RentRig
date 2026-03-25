@@ -68,6 +68,10 @@ export async function GET(req: Request) {
         delivery_selected,
         delivery_fee,
 
+        owner_discount_amount,
+        owner_discount_note,
+
+        
         operator_selected,
         operator_rate,
         operator_rate_unit,
@@ -158,10 +162,17 @@ export async function GET(req: Request) {
 
     const operatorCharge = operatorSelected ? operatorTotal : 0;
 
-    // Service fee applied to (rental subtotal + add-ons)
-    const preFee = rentalSubtotal + deliveryCharge + operatorCharge;
+        // Service fee applied to (rental subtotal + add-ons - discount)
+    const preDiscount = rentalSubtotal + deliveryCharge + operatorCharge;
+
+    const rawDiscount = Math.max(0, Number(rental.owner_discount_amount ?? 0) || 0);
+    const discount = Math.min(rawDiscount, preDiscount); // never exceed charges
+
+    const preFee = preDiscount - discount;
+
     const serviceFee = Math.round(preFee * 0.1 * 100) / 100;
     const total = preFee + serviceFee;
+
 
     const deposit = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
 
@@ -246,6 +257,12 @@ export async function GET(req: Request) {
     draw(`Daily rate: ${money(pricePerDay)}`, 11);
     draw(`Days: ${days}`, 11);
     draw(`Rental subtotal: ${money(rentalSubtotal)}`, 11);
+
+    if (discount > 0) {
+      const note = String(rental.owner_discount_note ?? "").trim();
+      draw(`Discount: -${money(discount)}${note ? ` (${note})` : ""}`, 11);
+    }
+
 
     if (operatorSelected && operatorCharge > 0) {
       if (operatorRateUnit === "day") {

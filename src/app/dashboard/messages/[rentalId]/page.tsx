@@ -6,7 +6,11 @@ import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import MessageThreadClient from "@/components/MessageThreadClient";
-
+function photoUrl(path: string) {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return "";
+  return `${base}/storage/v1/object/public/listing-photos/${path}`;
+}
 export default async function MessageThreadPage({
   params,
 }: {
@@ -27,8 +31,8 @@ export default async function MessageThreadPage({
   const { data: rental, error } = await supabase
     .from("rentals")
     .select(
-      "id, listing_id, renter_id, start_date, end_date, status, created_at, listing:listings(id,title,owner_id)"
-    )
+  "id, listing_id, renter_id, start_date, end_date, status, created_at, listing:listings(id,title,owner_id), renter:profiles!rentals_renter_id_fkey(id,full_name,avatar_url)"
+)
     .eq("id", rentalId)
     .single();
 
@@ -58,13 +62,50 @@ export default async function MessageThreadPage({
     );
   }
 
-  // Extra safety check: must be renter OR listing owner
-  const isRenter = rental.renter_id === user.id;
-  const isOwner = (rental as any)?.listing?.owner_id === user.id;
+    // Extra safety check: must be renter OR listing owner
+  const listing = Array.isArray((rental as any).listing)
+    ? (rental as any).listing[0]
+    : (rental as any).listing;
 
-  if (!isRenter && !isOwner) {
+  const isRenter = rental.renter_id === user.id;
+  const isOwner = listing?.owner_id === user.id;
+
+    if (!isRenter && !isOwner) {
     redirect("/dashboard/messages");
   }
+  const { data: ownerProfile } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("id", listing?.owner_id)
+    .single();
+      const { data: firstPhoto } = await supabase
+    .from("listing_photos")
+    .select("path")
+    .eq("listing_id", listing?.id)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+      const renterProfile = Array.isArray((rental as any).renter)
+    ? (rental as any).renter[0]
+    : (rental as any).renter;
+
+  const rentalWithNames = {
+    ...(rental as any),
+    listing: {
+      id: listing?.id ?? "",
+      title: listing?.title ?? "Listing",
+      owner_id: listing?.owner_id ?? null,
+      owner_name: ownerProfile?.full_name ?? "Owner",
+      owner_avatar_url: ownerProfile?.avatar_url ?? null,
+      thumb_url: firstPhoto?.path ? photoUrl(firstPhoto.path) : "",
+    },
+    renter: {
+      ...(renterProfile ?? {}),
+      avatar_url: renterProfile?.avatar_url ?? null,
+    },
+  };
 
   return (
     <div>
@@ -73,11 +114,11 @@ export default async function MessageThreadPage({
       <div style={{ padding: 24 }}>
         <PageHeader
           title="Message Thread"
-          subtitle={(rental as any)?.listing?.title ?? "Rental"}
+                    subtitle={listing?.title ?? "Rental"}
         />
 
         <div className="mt-6">
-          <MessageThreadClient rental={rental as any} />
+          <MessageThreadClient rental={rentalWithNames as any} />
         </div>
       </div>
     </div>

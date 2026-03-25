@@ -74,10 +74,17 @@ export default function ThreadsListClient({
 
                   {/* Text */}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-slate-900 truncate">
-                      {r.listing?.title ?? "Listing"}
-                    </div>
+                    <div className="text-sm font-semibold text-slate-900 truncate flex items-center gap-2">
+  <span className="truncate">
+    {r.listing?.title ?? "Listing"}
+  </span>
 
+  {(r as any).is_unread ? (
+    <span className="text-[10px] px-2 py-0.5 rounded bg-orange-500 text-white">
+      New
+    </span>
+  ) : null}
+</div>
                     <div className="mt-0.5 text-xs text-slate-600">
                       {fmtDate(r.start_date)} → {fmtDate(r.end_date)}
                       {r.status ? ` • ${r.status}` : ""}
