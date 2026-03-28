@@ -27,7 +27,7 @@ export default async function DashboardListingsPage() {
   if (error) {
     return (
       <div style={{ padding: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>My Listings</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 600 }}>MY Listings</h1>
         <p style={{ marginTop: 12, color: "crimson" }}>Load failed: {error.message}</p>
       </div>
     );
@@ -40,7 +40,7 @@ export default async function DashboardListingsPage() {
     <div style={{ padding: 24 }}>
       <PageHeader
   title="My Listings"
-  subtitle="Create, publish, and manage your equipment/rig listings."
+  subtitle="View and manage your published listings."
 />
 
       <MyListingsClient listings={(listings ?? []) as any} showCreate={false} />

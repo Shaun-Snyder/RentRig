@@ -12,6 +12,7 @@ type Listing = {
   description: string | null;
   city: string | null;
   state: string | null;
+  zip?: string | null;
   price_per_day: number;
   created_at: string;
 
@@ -69,6 +70,18 @@ function money(v: any) {
   return `$${n.toFixed(0)}`;
 }
 
+function zipDistance(a?: string | null, b?: string | null) {
+  if (!a || !b) return Number.MAX_SAFE_INTEGER;
+
+  const na = Number(a);
+  const nb = Number(b);
+
+  if (!Number.isFinite(na) || !Number.isFinite(nb)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return Math.abs(na - nb);
+}
 function rateLabel(unit: string | null | undefined) {
   return unit === "hour" ? "/hr" : "/day";
 }
@@ -193,17 +206,33 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     }
 
     const sorted = [...out].sort((a, b) => {
-      if (sort === "price_asc") {
-        return Number(a.price_per_day) - Number(b.price_per_day);
-      }
-      if (sort === "price_desc") {
-        return Number(b.price_per_day) - Number(a.price_per_day);
-      }
+  if (sort === "price_asc") {
+    return Number(a.price_per_day) - Number(b.price_per_day);
+  }
 
-      const ta = new Date(a.created_at).getTime();
-      const tb = new Date(b.created_at).getTime();
-      return tb - ta;
-    });
+  if (sort === "price_desc") {
+    return Number(b.price_per_day) - Number(a.price_per_day);
+  }
+
+  if (sort === "distance") {
+    // extract ZIP from search input
+    const zipMatch = q.match(/\b\d{5}\b/);
+    const userZip = zipMatch ? zipMatch[0] : null;
+
+    if (userZip) {
+      const da = zipDistance(userZip, a.zip);
+      const db = zipDistance(userZip, b.zip);
+      return da - db;
+    }
+
+    // fallback if no ZIP entered
+    return 0;
+  }
+
+  const ta = new Date(a.created_at).getTime();
+  const tb = new Date(b.created_at).getTime();
+  return tb - ta;
+});
 
     return sorted;
   }, [
@@ -382,6 +411,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               <option value="newest">Newest</option>
               <option value="price_asc">Price: low → high</option>
               <option value="price_desc">Price: high → low</option>
+              <option value="distance">Distance</option>
             </select>
           </label>
 

@@ -51,6 +51,7 @@ export async function createListing(arg1: any, arg2?: any) {
 
   const city = toStr(fd.get("city")) || null;
   const state = toStr(fd.get("state")) || null;
+  const zip = toStr(fd.get("zip")) || null;
 
   const cancellation_policy = toStr(fd.get("cancellation_policy")) || null;
 
@@ -102,6 +103,7 @@ export async function createListing(arg1: any, arg2?: any) {
 
     city,
     state,
+    zip,
 
     cancellation_policy,
 
@@ -169,6 +171,7 @@ export async function updateListing(arg1: any, arg2?: any) {
 
   const city = toStr(fd.get("city")) || null;
   const state = toStr(fd.get("state")) || null;
+  const zip = toStr(fd.get("zip")) || null;
 
   const cancellation_policy = toStr(fd.get("cancellation_policy")) || null;
 
@@ -230,6 +233,7 @@ const is_published = has_is_published
 
       city,
       state,
+      zip,
 
       cancellation_policy,
 

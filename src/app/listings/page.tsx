@@ -12,6 +12,7 @@ type ListingRow = {
   description: string | null;
   city: string | null;
   state: string | null;
+  zip: string | null;
   price_per_day: number;
   created_at: string;
 
@@ -92,6 +93,7 @@ export default async function ListingsPage({
     description,
     city,
     state,
+    zip,
     price_per_day,
     created_at,
     category,
@@ -125,9 +127,10 @@ export default async function ListingsPage({
   }
 
   if (q) {
-    // Keep it simple for now: title match. (zip comes next step)
-    query = query.ilike("title", `%${q}%`);
-  }
+  query = query.or(
+    `title.ilike.%${q}%,city.ilike.%${q}%,state.ilike.%${q}%,zip.ilike.%${q}%`
+  );
+}
 
   const { data: listings, error } = await query;
 

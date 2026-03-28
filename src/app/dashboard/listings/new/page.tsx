@@ -50,7 +50,7 @@ export default async function DashboardNewListingPage() {
       <div style={{ padding: 24 }}>
         <PageHeader
   title="Create Listing"
-  subtitle="Create a new listing, then publish when ready. Drafts only show here."
+  subtitle="Create and manage your draft listings before publishing."
 />
         <MyListingsClient listings={(listings ?? []) as any} showCreate={true} />
       </div>

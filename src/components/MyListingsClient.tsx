@@ -98,9 +98,13 @@ export default function MyListingsClient({
   const router = useRouter();
   const supabase = createClient();
 
-  const [zip, setZip] = useState("");
-  const [msg, setMsg] = useState("");
-  const [isPending, startTransition] = useTransition();
+ const [zip, setZip] = useState("");
+const [createFiles, setCreateFiles] = useState<FileList | null>(null);
+const [createPhotoInputKey, setCreatePhotoInputKey] = useState(0);
+const [createFormKey, setCreateFormKey] = useState(0);
+const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
+const [msg, setMsg] = useState("");
+const [isPending, startTransition] = useTransition();
 
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -419,6 +423,7 @@ export default function MyListingsClient({
 
     fd.set("city", (x.city ?? "").toString());
     fd.set("state", (x.state ?? "").toString());
+    fd.set("zip", (x.zip ?? "").toString());
 
     fd.set("price_per_day", numStr(x.price_per_day ?? 0));
     fd.set("price_per_week", numStr(x.price_per_week));
@@ -496,15 +501,32 @@ export default function MyListingsClient({
     <div className="grid gap-6">
       {/* CREATE FORM (unchanged behavior) */}
       {showCreate && (
-        <form
-          className="rounded-lg border rr-card p-4 grid gap-3"
-          action={(fd) => {
+          <form
+  key={createFormKey}
+  className="rounded-lg border rr-card p-4 grid gap-3"       
+            action={(fd) => {
             setMsg("");
             startTransition(async () => {
               try {
                 const res: any = await createListing(fd);
-                setMsg(res?.message ?? "Created.");
-                router.refresh();
+const newId = res?.listingId;
+
+if (!res?.ok) {
+  setMsg(res?.message ?? "Create failed.");
+  return;
+}
+
+if (newId && createFiles) {
+  await uploadQueuedCreatePhotos(newId, createFiles);
+  await refreshPhotos(newId);
+}
+
+setMsg(res?.message ?? "Created.");
+setZip("");
+setCreateFiles(null);
+setCreatePhotoInputKey((k) => k + 1);
+setCreateFormKey((k) => k + 1);
+router.refresh();
               } catch (e: any) {
                 setMsg(e?.message ?? "Create failed.");
               }
@@ -550,11 +572,12 @@ export default function MyListingsClient({
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">ZIP code (optional)</span>
             <input
-              className="border rounded-lg p-2"
-              placeholder="e.g. 32817"
-              value={zip}
-              onChange={(e) => setZip(e.target.value)}
-            />
+  className="border rounded-lg p-2"
+  name="zip"
+  placeholder="e.g. 32817"
+  value={zip}
+  onChange={(e) => setZip(e.target.value)}
+/>
           </label>
 
           <div className="grid gap-1">
@@ -867,7 +890,58 @@ export default function MyListingsClient({
               />
             </div>
           </div>
+<div style={{ marginTop: 16 }}>
+  <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
+    Photos
+  </label>
 
+  <input
+  key={createPhotoInputKey}
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={(e) => {
+    const files = e.target.files;
+    setCreateFiles(files);
+
+    const urls = files
+      ? Array.from(files).map((f) => URL.createObjectURL(f))
+      : [];
+
+    setCreatePreviewUrls(urls);
+  }}
+/>
+
+{createPreviewUrls.length > 0 ? (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+      gap: 12,
+      marginTop: 12,
+    }}
+  >
+    {createPreviewUrls.map((url, i) => (
+      <img
+        key={`${url}-${i}`}
+        src={url}
+        alt={`Preview ${i + 1}`}
+        style={{
+          width: "100%",
+          height: 110,
+          objectFit: "cover",
+          border: "1px solid #d1d5db",
+          borderRadius: 8,
+        }}
+      />
+    ))}
+  </div>
+) : null}
+
+<div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+    Add photos now, or upload more later from Edit Listing.
+  </div>
+</div>
           <button
             disabled={isPending}
             className="rounded-md bg-black text-white px-4 py-2 w-fit"
@@ -1156,6 +1230,29 @@ export default function MyListingsClient({
                 </div>
 
                 <div className="flex items-center gap-2">
+<button
+  type="button"
+  className="rounded-md border px-2 py-1 text-xs hover:rr-card"
+  onClick={() => {
+    if (idx === 0) return;
+    setPhotosByListing((prev) => {
+      const list = (prev[l.id] ?? [])
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+      const picked = list[idx];
+      const rest = list.filter((x) => x.id !== picked.id);
+      const reordered = [picked, ...rest].map((x, i) => ({
+        ...x,
+        sort_order: i,
+      }));
+
+      return { ...prev, [l.id]: reordered };
+    });
+  }}
+>
+  Set cover
+</button>
                   {/* move up */}
                   <button
                     type="button"
@@ -1286,24 +1383,35 @@ export default function MyListingsClient({
                     </select>
                   </div>
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="grid gap-1">
-                      <label className="text-sm">City</label>
-                      <input
-                        className="rounded-md border px-3 py-2"
-                        name="city"
-                        defaultValue={l.city ?? ""}
-                      />
-                    </div>
-                    <div className="grid gap-1">
-                      <label className="text-sm">State</label>
-                      <input
-                        className="rounded-md border px-3 py-2"
-                        name="state"
-                        defaultValue={l.state ?? ""}
-                      />
-                    </div>
-                  </div>
+                  <div className="grid gap-3 md:grid-cols-3">
+  <div className="grid gap-1">
+    <label className="text-sm">City</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="city"
+      defaultValue={l.city ?? ""}
+    />
+  </div>
+
+  <div className="grid gap-1">
+    <label className="text-sm">State</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="state"
+      defaultValue={l.state ?? ""}
+    />
+  </div>
+
+  <div className="grid gap-1">
+    <label className="text-sm">ZIP</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="zip"
+      defaultValue={String(l.zip ?? "")}
+      placeholder="e.g. 32817"
+    />
+  </div>
+</div>
 
                   <div className="grid gap-1">
                     <label className="text-sm">Description</label>
