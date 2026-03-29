@@ -411,7 +411,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               <option value="newest">Newest</option>
               <option value="price_asc">Price: low → high</option>
               <option value="price_desc">Price: high → low</option>
-              <option value="distance">Distance</option>
+              <option value="distance">Closest (ZIP)</option>
             </select>
           </label>
 
@@ -510,9 +510,15 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
 
         <div className="text-sm text-slate-500">
-          Showing <span className="font-medium">{filteredSorted.length}</span> of{" "}
-          <span className="font-medium">{listings.length}</span>
-        </div>
+  Showing <span className="font-medium">{filteredSorted.length}</span> of{" "}
+  <span className="font-medium">{listings.length}</span>
+  {q.trim() ? (
+    <>
+      {" "}
+      for <span className="font-medium">"{q.trim()}"</span>
+    </>
+  ) : null}
+</div>
       </div>
 
       {filteredSorted.length === 0 ? (
@@ -606,6 +612,17 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               </div>
             )}
 
+{l.zip && (
+  <div className="text-xs text-slate-500">
+    ZIP: {l.zip}
+  </div>
+)}
+
+{q.match(/\b\d{5}\b/) && l.zip && (
+  <div className="text-xs text-slate-500">
+    ~ Nearby (ZIP match)
+  </div>
+)}
             <div className="text-sm text-slate-700">
               <span className="font-semibold">
                 Price: {money(l.price_per_day)} /day

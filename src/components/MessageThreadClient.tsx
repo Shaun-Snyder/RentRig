@@ -286,8 +286,13 @@ const renterAvatar = rental?.renter?.avatar_url;
           )}
         </div>
 
-        <div className="border-t p-3 flex gap-2">
-          <input
+        <div className="border-t p-3 grid gap-2">
+  <div className="text-xs text-slate-500">
+    Ask the owner a question before requesting this rental.
+  </div>
+
+  <div className="flex gap-2">
+    <input
             className="rr-input flex-1"
             placeholder="Type a message…"
             value={sendText}
@@ -299,15 +304,16 @@ const renterAvatar = rental?.renter?.avatar_url;
               }
             }}
           />
-          <button
-            type="button"
-            className="rr-btn rr-btn-primary"
-            disabled={isPending || !sendText.trim()}
-            onClick={sendMessage}
-          >
-            {isPending ? "Sending..." : "Send"}
-          </button>
-        </div>
+              <button
+      type="button"
+      className="rr-btn rr-btn-primary"
+      disabled={isPending || !sendText.trim()}
+      onClick={sendMessage}
+    >
+      {isPending ? "Sending..." : "Send"}
+    </button>
+  </div>
+</div>
       </div>
     </div>
   );

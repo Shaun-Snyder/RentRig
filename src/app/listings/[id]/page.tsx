@@ -189,6 +189,15 @@ export default async function ListingPage({
           </div>
         ) : null}
 
+<div className="mb-4">
+  <a
+    href={`/api/inquiry/start?listing_id=${listing.id}`}
+    className="rr-btn rr-btn-secondary w-full text-center block"
+  >
+    Message Owner
+  </a>
+</div>
+
         {/* Rental form */}
         <div className="rr-card p-5">
           <RentalRequestForm
