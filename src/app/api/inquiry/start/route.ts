@@ -35,12 +35,12 @@ export async function GET(req: NextRequest) {
   }
 
   // Reuse an existing inquiry thread first
-  const { data: existingInquiry } = await supabase
+      const { data: existingInquiry } = await supabase
     .from("rentals")
     .select("id")
     .eq("listing_id", listingId)
     .eq("renter_id", user.id)
-    .eq("status", "inquiry")
+    .eq("is_inquiry", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -59,12 +59,13 @@ export async function GET(req: NextRequest) {
   const startDate = start.toISOString().slice(0, 10);
   const endDate = end.toISOString().slice(0, 10);
 
-  const { data: created, error: createError } = await supabase
+      const { data: created, error: createError } = await supabase
     .from("rentals")
     .insert({
       listing_id: listingId,
       renter_id: user.id,
       status: "pending",
+      is_inquiry: true,
       message: null,
       start_date: startDate,
       end_date: endDate,

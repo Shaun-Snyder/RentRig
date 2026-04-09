@@ -31,7 +31,7 @@ export default async function MessageThreadPage({
   const { data: rental, error } = await supabase
     .from("rentals")
     .select(
-  "id, listing_id, renter_id, start_date, end_date, status, created_at, listing:listings(id,title,owner_id), renter:profiles!rentals_renter_id_fkey(id,full_name,avatar_url)"
+  "id, listing_id, renter_id, start_date, end_date, status, is_inquiry, created_at, listing:listings(id,title,owner_id), renter:profiles!rentals_renter_id_fkey(id,full_name,avatar_url)"
 )
     .eq("id", rentalId)
     .single();
@@ -112,13 +112,16 @@ export default async function MessageThreadPage({
       <ServerHeader />
 
       <div style={{ padding: 24 }}>
-        <PageHeader
-          title="Message Thread"
-                    subtitle={listing?.title ?? "Rental"}
+                <PageHeader
+          title={(rental as any).is_inquiry ? "Inquiry Thread" : "Rental Request Thread"}
+          subtitle={listing?.title ?? "Rental"}
         />
 
         <div className="mt-6">
-          <MessageThreadClient rental={rentalWithNames as any} />
+                    <MessageThreadClient
+            rental={rentalWithNames as any}
+            currentUserId={user.id}
+          />
         </div>
       </div>
     </div>

@@ -96,11 +96,13 @@ async function normalizeAvatarFile(file: File): Promise<File> {
 
 export default function ProfileForm({
   initialFullName,
+  initialCompanyName,
   initialPhone,
   initialAvatarUrl,
   initialSummary,
 }: {
   initialFullName: string;
+  initialCompanyName: string;
   initialPhone: string;
   initialAvatarUrl: string;
   initialSummary: string;
@@ -211,7 +213,12 @@ export default function ProfileForm({
                 {initialFullName || "Not added yet"}
               </div>
             </div>
-
+<div>
+  <div className="text-sm text-slate-500">Company</div>
+  <div className="mt-1 font-medium">
+    {initialCompanyName || "Not added yet"}
+  </div>
+</div>
             <div>
               <div className="text-sm text-slate-500">Phone</div>
               <div className="mt-1 font-medium">
@@ -237,7 +244,15 @@ export default function ProfileForm({
                 className="rr-input w-full"
               />
             </div>
-
+<div className="grid gap-1">
+  <label className="text-sm font-medium">Company</label>
+  <input
+  name="company_name"
+  defaultValue={initialCompanyName}
+  placeholder="Company name (optional)"
+  className="rr-input w-full"
+/>
+</div>
             <div className="grid gap-1">
               <label className="text-sm font-medium">Phone</label>
               <input

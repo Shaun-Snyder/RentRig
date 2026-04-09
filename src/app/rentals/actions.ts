@@ -283,7 +283,7 @@ export async function requestRental(formData: FormData) {
     }
   }
 
-  const rentalInsert = {
+    const rentalInsert = {
     listing_id,
     renter_id: user.id,
     start_date,
@@ -291,6 +291,7 @@ export async function requestRental(formData: FormData) {
     buffer_days,
     message,
     status: "pending",
+    is_inquiry: false,
 
     delivery_selected,
     delivery_fee: delivery_fee_final,
@@ -311,7 +312,7 @@ export async function requestRental(formData: FormData) {
     hourly_finalized_at: null,
   };
 
-  assertAllowedInsertKeys("rentals", rentalInsert, [
+    assertAllowedInsertKeys("rentals", rentalInsert, [
     "listing_id",
     "renter_id",
     "start_date",
@@ -319,6 +320,7 @@ export async function requestRental(formData: FormData) {
     "buffer_days",
     "message",
     "status",
+    "is_inquiry",
 
     "delivery_selected",
     "delivery_fee",
@@ -573,9 +575,55 @@ export async function createRentalInspection(
       // We don't fail the whole action here; the main inspection saved.
     }
   }
-
   return {
     ok: true,
     message: "Inspection saved.",
   };
+}
+export async function submitRating(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, message: "Not authenticated." };
+
+  const rental_id = String(formData.get("rental_id") ?? "");
+  const reviewed_user_id = String(formData.get("reviewed_user_id") ?? "");
+  const stars = Number(formData.get("stars") ?? 0);
+
+  if (!rental_id || !reviewed_user_id || stars < 1 || stars > 5) {
+    return { ok: false, message: "Invalid rating." };
+  }
+
+  const { data: rental } = await supabase
+    .from("rentals")
+    .select("id, renter_id, listing:listings(owner_id)")
+    .eq("id", rental_id)
+    .single();
+
+  if (!rental) return { ok: false, message: "Rental not found." };
+
+  const ownerId = (rental as any)?.listing?.owner_id;
+  const renterId = rental.renter_id;
+
+  if (user.id !== ownerId && user.id !== renterId) {
+    return { ok: false, message: "Not allowed." };
+  }
+
+  if (user.id === reviewed_user_id) {
+    return { ok: false, message: "Cannot rate yourself." };
+  }
+
+  const { error } = await supabase.from("profile_ratings").insert({
+    rental_id,
+    reviewer_id: user.id,
+    reviewed_user_id,
+    stars,
+  });
+
+  if (error) return { ok: false, message: error.message };
+
+  return { ok: true, message: "Rating submitted." };
 }

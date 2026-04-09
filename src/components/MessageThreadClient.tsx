@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { submitRating } from "@/app/rentals/actions";
 
 type ThreadRental = {
   id: string;
@@ -38,7 +39,13 @@ function fmtDate(s?: string | null) {
   return s.slice(0, 10);
 }
 
-export default function MessageThreadClient({ rental }: { rental: ThreadRental }) {
+export default function MessageThreadClient({
+  rental,
+  currentUserId,
+}: {
+  rental: ThreadRental;
+  currentUserId: string;
+}) {
   const supabase = createClient();
   const [isPending, startTransition] = useTransition();
 
@@ -46,6 +53,8 @@ export default function MessageThreadClient({ rental }: { rental: ThreadRental }
   const [msgs, setMsgs] = useState<MsgRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendText, setSendText] = useState("");
+const [ratingMsg, setRatingMsg] = useState("");
+const [isRatingPending, startRatingTransition] = useTransition();
 const bottomRef = useRef<HTMLDivElement | null>(null);
   const title = rental?.listing?.title ?? "Thread";
   const thumb = rental?.listing?.thumb_url ?? "";
@@ -160,8 +169,12 @@ async function markThreadRead() {
       }
     });
   }
-const isOwner = rental?.listing?.owner_id === me;
-const isRenter = rental?.renter?.id === me;
+const isOwner = rental?.listing?.owner_id === currentUserId;
+const isRenter = rental?.renter?.id === currentUserId;
+
+const reviewedUserId = isOwner
+  ? rental?.renter?.id
+  : rental?.listing?.owner_id;
 const ownerName = rental?.listing?.owner_name?.trim() || "Owner";
 const renterName = rental?.renter?.full_name?.trim() || "Renter";
 const ownerAvatar = rental?.listing?.owner_avatar_url;
@@ -239,9 +252,12 @@ const renterAvatar = rental?.renter?.avatar_url;
       />
     ) : null}
 
-    <div className="text-[10px] text-slate-600 whitespace-nowrap">
+        <Link
+      href={`/profile/${m.sender_id === rental.renter?.id ? rental.renter?.id : rental.listing?.owner_id}`}
+      className="text-[10px] text-slate-600 whitespace-nowrap hover:underline"
+    >
       {m.sender_id === rental.renter?.id ? renterName : ownerName}
-    </div>
+    </Link>
   </div>
 ) : !mine ? (
   <div className="w-2" />
@@ -270,9 +286,12 @@ const renterAvatar = rental?.renter?.avatar_url;
       />
     ) : null}
 
-    <div className="text-[10px] text-slate-500 whitespace-nowrap">
+        <Link
+      href={`/profile/${isOwner ? rental.listing?.owner_id : rental.renter?.id}`}
+      className="text-[10px] text-slate-500 whitespace-nowrap hover:underline"
+    >
       {isOwner ? ownerName : "You"}
-    </div>
+    </Link>
   </div>
 ) : mine ? (
   <div className="w-2" />
@@ -314,7 +333,48 @@ const renterAvatar = rental?.renter?.avatar_url;
     </button>
   </div>
 </div>
-      </div>
+           </div>
+
+      {/* ⭐ Rating Section */}
+                  {!rental?.is_inquiry && rental?.status === "completed" && reviewedUserId ? (
+        <form
+          action={(formData) => {
+            setRatingMsg("");
+
+            startRatingTransition(async () => {
+              const res = await submitRating(formData);
+              setRatingMsg(res?.message ?? "Rating failed.");
+            });
+          }}
+          className="rr-card mt-4 p-4 rounded-none border shadow-sm"
+        >
+          <div className="text-sm font-semibold mb-2">
+            Rate {isOwner ? "Renter" : "Owner"}
+          </div>
+
+          <input type="hidden" name="rental_id" value={rental.id} />
+          <input type="hidden" name="reviewed_user_id" value={reviewedUserId} />
+
+          <div className="flex gap-2 flex-wrap">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="submit"
+                name="stars"
+                value={star}
+                className="rr-btn rr-btn-secondary rr-btn-sm"
+                disabled={isRatingPending}
+              >
+                {isRatingPending ? "Saving..." : `★ ${star}`}
+              </button>
+            ))}
+          </div>
+
+          {ratingMsg ? (
+            <div className="mt-2 text-sm text-slate-700">{ratingMsg}</div>
+          ) : null}
+        </form>
+      ) : null}
     </div>
   );
 }

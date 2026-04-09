@@ -137,6 +137,7 @@ export default async function DashboardPage() {
         <div className="mt-4">
           <ProfileForm
             initialFullName={profile?.full_name ?? ""}
+            initialCompanyName={profile.company_name ?? ""}
             initialPhone={profile?.phone ?? ""}
             initialAvatarUrl={profile?.avatar_url ?? ""}
             initialSummary={profile?.profile_summary ?? ""}

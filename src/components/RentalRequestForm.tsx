@@ -16,8 +16,22 @@ function formatMoney(amount: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 }
 
-function parseISO(value: string) {
-  const [y, m, d] = value.split("-").map(Number);
+function parseISO(value?: string | null) {
+  if (!value || typeof value !== "string") {
+    return null;
+  }
+
+  const parts = value.split("-");
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [y, m, d] = parts.map(Number);
+
+  if (!y || !m || !d) {
+    return null;
+  }
+
   return new Date(Date.UTC(y, m - 1, d));
 }
 

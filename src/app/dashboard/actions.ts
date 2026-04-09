@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function updateProfile(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const profile_summary = String(formData.get("profile_summary") ?? "").trim();
+const company_name = String(formData.get("company_name") ?? "").trim();
+const phone = String(formData.get("phone") ?? "").trim();
+const profile_summary = String(formData.get("profile_summary") ?? "").trim();
 
   const supabase = await createClient();
   const { data, error: userError } = await supabase.auth.getUser();
@@ -19,15 +20,17 @@ export async function updateProfile(formData: FormData) {
 
   // Start with the existing profile fields
   const updates: {
-    full_name: string;
-    phone: string;
-    profile_summary: string;
-    avatar_url?: string;
-  } = {
-    full_name,
-    phone,
-    profile_summary,
-  };
+  full_name: string;
+  company_name: string;
+  phone: string;
+  profile_summary: string;
+  avatar_url?: string;
+} = {
+  full_name,
+  company_name,
+  phone,
+  profile_summary,
+};
 
   // Handle avatar file if provided
   const avatar = formData.get("avatar");
