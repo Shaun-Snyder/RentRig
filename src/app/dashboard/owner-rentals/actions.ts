@@ -301,3 +301,38 @@ export async function rejectRental(rentalId: string) {
   revalidatePath("/dashboard/rentals");
   return { ok: true };
 }
+export async function markRentalCompleted(rentalId: string) {
+  const supabase = await createClient();
+
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth?.user;
+
+  if (!user) return { ok: false, error: "Not authenticated" as const };
+
+  // Verify ownership (same pattern as approve)
+  const { data: rental } = await supabase
+    .from("rentals")
+    .select("id, listing:listings(owner_id)")
+    .eq("id", rentalId)
+    .single();
+
+  const ownerId = (rental as any)?.listing?.owner_id;
+
+  if (!rental || ownerId !== user.id) {
+    return { ok: false, error: "Forbidden" as const };
+  }
+
+  // Only allow from approved → completed
+  const { error } = await supabase
+    .from("rentals")
+    .update({ status: "completed" })
+    .eq("id", rentalId)
+    .eq("status", "approved");
+
+  if (error) return { ok: false, error: error.message as const };
+
+  revalidatePath("/dashboard/owner-rentals");
+  revalidatePath("/dashboard/rentals");
+
+  return { ok: true };
+}

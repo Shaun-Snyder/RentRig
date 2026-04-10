@@ -7,6 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 export async function updateProfile(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
 const company_name = String(formData.get("company_name") ?? "").trim();
+const city = String(formData.get("city") ?? "").trim();
+const state = String(formData.get("state") ?? "").trim();
+const occupation = String(formData.get("occupation") ?? "").trim();
 const phone = String(formData.get("phone") ?? "").trim();
 const profile_summary = String(formData.get("profile_summary") ?? "").trim();
 
@@ -22,12 +25,18 @@ const profile_summary = String(formData.get("profile_summary") ?? "").trim();
   const updates: {
   full_name: string;
   company_name: string;
+  city: string;
+  state: string;
+  occupation: string;
   phone: string;
   profile_summary: string;
   avatar_url?: string;
 } = {
   full_name,
   company_name,
+  city,
+  state,
+  occupation,
   phone,
   profile_summary,
 };

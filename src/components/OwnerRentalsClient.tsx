@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   approveRentalAndEmail,
   rejectRental,
+  markRentalCompleted,
 } from "@/app/dashboard/owner-rentals/actions";
 import FinalizeHourlyService from "@/components/FinalizeHourlyService";
 import { createClient } from "@/lib/supabase/client";
@@ -15,9 +17,20 @@ type RentalRow = {
   start_date: string;
   end_date: string;
   status: string;
+  renter_returned?: boolean | null;
   message?: string | null;
   created_at?: string | null;
-  listing?: { id: string; title: string } | null;
+    listing?: { id: string; title: string } | null;
+  renter?: {
+    id: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+    company_name?: string | null;
+  } | null;
+  renter_rating?: {
+    avg: string | null;
+    count: number;
+  } | null;
 
   // Step 3.3 fields (from page.tsx select)
   hourly_is_estimate?: boolean | null;
@@ -48,7 +61,8 @@ export default function OwnerRentalsClient({
   rentals: RentalRow[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const supabase = createClient();
+const router = useRouter();
+const supabase = createClient();
 
   const [photosByListing, setPhotosByListing] = useState<
     Record<string, ListingPhoto[]>
@@ -116,24 +130,44 @@ export default function OwnerRentalsClient({
   }, [rentals]);
 
   async function onApprove(rentalId: string) {
-    startTransition(async () => {
-      const res = await approveRentalAndEmail(rentalId);
-      if (!res.ok) {
-        alert(res.error);
-      } else if ("emailed" in res && !res.emailed && res.error) {
-        alert(res.error);
-      }
-    });
-  }
+  startTransition(async () => {
+    const res = await approveRentalAndEmail(rentalId);
+    if (!res.ok) {
+      alert(res.error);
+      return;
+    }
 
-  async function onReject(rentalId: string) {
-    startTransition(async () => {
-      const res = await rejectRental(rentalId);
-      if (!res.ok) {
-        alert(res.error);
-      }
-    });
-  }
+    if ("emailed" in res && !res.emailed && res.error) {
+      alert(res.error);
+    }
+
+    router.refresh();
+  });
+}
+
+async function onReject(rentalId: string) {
+  startTransition(async () => {
+    const res = await rejectRental(rentalId);
+    if (!res.ok) {
+      alert(res.error);
+      return;
+    }
+
+    router.refresh();
+  });
+}
+
+async function onComplete(rentalId: string) {
+  startTransition(async () => {
+    const res = await markRentalCompleted(rentalId);
+    if (!res.ok) {
+      alert(res.error);
+      return;
+    }
+
+    router.refresh();
+  });
+}
 
   if (!rentals || rentals.length === 0) {
     return (
@@ -146,7 +180,7 @@ export default function OwnerRentalsClient({
   return (
     <div className="mt-6 space-y-4">
       {rentals.map((r) => {
-        const isFinal = r.status === "approved" || r.status === "rejected";
+        const isRejected = r.status === "rejected";
         const isApproved = r.status === "approved";
 
         const showFinalize =
@@ -156,7 +190,11 @@ export default function OwnerRentalsClient({
           Boolean(r.hourly_is_estimate) &&
           !r.hourly_finalized_at;
 
-        const thumb = getThumb(r.listing_id);
+                const thumb = getThumb(r.listing_id);
+        const renterName = r.renter?.full_name?.trim() || "Renter";
+        const renterCompany = r.renter?.company_name?.trim() || "";
+        const renterRatingAvg = r.renter_rating?.avg ?? null;
+        const renterRatingCount = r.renter_rating?.count ?? 0;
 
         return (
   <div
@@ -216,10 +254,33 @@ export default function OwnerRentalsClient({
               {r.start_date} → {r.end_date}
             </span>
           </div>
+          <div className="text-sm text-slate-700">
+            <span className="font-semibold">Renter:</span>{" "}
+            <a
+              href={`/profile/${encodeURIComponent(r.renter_id)}`}
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              {renterName}
+            </a>
+            {renterCompany ? <span> — {renterCompany}</span> : null}
+          </div>
 
           <div className="text-sm text-slate-700">
+            <span className="font-semibold">Rating:</span>{" "}
+            {renterRatingAvg
+              ? `★ ${renterRatingAvg} (${renterRatingCount} review${renterRatingCount === 1 ? "" : "s"})`
+              : "No reviews yet"}
+          </div>
+                    <div className="text-sm text-slate-700">
             <span className="font-semibold">Status:</span>{" "}
             <span className="capitalize">{r.status}</span>
+          </div>
+
+          <div className="text-sm text-slate-700">
+            <span className="font-semibold">Return:</span>{" "}
+            <span className={r.renter_returned ? "text-emerald-700 font-medium" : "text-amber-700 font-medium"}>
+              {r.renter_returned ? "Returned by renter" : "Waiting on renter"}
+            </span>
           </div>
 
           {r.message && (
@@ -262,7 +323,7 @@ export default function OwnerRentalsClient({
   {/* Approve – same base as listings, with green override when approved */}
   <button
     onClick={() => onApprove(r.id)}
-    disabled={isPending || isFinal}
+    disabled={isPending || isApproved || isRejected}
     className={`rr-btn rr-btn-primary ${
       isApproved
         ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700"
@@ -273,15 +334,30 @@ export default function OwnerRentalsClient({
   </button>
 
   {/* Reject – same danger style as Delete on listings */}
+  {!isApproved && !isRejected ? (
   <button
     onClick={() => onReject(r.id)}
-    disabled={isPending || isFinal}
+    disabled={isPending}
     className="rr-btn rr-btn-danger"
   >
     Reject
   </button>
+) : null}
 </div>
 
+<a
+  href={`/profile/${encodeURIComponent(r.renter_id)}`}
+  className="rr-btn rr-btn-secondary"
+>
+  View Profile
+</a>
+<button
+  onClick={() => onComplete(r.id)}
+  disabled={isPending || r.status !== "approved" || !r.renter_returned}
+  className="rr-btn rr-btn-secondary"
+>
+  {r.renter_returned ? "Complete" : "Waiting on Return"}
+</button>
 <a
   href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}/inspection`}
   className="rr-btn rr-btn-secondary"

@@ -24,8 +24,10 @@ export default async function OwnerRentalsPage() {
         "start_date",
         "end_date",
         "status",
+        "renter_returned",
         "message",
         "created_at",
+        "renter:profiles!rentals_renter_id_fkey(id, full_name, avatar_url, company_name)",
 
         // Step 3.3 fields (hourly estimate -> finalize)
         "hourly_is_estimate",
@@ -147,15 +149,54 @@ export default async function OwnerRentalsPage() {
   const listingMap = new Map(
     ownedListingsWithThumb.map((l: any) => [l.id, l])
   );
+  const renterIds = Array.from(
+    new Set(
+      rentalsRaw
+        .map((r: any) => r.renter_id)
+        .filter((id: string | undefined): id is string => Boolean(id))
+    )
+  );
+
+  const renterRatingMap = new Map<string, { avg: string | null; count: number }>();
+
+  if (renterIds.length > 0) {
+    const { data: renterRatings } = await supabase
+      .from("profile_ratings")
+      .select("reviewed_user_id, stars")
+      .in("reviewed_user_id", renterIds);
+
+    const grouped = new Map<string, number[]>();
+
+    for (const row of renterRatings ?? []) {
+      const userId = (row as any).reviewed_user_id as string;
+      const stars = Number((row as any).stars ?? 0);
+      if (!grouped.has(userId)) grouped.set(userId, []);
+      grouped.get(userId)!.push(stars);
+    }
+
+    for (const renterId of renterIds) {
+      const vals = grouped.get(renterId) ?? [];
+      if (vals.length === 0) {
+        renterRatingMap.set(renterId, { avg: null, count: 0 });
+      } else {
+        const total = vals.reduce((sum, n) => sum + n, 0);
+        renterRatingMap.set(renterId, {
+          avg: (total / vals.length).toFixed(1),
+          count: vals.length,
+        });
+      }
+    }
+  }
 
   // Final enriched rentals: only those whose listing is owned by this user
-  const enriched = rentalsRaw
+      const enriched = rentalsRaw
     .filter((r: any) => listingMap.has(r.listing_id))
+    .filter((r: any) => r.status !== "rejected" && r.status !== "completed")
     .map((r: any) => ({
       ...r,
       listing: listingMap.get(r.listing_id) ?? null,
+      renter_rating: renterRatingMap.get(r.renter_id) ?? { avg: null, count: 0 },
     }));
-
   return (
     <>
       <ServerHeader />

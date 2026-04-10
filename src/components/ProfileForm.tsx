@@ -97,12 +97,18 @@ async function normalizeAvatarFile(file: File): Promise<File> {
 export default function ProfileForm({
   initialFullName,
   initialCompanyName,
+  initialCity,
+  initialState,
+  initialOccupation,
   initialPhone,
   initialAvatarUrl,
   initialSummary,
 }: {
   initialFullName: string;
   initialCompanyName: string;
+  initialCity: string;
+  initialState: string;
+  initialOccupation: string;
   initialPhone: string;
   initialAvatarUrl: string;
   initialSummary: string;
@@ -219,6 +225,26 @@ export default function ProfileForm({
     {initialCompanyName || "Not added yet"}
   </div>
 </div>
+<div>
+  <div className="text-sm text-slate-500">City</div>
+  <div className="mt-1 font-medium">
+    {initialCity || "Not added yet"}
+  </div>
+</div>
+
+<div>
+  <div className="text-sm text-slate-500">State</div>
+  <div className="mt-1 font-medium">
+    {initialState || "Not added yet"}
+  </div>
+</div>
+
+<div>
+  <div className="text-sm text-slate-500">Occupation</div>
+  <div className="mt-1 font-medium">
+    {initialOccupation || "Not added yet"}
+  </div>
+</div>
             <div>
               <div className="text-sm text-slate-500">Phone</div>
               <div className="mt-1 font-medium">
@@ -252,6 +278,35 @@ export default function ProfileForm({
   placeholder="Company name (optional)"
   className="rr-input w-full"
 />
+</div>
+<div className="grid gap-1">
+  <label className="text-sm font-medium">City</label>
+  <input
+    name="city"
+    defaultValue={initialCity}
+    placeholder="City"
+    className="rr-input w-full"
+  />
+</div>
+
+<div className="grid gap-1">
+  <label className="text-sm font-medium">State</label>
+  <input
+    name="state"
+    defaultValue={initialState}
+    placeholder="State"
+    className="rr-input w-full"
+  />
+</div>
+
+<div className="grid gap-1">
+  <label className="text-sm font-medium">Occupation</label>
+  <input
+    name="occupation"
+    defaultValue={initialOccupation}
+    placeholder="Occupation"
+    className="rr-input w-full"
+  />
 </div>
             <div className="grid gap-1">
               <label className="text-sm font-medium">Phone</label>

@@ -14,7 +14,7 @@ export default async function ProfilePage({
 
     const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, company_name, avatar_url, profile_summary")
+    .select("id, full_name, company_name, city, state, occupation, avatar_url, profile_summary")
     .eq("id", params.id)
     .single();
 
@@ -44,10 +44,10 @@ if (ratingCount > 0) {
       <div className="mx-auto max-w-3xl px-6 py-6">
         <PageHeader title={profile.full_name || "User Profile"} />
 
-        <div className="rr-card mt-4 p-4 rounded-none border shadow-sm">
+        <div className="rr-card mt-4 p-5 rounded-none border shadow-sm space-y-3">
 
-                    <div className="flex items-center gap-4">
-            <div className="h-24 w-24 border-4 border-black bg-slate-200 overflow-hidden">
+                    <div className="flex items-start gap-5">
+            <div className="w-44 h-44 md:w-56 md:h-56 border border-slate-300 bg-slate-100 overflow-hidden">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -57,28 +57,66 @@ if (ratingCount > 0) {
               ) : null}
             </div>
 
-            <div>
-              <div className="font-semibold text-lg">
-                {profile.full_name || "No name"}
-              </div>
+                     <div>
+  <div className="text-xs text-slate-500 font-semibold tracking-wide">
+    NAME
+  </div>
+  <div className="font-semibold text-lg">
+    {profile.full_name || "No name"}
+  </div>
 
-              {profile.company_name ? (
-                <div className="mt-1 text-sm text-slate-600">
-                  {profile.company_name}
-                </div>
-              ) : null}
+  {profile.company_name ? (
+    <>
+      <div className="mt-2 text-xs text-slate-500 font-semibold tracking-wide">
+        COMPANY
+      </div>
+      <div className="text-sm text-slate-800">
+        {profile.company_name}
+      </div>
+    </>
+  ) : null}
 
-              <div className="mt-1 text-sm text-slate-600">
-                {averageRating
-                  ? `★ ${averageRating} (${ratingCount} review${ratingCount === 1 ? "" : "s"})`
-                  : "No reviews yet"}
-              </div>
-            </div>
+  {profile.occupation ? (
+    <>
+      <div className="mt-2 text-xs text-slate-500 font-semibold tracking-wide">
+        OCCUPATION
+      </div>
+      <div className="text-sm text-slate-800">
+        {profile.occupation}
+      </div>
+    </>
+  ) : null}
+
+  {(profile.city || profile.state) ? (
+    <>
+      <div className="mt-2 text-xs text-slate-500 font-semibold tracking-wide">
+        LOCATION
+      </div>
+      <div className="text-sm text-slate-800">
+        {[profile.city, profile.state].filter(Boolean).join(", ")}
+      </div>
+    </>
+  ) : null}
+
+  <div className="mt-2 text-xs text-slate-500 font-semibold tracking-wide">
+    RATING
+  </div>
+  <div className="text-sm text-slate-800">
+    {averageRating
+      ? `★ ${averageRating} (${ratingCount} review${ratingCount === 1 ? "" : "s"})`
+      : "No reviews yet"}
+  </div>
+</div>   
           </div>
           
-          {profile.profile_summary && (
-            <div className="mt-4 text-sm text-slate-700 whitespace-pre-wrap">
-              {profile.profile_summary}
+                    {profile.profile_summary && (
+            <div className="mt-4">
+              <div className="text-xs text-slate-500 font-semibold tracking-wide">
+                SUMMARY
+              </div>
+              <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                {profile.profile_summary}
+              </div>
             </div>
           )}
 

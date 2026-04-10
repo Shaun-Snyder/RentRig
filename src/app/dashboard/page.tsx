@@ -31,7 +31,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name, phone, avatar_url, profile_summary")
+    .select("role, full_name, company_name, city, state, occupation, phone, avatar_url, profile_summary")
     .eq("id", user.id)
     .single();
 
@@ -136,12 +136,15 @@ export default async function DashboardPage() {
         {/* PROFILE BUBBLE AT TOP */}
         <div className="mt-4">
           <ProfileForm
-            initialFullName={profile?.full_name ?? ""}
-            initialCompanyName={profile.company_name ?? ""}
-            initialPhone={profile?.phone ?? ""}
-            initialAvatarUrl={profile?.avatar_url ?? ""}
-            initialSummary={profile?.profile_summary ?? ""}
-          />
+  initialFullName={profile?.full_name ?? ""}
+  initialCompanyName={profile?.company_name ?? ""}
+  initialCity={profile?.city ?? ""}
+  initialState={profile?.state ?? ""}
+  initialOccupation={profile?.occupation ?? ""}
+  initialPhone={profile?.phone ?? ""}
+  initialAvatarUrl={profile?.avatar_url ?? ""}
+  initialSummary={profile?.profile_summary ?? ""}
+/>
         </div>
 
                 {/* INFO BUBBLES UNDER PROFILE */}

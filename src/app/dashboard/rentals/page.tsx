@@ -19,10 +19,11 @@ export default async function MyRentalsPage() {
     .from("rentals")
     .select(
       `
-      id,
+            id,
       start_date,
       end_date,
       status,
+      renter_returned,
       buffer_days,
       message,
       created_at,

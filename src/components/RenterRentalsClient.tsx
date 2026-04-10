@@ -10,6 +10,7 @@ type Rental = {
   start_date: string;
   end_date: string;
   status: string;
+renter_returned?: boolean | null;
   buffer_days: number | null;
   message: string | null;
   created_at: string;
@@ -31,8 +32,10 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
   const supabase = createClient();
 
   const [photosByListing, setPhotosByListing] = useState<
-    Record<string, ListingPhoto[]>
-  >({});
+  Record<string, ListingPhoto[]>
+>({});
+
+const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
 
   function storageUrl(path: string) {
     const { data } = supabase.storage
@@ -189,6 +192,26 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
   >
     Record / view condition
   </a>
+
+  <button
+  onClick={async () => {
+    const res = await fetch("/api/rentals/mark-returned", {
+      method: "POST",
+      body: JSON.stringify({ rentalId: r.id }),
+    });
+
+    if (!res.ok) {
+      alert("Failed to mark returned");
+      return;
+    }
+
+    setReturnedMap((prev) => ({ ...prev, [r.id]: true }));
+  }}
+  disabled={r.status !== "approved" || r.renter_returned || returnedMap[r.id]}
+  className="rr-btn rr-btn-secondary"
+>
+  {r.renter_returned || returnedMap[r.id] ? "Returned" : "Mark Returned"}
+</button>
 </div>
 
             </div>
