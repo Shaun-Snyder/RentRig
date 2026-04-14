@@ -30,12 +30,15 @@ export default async function ListingPage({
       category,
 
       price_per_day,
+      rental_hourly_enabled,
+      rental_hour_rate,
       security_deposit,
       min_rental_days,
       max_rental_days,
 
       delivery_mode,
       delivery_fee,
+      delivery_miles,
       delivery_service_discount_enabled,
       delivery_service_discount_amount,
 
@@ -95,15 +98,18 @@ export default async function ListingPage({
      Normalize numbers for UI + form
   ========================== */
   const pricePerDay = Number(listing.price_per_day ?? 0);
+  const rentalHourlyEnabled = Boolean((listing as any).rental_hourly_enabled);
+  const rentalHourRate = Number((listing as any).rental_hour_rate ?? 0);
   const securityDeposit = Number(listing.security_deposit ?? 0);
   const minRentalDays =
     listing.min_rental_days == null ? undefined : Number(listing.min_rental_days);
   const maxRentalDays =
     listing.max_rental_days == null ? undefined : Number(listing.max_rental_days);
 
-  const deliveryMode =
+    const deliveryMode =
     (listing.delivery_mode as "pickup_only" | "pickup_or_delivery" | "delivery_only") ??
     "pickup_only";
+  const deliveryMiles = Number((listing as any).delivery_miles ?? 0);
   const deliveryFee = Number(listing.delivery_fee ?? 0);
 
   const licenseRequired = Boolean(listing.license_required);
@@ -128,12 +134,19 @@ export default async function ListingPage({
         />
 
         {/* Listing details */}
-        <div className="rr-card p-5 mb-6">
+                <div className="rr-card p-5 mb-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <div className="font-extrabold rr-outline-section">Daily rate</div>
               <div className="mt-1 font-semibold">${pricePerDay.toFixed(2)} / day</div>
             </div>
+
+            {rentalHourlyEnabled && rentalHourRate > 0 && (
+              <div>
+                <div className="font-extrabold rr-outline-section">Hourly rate</div>
+                <div className="mt-1 font-semibold">${rentalHourRate.toFixed(2)} / hour</div>
+              </div>
+            )}
 
             <div>
               <div className="font-extrabold rr-outline-section">Deposit</div>
@@ -147,11 +160,17 @@ export default async function ListingPage({
               </div>
             </div>
 
-            <div>
+                        <div>
               <div className="font-extrabold rr-outline-section">Delivery</div>
               <div className="mt-1 font-semibold">
-                {deliveryMode}
-                {deliveryMode !== "pickup_only" ? ` ($${deliveryFee.toFixed(2)})` : ""}
+                {deliveryMode === "pickup_only"
+                  ? "Local pickup only"
+                  : deliveryMode === "delivery_only"
+                  ? "Delivery only"
+                  : "Pickup or delivery"}
+                {deliveryMode !== "pickup_only"
+                  ? ` • ${deliveryMiles.toFixed(0)} miles • $${deliveryFee.toFixed(2)}`
+                  : ""}
               </div>
             </div>
 

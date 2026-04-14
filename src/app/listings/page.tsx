@@ -14,6 +14,10 @@ type ListingRow = {
   state: string | null;
   zip: string | null;
   price_per_day: number;
+  price_per_week: number | null;
+  price_per_month: number | null;
+  rental_hourly_enabled?: boolean | null;
+  rental_hour_rate?: number | null;
   created_at: string;
 
   category: string | null;
@@ -95,6 +99,10 @@ export default async function ListingsPage({
     state,
     zip,
     price_per_day,
+    price_per_week,
+    price_per_month,
+    rental_hourly_enabled,
+    rental_hour_rate,
     created_at,
     category,
     license_required,

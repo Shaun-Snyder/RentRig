@@ -14,6 +14,10 @@ type Listing = {
   state: string | null;
   zip?: string | null;
   price_per_day: number;
+  price_per_week?: number | null;
+  price_per_month?: number | null;
+  rental_hourly_enabled?: boolean | null;
+  rental_hour_rate?: number | null;
   created_at: string;
 
   category?: string | null;
@@ -623,13 +627,27 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     ~ Nearby (ZIP match)
   </div>
 )}
-            <div className="text-sm text-slate-700">
+                             <div className="text-sm text-slate-700">
               <span className="font-semibold">
-                Price: {money(l.price_per_day)} /day
-              </span>{" "}
-              <span className="text-slate-500">
-                • Deposit: {money(l.security_deposit)}
+                {money(l.price_per_day)} /day
               </span>
+
+              {Number(l.price_per_week ?? 0) > 0 && (
+                <span className="text-slate-600"> • {money(l.price_per_week)} /week</span>
+              )}
+
+              {Number(l.price_per_month ?? 0) > 0 && (
+                <span className="text-slate-600"> • {money(l.price_per_month)} /month</span>
+              )}
+
+              {Boolean(l.rental_hourly_enabled) && Number(l.rental_hour_rate ?? 0) > 0 && (
+                <span className="text-slate-600"> • {money(l.rental_hour_rate)} /hour</span>
+              )}
+
+              <span className="text-slate-500">
+                {" "}• Deposit: {money(l.security_deposit)}
+              </span>
+
               {st === "available" && (
                 <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
                   Available

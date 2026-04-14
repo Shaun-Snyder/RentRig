@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   approveRentalAndEmail,
@@ -345,6 +346,12 @@ async function onComplete(rentalId: string) {
 ) : null}
 </div>
 
+<Link
+  href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}`}
+  className="rr-btn rr-btn-secondary"
+>
+  View Rental
+</Link>
 <a
   href={`/profile/${encodeURIComponent(r.renter_id)}`}
   className="rr-btn rr-btn-secondary"
@@ -364,7 +371,6 @@ async function onComplete(rentalId: string) {
 >
   Record / view condition
 </a>
-
       </div>
     </div>
 

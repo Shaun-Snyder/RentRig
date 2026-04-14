@@ -31,9 +31,14 @@ type Listing = {
   security_deposit: number | null;
   is_published: boolean;
 
-  delivery_enabled: boolean;
-  delivery_miles: number | null;
-  delivery_price: number | null;
+  delivery_mode?: "pickup_only" | "pickup_or_delivery" | "delivery_only" | string | null;
+  delivery_miles?: number | null;
+  delivery_fee?: number | null;
+  delivery_service_discount_enabled?: boolean | null;
+  delivery_service_discount_amount?: number | null;
+
+  rental_hourly_enabled?: boolean | null;
+  rental_hour_rate?: number | null;
 
   operator_enabled: boolean;
   operator_rate: number | null;
@@ -428,13 +433,25 @@ const [isPending, startTransition] = useTransition();
     fd.set("price_per_day", numStr(x.price_per_day ?? 0));
     fd.set("price_per_week", numStr(x.price_per_week));
     fd.set("price_per_month", numStr(x.price_per_month));
+    fd.set("rental_hourly_enabled", boolStr((x as any).rental_hourly_enabled));
+    fd.set("rental_hour_rate", numStr((x as any).rental_hour_rate));
     fd.set("security_deposit", numStr(x.security_deposit));
+
+    fd.set("license_required", boolStr(x.license_required));
+    fd.set("license_type", (x.license_type ?? "").toString());
 
     fd.set("is_published", boolStr(x.is_published));
 
-    fd.set("delivery_enabled", boolStr(x.delivery_enabled));
-    fd.set("delivery_miles", numStr(x.delivery_miles));
-    fd.set("delivery_price", numStr(x.delivery_price));
+    fd.set("delivery_mode", ((x as any).delivery_mode ?? "pickup_only").toString());
+    fd.set("delivery_fee", numStr((x as any).delivery_fee));
+    fd.set(
+      "delivery_service_discount_enabled",
+      boolStr((x as any).delivery_service_discount_enabled)
+    );
+    fd.set(
+      "delivery_service_discount_amount",
+      numStr((x as any).delivery_service_discount_amount)
+    );
 
     fd.set("operator_enabled", boolStr(x.operator_enabled));
     fd.set("operator_rate", numStr(x.operator_rate));
@@ -623,7 +640,27 @@ router.refresh();
               />
             </div>
           </div>
+{/* Hourly Rental (NEW) */}
+<div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
+  <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
 
+  <label className="flex items-center gap-2 text-sm">
+    <input type="checkbox" name="rental_hourly_enabled" value="true" />
+    Allow hourly rental
+  </label>
+
+  <div className="grid gap-1">
+    <label className="text-sm">$ / hour</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="rental_hour_rate"
+      type="number"
+      min="0"
+      step="1"
+      placeholder="e.g. 75"
+    />
+  </div>
+</div>
           <div className="grid gap-1">
             <label className="text-sm">Security deposit</label>
             <input
@@ -656,13 +693,23 @@ router.refresh();
             </div>
           </div>
 
-          {/* Delivery */}
+                              {/* Delivery */}
           <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
             <div className="text-sm font-medium">Delivery</div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="delivery_enabled" value="true" /> Offer
-              delivery
-            </label>
+
+            <div className="grid gap-1">
+              <label className="text-sm">Delivery mode</label>
+              <select
+                className="rounded-md border px-3 py-2"
+                name="delivery_mode"
+                defaultValue="pickup_only"
+              >
+                <option value="pickup_only">Local pickup only</option>
+                <option value="pickup_or_delivery">Pickup or delivery</option>
+                <option value="delivery_only">Delivery only</option>
+              </select>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-2">
               <div className="grid gap-1">
                 <label className="text-sm">Delivery miles</label>
@@ -672,16 +719,19 @@ router.refresh();
                   type="number"
                   min="0"
                   step="1"
+                  defaultValue={0}
                 />
               </div>
+
               <div className="grid gap-1">
-                <label className="text-sm">Delivery price</label>
+                <label className="text-sm">Delivery fee</label>
                 <input
                   className="rounded-md border px-3 py-2"
-                  name="delivery_price"
+                  name="delivery_fee"
                   type="number"
                   min="0"
                   step="1"
+                  defaultValue={0}
                 />
               </div>
             </div>
@@ -1074,6 +1124,11 @@ router.refresh();
                       • Deposit: {money(l.security_deposit)}
                     </span>
                   </div>
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">License required:</span>{" "}
+                    {l.license_required ? "Yes" : "No"}
+                    {l.license_required && l.license_type ? ` — ${l.license_type}` : ""}
+                  </div>
 
                   <div className="text-sm text-slate-700">
                     <span className="font-semibold">Operator:</span>{" "}
@@ -1459,7 +1514,32 @@ router.refresh();
                       />
                     </div>
                   </div>
+{/* Hourly Rental (EDIT) */}
+<div className="rounded-lg border rr-card p-4 grid gap-2">
+  <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
 
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      name="rental_hourly_enabled"
+      value="true"
+      defaultChecked={Boolean((l as any).rental_hourly_enabled)}
+    />
+    Allow hourly rental
+  </label>
+
+  <div className="grid gap-1">
+    <label className="text-sm">$ / hour</label>
+    <input
+      className="rounded-md border px-3 py-2"
+      name="rental_hour_rate"
+      type="number"
+      min="0"
+      step="1"
+      defaultValue={(l as any).rental_hour_rate ?? ""}
+    />
+  </div>
+</div>
                   <div className="grid gap-1">
                     <label className="text-sm">Security deposit</label>
                     <input
@@ -1471,7 +1551,31 @@ router.refresh();
                       defaultValue={l.security_deposit ?? 0}
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm font-semibold">Required license</label>
 
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="license_required"
+                        value="true"
+                        defaultChecked={Boolean(l.license_required)}
+                      />
+                      This listing requires a license
+                    </label>
+
+                    <div className="grid gap-1">
+                      <label className="text-sm text-slate-600">
+                        License type / note (shown to renter)
+                      </label>
+                      <input
+                        className="rounded-md border px-3 py-2"
+                        name="license_type"
+                        defaultValue={l.license_type ?? ""}
+                        placeholder="e.g., CDL, OSHA forklift, excavator certification"
+                      />
+                    </div>
+                  </div>
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -1482,18 +1586,23 @@ router.refresh();
                     Published
                   </label>
 
-                  {/* Delivery */}
+                                     {/* Delivery */}
                   <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Delivery</div>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        name="delivery_enabled"
-                        value="true"
-                        defaultChecked={Boolean(l.delivery_enabled)}
-                      />{" "}
-                      Offer delivery
-                    </label>
+
+                    <div className="grid gap-1">
+                      <label className="text-sm">Delivery mode</label>
+                      <select
+                        className="rounded-md border px-3 py-2"
+                        name="delivery_mode"
+                        defaultValue={l.delivery_mode ?? "pickup_only"}
+                      >
+                        <option value="pickup_only">Local pickup only</option>
+                        <option value="pickup_or_delivery">Pickup or delivery</option>
+                        <option value="delivery_only">Delivery only</option>
+                      </select>
+                    </div>
+
                     <div className="grid gap-3 md:grid-cols-2">
                       <div className="grid gap-1">
                         <label className="text-sm">Delivery miles</label>
@@ -1503,18 +1612,19 @@ router.refresh();
                           type="number"
                           min="0"
                           step="1"
-                          defaultValue={l.delivery_miles ?? 0}
+                          defaultValue={(l as any).delivery_miles ?? 0}
                         />
                       </div>
+
                       <div className="grid gap-1">
-                        <label className="text-sm">Delivery price</label>
+                        <label className="text-sm">Delivery fee</label>
                         <input
                           className="rounded-md border px-3 py-2"
-                          name="delivery_price"
+                          name="delivery_fee"
                           type="number"
                           min="0"
                           step="1"
-                          defaultValue={l.delivery_price ?? 0}
+                          defaultValue={l.delivery_fee ?? 0}
                         />
                       </div>
                     </div>

@@ -47,6 +47,10 @@ export async function createListing(arg1: any, arg2?: any) {
   const description = toStr(fd.get("description")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
+  const price_per_week = toNum(fd.get("price_per_week"));
+  const price_per_month = toNum(fd.get("price_per_month"));
+  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
+  const rental_hour_rate = toNum(fd.get("rental_hour_rate"));
   const security_deposit = toNum(fd.get("security_deposit"));
 
   const city = toStr(fd.get("city")) || null;
@@ -58,7 +62,8 @@ export async function createListing(arg1: any, arg2?: any) {
   const license_required = toBool(fd.get("license_required"));
   const license_type = toStr(fd.get("license_type")) || null;
 
-  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode")) || "pickup_only");
+  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
+  const delivery_miles = toNum(fd.get("delivery_miles"));
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
 
   const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
@@ -99,6 +104,10 @@ export async function createListing(arg1: any, arg2?: any) {
     description,
 
     price_per_day,
+    price_per_week,
+    price_per_month,
+    rental_hourly_enabled,
+    rental_hour_rate,
     security_deposit,
 
     city,
@@ -111,6 +120,7 @@ export async function createListing(arg1: any, arg2?: any) {
     license_type,
 
     delivery_mode,
+    delivery_miles,
     delivery_fee,
     delivery_service_discount_enabled,
     delivery_service_discount_amount,
@@ -167,6 +177,10 @@ export async function updateListing(arg1: any, arg2?: any) {
   const description = toStr(fd.get("description")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
+  const price_per_week = toNum(fd.get("price_per_week"));
+  const price_per_month = toNum(fd.get("price_per_month"));
+  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
+  const rental_hour_rate = toNum(fd.get("rental_hour_rate"));
   const security_deposit = toNum(fd.get("security_deposit"));
 
   const city = toStr(fd.get("city")) || null;
@@ -184,7 +198,8 @@ const is_published = has_is_published
   const license_required = toBool(fd.get("license_required"));
   const license_type = toStr(fd.get("license_type")) || null;
 
-  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
+  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode")) || "pickup_only");
+  const delivery_miles = toNum(fd.get("delivery_miles"));
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
 
   const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
@@ -229,6 +244,10 @@ const is_published = has_is_published
       license_type: String(fd.get("license_type") ?? "") || null,
 
       price_per_day,
+      price_per_week,
+      price_per_month,
+      rental_hourly_enabled,
+      rental_hour_rate,
       security_deposit,
 
       city,
@@ -240,6 +259,7 @@ const is_published = has_is_published
       is_published,
 
       delivery_mode,
+      delivery_miles,
       delivery_fee,
 
       delivery_service_discount_enabled,

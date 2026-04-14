@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type Rental = {
@@ -177,6 +178,12 @@ const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
 
               {/* BUTTON ROW (moved to bottom) */}
 <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
+<Link
+  href={`/dashboard/rentals/${encodeURIComponent(r.id)}`}
+  className="rr-btn rr-btn-secondary"
+>
+  View Rental
+</Link>
   <a
     href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
     target="_blank"
