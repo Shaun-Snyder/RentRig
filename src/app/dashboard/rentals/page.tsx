@@ -15,7 +15,7 @@ export default async function MyRentalsPage() {
   const user = data.user;
 
   // Load rentals for this renter
-  const { data: rentals, error: rentalsError } = await supabase
+      const { data: rentals, error: rentalsError } = await supabase
     .from("rentals")
     .select(
       `
@@ -24,13 +24,16 @@ export default async function MyRentalsPage() {
       end_date,
       status,
       renter_returned,
+      renter_rejection_acknowledged,
       buffer_days,
       message,
       created_at,
+      inspections:rental_inspections!left(id, role),
       listing:listings ( id, title )
     `
     )
     .eq("renter_id", user.id)
+    .eq("renter_returned", false)
     .order("created_at", { ascending: false });
 
   if (rentalsError) {
@@ -105,15 +108,22 @@ export default async function MyRentalsPage() {
   }
 
   // Enrich rentals with listing.thumb_url for the client component
-  const rentalsWithThumb = rentalsRaw.map((r: any) => {
+      const rentalsWithThumb = rentalsRaw
+    .filter((r: any) => !(r.status === "rejected" && r.renter_rejection_acknowledged))
+    .map((r: any) => {
     const listingId = r.listing?.id as string | undefined;
     const thumb_url =
       listingId && thumbPathByListingId[listingId]
         ? thumbPathByListingId[listingId]
         : null;
 
+    const renter_condition_recorded = Array.isArray(r.inspections)
+      ? r.inspections.some((ins: any) => ins.role === "renter")
+      : false;
+
     return {
       ...r,
+      renter_condition_recorded,
       listing: r.listing
         ? {
             ...r.listing,

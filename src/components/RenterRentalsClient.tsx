@@ -11,7 +11,9 @@ type Rental = {
   start_date: string;
   end_date: string;
   status: string;
-renter_returned?: boolean | null;
+  renter_returned?: boolean | null;
+  renter_rejection_acknowledged?: boolean | null;
+  renter_condition_recorded?: boolean | null;
   buffer_days: number | null;
   message: string | null;
   created_at: string;
@@ -37,6 +39,8 @@ export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) 
 >({});
 
 const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
+const [ackedRejectedMap, setAckedRejectedMap] = useState<Record<string, boolean>>({});
+const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, string>>({});
 
   function storageUrl(path: string) {
     const { data } = supabase.storage
@@ -137,7 +141,7 @@ const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
                   </div>
 
                   {/* BUBBLES: black outline + shadow */}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
                       className="
                         inline-flex items-center
@@ -165,6 +169,36 @@ const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
                         Buffer: {r.buffer_days}d
                       </span>
                     )}
+
+                    {r.renter_condition_recorded && (
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-xs
+                          shadow-sm
+                        "
+                      >
+                        Condition recorded
+                      </span>
+                    )}
+
+                    {(r.renter_returned || returnedMap[r.id]) && (
+                      <span
+                        className="
+                          inline-flex items-center
+                          rounded-full border border-black
+                          bg-white
+                          px-3 py-1
+                          text-xs
+                          shadow-sm
+                        "
+                      >
+                        Returned
+                      </span>
+                    )}
                   </div>
 
                   {r.message && (
@@ -178,12 +212,13 @@ const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
 
               {/* BUTTON ROW (moved to bottom) */}
 <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
-<Link
-  href={`/dashboard/rentals/${encodeURIComponent(r.id)}`}
-  className="rr-btn rr-btn-secondary"
->
-  View Rental
-</Link>
+  <Link
+    href={`/dashboard/rentals/${encodeURIComponent(r.id)}`}
+    className="rr-btn rr-btn-secondary"
+  >
+    View Rental
+  </Link>
+
   <a
     href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
     target="_blank"
@@ -200,27 +235,76 @@ const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
     Record / view condition
   </a>
 
+  {r.status === "rejected" && !ackedRejectedMap[r.id] && (
+    <button
+      onClick={async () => {
+        setReturnErrorByRental((prev) => ({ ...prev, [r.id]: "" }));
+
+        const res = await fetch("/api/rentals/acknowledge-rejection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rentalId: r.id }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setReturnErrorByRental((prev) => ({
+            ...prev,
+            [r.id]: data?.error ?? "Failed to acknowledge rejection.",
+          }));
+          return;
+        }
+
+        setAckedRejectedMap((prev) => ({ ...prev, [r.id]: true }));
+        window.location.href = "/dashboard/rentals/history";
+      }}
+      className="rr-btn rr-btn-secondary"
+    >
+      Acknowledge rejection
+    </button>
+  )}
+
   <button
-  onClick={async () => {
-    const res = await fetch("/api/rentals/mark-returned", {
-      method: "POST",
-      body: JSON.stringify({ rentalId: r.id }),
-    });
+    onClick={async () => {
+      setReturnErrorByRental((prev) => ({ ...prev, [r.id]: "" }));
 
-    if (!res.ok) {
-      alert("Failed to mark returned");
-      return;
+      const res = await fetch("/api/rentals/mark-returned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rentalId: r.id }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setReturnErrorByRental((prev) => ({
+          ...prev,
+          [r.id]:
+            data?.error ??
+            "Failed to mark returned. Please add renter checkout photos first.",
+        }));
+        return;
+      }
+
+      setReturnedMap((prev) => ({ ...prev, [r.id]: true }));
+    }}
+    disabled={
+      r.status !== "approved" ||
+      r.renter_returned ||
+      returnedMap[r.id] ||
+      r.status === "rejected"
     }
-
-    setReturnedMap((prev) => ({ ...prev, [r.id]: true }));
-  }}
-  disabled={r.status !== "approved" || r.renter_returned || returnedMap[r.id]}
-  className="rr-btn rr-btn-secondary"
->
-  {r.renter_returned || returnedMap[r.id] ? "Returned" : "Mark Returned"}
-</button>
+    className="rr-btn rr-btn-secondary"
+  >
+    {r.renter_returned || returnedMap[r.id] ? "Returned" : "Mark Returned"}
+  </button>
 </div>
-
+{returnErrorByRental[r.id] ? (
+  <div className="text-sm text-amber-700">
+    {returnErrorByRental[r.id]}
+  </div>
+) : null}
             </div>
           </div>
         );

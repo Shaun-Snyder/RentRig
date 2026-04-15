@@ -13,10 +13,7 @@ export default async function RenterHistoryPage() {
   if (error || !data?.user) redirect("/login");
   const user = data.user;
 
-  // Today as YYYY-MM-DD (server time)
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: rentals, error: rentalsError } = await supabase
+    const { data: rentals, error: rentalsError } = await supabase
     .from("rentals")
     .select(
       `
@@ -24,19 +21,34 @@ export default async function RenterHistoryPage() {
       start_date,
       end_date,
       status,
+      renter_returned,
+      renter_rejection_acknowledged,
       buffer_days,
       message,
       created_at,
+      inspections:rental_inspections!left(id, role),
       listing:listings ( id, title )
     `
     )
     .eq("renter_id", user.id)
-    .lt("end_date", today) // only rentals that have ended
-    .order("end_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (rentalsError) {
     console.error("RenterHistoryPage rentalsError:", rentalsError);
   }
+
+    const rentalsWithCondition = (rentals ?? [])
+    .filter(
+      (r: any) =>
+        r.renter_returned === true ||
+        (r.status === "rejected" && r.renter_rejection_acknowledged === true)
+    )
+    .map((r: any) => ({
+    ...r,
+    renter_condition_recorded: Array.isArray(r.inspections)
+      ? r.inspections.some((ins: any) => ins.role === "renter")
+      : false,
+  }));
 
   return (
     <>
@@ -44,7 +56,7 @@ export default async function RenterHistoryPage() {
       <main className="mx-auto max-w-5xl px-6 py-10">
         <PageHeader
           title="Past rentals"
-          subtitle="Completed rentals and their history."
+          subtitle="Returned rentals and their history."
         />
 
         <div className="mt-2 mb-4">
@@ -53,7 +65,7 @@ export default async function RenterHistoryPage() {
           </a>
         </div>
 
-        <RenterRentalsClient rentals={(rentals ?? []) as any} />
+        <RenterRentalsClient rentals={rentalsWithCondition as any} />
       </main>
     </>
   );

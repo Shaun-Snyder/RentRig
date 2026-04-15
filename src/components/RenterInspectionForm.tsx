@@ -180,18 +180,17 @@ export default function RenterInspectionForm({
     }
 
     startTransition(async () => {
-      const res = await createRentalInspection(fd);
-      if (!res.ok) {
-        const m = res.message || "Could not save inspection.";
-        alert(m);
-        setMsg(m);
-      } else {
-        const m = res.message || "Inspection saved.";
-        alert(m);
-        setMsg(m);
-        form.reset();
-      }
-    });
+  const res = await createRentalInspection(fd);
+
+  if (!res.ok) {
+    const m = res.message || "Could not save inspection.";
+    setMsg(m);
+    return;
+  }
+
+  // ✅ SUCCESS — redirect instead of alert
+  window.location.href = "/dashboard/rentals";
+});
   }
 
   return (
@@ -298,10 +297,10 @@ export default function RenterInspectionForm({
             <div className="grid gap-1">
               <label className="text-xs font-medium">Phase</label>
               <select
-                name="phase"
-                className="rr-input w-full text-sm"
-                defaultValue="checkin"
-              >
+  name="phase"
+  className="rr-input w-full text-sm"
+  defaultValue="checkout"
+>
                 <option value="checkin">Check-in (before rental)</option>
                 <option value="checkout">Check-out (after rental)</option>
               </select>
