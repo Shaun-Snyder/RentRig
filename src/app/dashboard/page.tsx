@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import ProfileForm from "@/components/ProfileForm";
-import PageHeader from "@/components/PageHeader";
+
 
 type OwnerRequestRow = {
   id: string;
@@ -96,16 +96,20 @@ export default async function DashboardPage() {
       <ServerHeader />
 
       <main className="mx-auto max-w-5xl px-6 py-2">
-                <div className="mb-2">
-          <h1
-            className="
-              text-4xl font-extrabold text-black
-              [text-shadow:_2px_2px_0_#fff,_-2px_2px_0_#fff,_2px_-2px_0_#fff,_-2px_-2px_0_#fff]
-            "
-          >
-            Dashboard
-          </h1>
-        </div>
+               <div className="mb-4 rr-card p-4">
+  <h1
+    className="
+      text-4xl font-extrabold text-black
+      [text-shadow:_2px_2px_0_#fff,_-2px_2px_0_#fff,_2px_-2px_0_#fff,_-2px_-2px_0_#fff]
+    "
+  >
+    Dashboard
+  </h1>
+
+  <p className="mt-2 text-sm text-slate-600">
+    Manage your profile, listings, rentals, messages, and account settings.
+  </p>
+</div>
 
         {/* Popup-style alert when there are owner requests needing action */}
                 {pendingCount > 0 && (
@@ -164,11 +168,11 @@ export default async function DashboardPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <div className="text-xs text-slate-500">User ID</div>
-                <div className="mt-1 font-mono text-xs break-all opacity-80">
-                  {user.id}
-                </div>
-              </div>
+  <div className="text-xs text-slate-500">Account ID</div>
+  <div className="mt-1 font-mono text-xs break-all opacity-60">
+    {user.id}
+  </div>
+</div>
             </div>
           </div>
 

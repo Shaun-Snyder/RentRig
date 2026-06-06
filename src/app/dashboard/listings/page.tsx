@@ -26,26 +26,30 @@ export default async function DashboardListingsPage() {
 
   if (error) {
     return (
-      <div style={{ padding: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 600 }}>MY Listings</h1>
-        <p style={{ marginTop: 12, color: "crimson" }}>Load failed: {error.message}</p>
-      </div>
-    );
+  <div style={{ padding: 24 }}>
+    <h1 style={{ fontSize: 20, fontWeight: 600 }}>MY Listings</h1>
+    <p style={{ marginTop: 12, color: "crimson" }}>Load failed: {error.message}</p>
+  </div>
+);
   }
 
-  return (
+ return (
   <div>
     <ServerHeader />
 
-    <div style={{ padding: 24 }}>
-      <PageHeader
-  title="My Listings"
-  subtitle="View and manage your published listings."
-/>
+    <main className="mx-auto max-w-6xl px-6 py-4">
+      <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="My Listings"
+    subtitle="View and manage your published listings."
+  />
+</div>
 
-      <MyListingsClient listings={(listings ?? []) as any} showCreate={false} />
-        </div>
+      <MyListingsClient
+        listings={(listings ?? []) as any}
+        showCreate={false}
+      />
+    </main>
   </div>
 );
 }
-

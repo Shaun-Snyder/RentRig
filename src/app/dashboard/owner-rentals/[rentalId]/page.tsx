@@ -53,7 +53,7 @@ export default async function OwnerRentalDetailsPage({
     <>
       <ServerHeader />
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="mb-4">
           <Link
             href="/dashboard/owner-rentals"
@@ -63,12 +63,14 @@ export default async function OwnerRentalDetailsPage({
           </Link>
         </div>
 
-        <PageHeader
-          title="Rental Details"
-          subtitle="Full rental details for this request."
-        />
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Rental Details"
+    subtitle="Full rental details for this request."
+  />
+</div>
 
-        <div className="mt-6 grid gap-6">
+        <div className="grid gap-4">
           <div className="rr-card p-5">
             <div className="text-xl font-bold">
               {rental.listing?.title ?? "Listing"}

@@ -146,7 +146,7 @@ export default async function ListingsPage({
     return (
       <>
         <ServerHeader />
-        <main className="mx-auto max-w-6xl px-6 py-10">
+        <main className="mx-auto max-w-6xl px-6 py-4">
           <h1 className="text-3xl font-semibold">Browse Listings</h1>
           <p className="mt-4 text-red-600">Load failed: {error.message}</p>
         </main>
@@ -186,19 +186,20 @@ export default async function ListingsPage({
     <>
       <ServerHeader />
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-                <div className="flex items-end justify-between gap-4 flex-wrap">
-          <PageHeader
-            title="Browse Listings"
-            subtitle={
-              selectedIsValid
-                ? `Showing: ${catLabel(selected)}`
-                : "Showing: All categories"
-            }
-          />
-        </div>
+      <main className="mx-auto max-w-6xl px-6 py-4">
+                <div className="rr-card p-4">
+  <PageHeader
+    title="Browse Listings"
+    subtitle={
+      selectedIsValid
+        ? `Showing: ${catLabel(selected)}`
+        : "Showing: All categories"
+    }
+  />
+</div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 rr-card p-3">
+  <div className="flex flex-wrap gap-2">
   {/* ALL button */}
   <Link
     href="/listings"
@@ -233,6 +234,7 @@ export default async function ListingsPage({
         <div className="mt-8">
           <ListingsClient listings={listingListForClient as any} />
         </div>
+       </div>
       </main>
     </>
   );

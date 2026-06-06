@@ -137,11 +137,13 @@ export default async function MyRentalsPage() {
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="My Rentals"
-          subtitle="Your rental requests and their status."
-        />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="My Rentals"
+    subtitle="Your rental requests and their status."
+  />
+</div>
 
         <div className="mt-2 mb-4 flex justify-end">
           <a

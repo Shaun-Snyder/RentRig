@@ -200,20 +200,22 @@ latest_message_at: latest?.created_at ?? r.created_at ?? "",
     };
   });
 
-  return (
-    <div>
-      <ServerHeader />
+ return (
+  <div>
+    <ServerHeader />
 
-      <div style={{ padding: 24 }}>
+    <main className="mx-auto max-w-6xl px-6 py-4">
+      <div className="rr-card p-4 mb-4">
         <PageHeader
           title="Messages"
           subtitle="Select a rental to open the conversation."
         />
-
-        <div className="mt-6">
-          <ThreadsListClient rentals={threads as any} />
-        </div>
       </div>
-    </div>
-  );
+
+      <div className="mt-6">
+        <ThreadsListClient rentals={threads as any} />
+      </div>
+    </main>
+  </div>
+);
 }

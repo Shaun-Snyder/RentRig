@@ -185,10 +185,10 @@ const renterAvatar = rental?.renter?.avatar_url;
   }, [rental.start_date, rental.end_date, rental.status]);
 
   return (
-    <div className="rr-card p-4 md:p-6">
+    <div className="rr-card p-3 md:p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3 min-w-0">
-          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border bg-slate-50">
+          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-none border bg-slate-50">
             {thumb ? (
               <img src={thumb} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -222,8 +222,8 @@ const renterAvatar = rental?.renter?.avatar_url;
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border bg-white">
-        <div className="p-4 overflow-auto max-h-[60vh]">
+      <div className="mt-3 rounded-none border bg-white">
+        <div className="p-3 overflow-auto max-h-[60vh]">
           {loading && msgs.length === 0 ? (
             <div className="text-sm text-slate-500">Loading…</div>
           ) : msgs.length === 0 ? (
@@ -243,7 +243,7 @@ const renterAvatar = rental?.renter?.avatar_url;
     {m.sender_id === rental.renter?.id && renterAvatar ? (
       <img
         src={renterAvatar}
-        className="h-7 w-7 rounded-full object-cover border"
+        className="h-6 w-6 rounded-none object-cover border"
       />
     ) : m.sender_id !== rental.renter?.id && ownerAvatar ? (
       <img

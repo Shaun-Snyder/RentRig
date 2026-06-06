@@ -197,65 +197,36 @@ async function onComplete(rentalId: string) {
         const renterRatingAvg = r.renter_rating?.avg ?? null;
         const renterRatingCount = r.renter_rating?.count ?? 0;
 
-        return (
+       return (
   <div
     key={r.id}
-    className="
-      rr-card
-      border border-slate-300
-      rounded-none
-      px-4 py-4
-      grid gap-3
-      shadow-[0_18px_40px_rgba(15,23,42,0.18)]
-      bg-white
-    "
+    className="rr-card border border-slate-300 rounded-none p-3 shadow-sm bg-white"
   >
-    {/* TOP ROW: big thumbnail + summary + actions */}
-    <div className="flex items-start justify-between gap-4">
-      {/* LEFT: Large thumbnail and main text */}
-      <div className="flex gap-4">
-        <div className="flex-shrink-0">
-          {thumb ? (
-            <img
-              src={thumb}
-              alt=""
-              className="
-                w-40 md:w-56
-                aspect-[16/9]
-                object-cover
-                border border-slate-300
-                rounded-none
-              "
-            />
-          ) : (
-            <div
-              className="
-                w-40 md:w-56
-                aspect-[16/9]
-                border border-dashed border-slate-300
-                bg-slate-50
-                grid place-items-center
-                text-xs text-slate-500
-                rounded-none
-              "
-            >
-              No photo
-            </div>
-          )}
+    <div className="flex gap-4">
+      <div className="flex-shrink-0">
+        {thumb ? (
+          <img
+            src={thumb}
+            alt=""
+            className="w-32 md:w-40 aspect-[16/9] object-cover border border-slate-300 rounded-none"
+          />
+        ) : (
+          <div className="w-32 md:w-40 aspect-[16/9] border border-dashed border-slate-300 bg-slate-50 grid place-items-center text-xs text-slate-500 rounded-none">
+            No photo
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="text-lg font-extrabold text-slate-900">
+          {r.listing?.title ?? "Listing"}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <div className="text-2xl md:text-xl font-extrabold text-slate-900">
-            {r.listing?.title ?? "Listing"}
-          </div>
+        <div className="mt-2 grid gap-1 text-sm text-slate-700 md:grid-cols-2">
+          <div><span className="font-semibold">Dates:</span> {r.start_date} → {r.end_date}</div>
+          <div><span className="font-semibold">Status:</span> <span className="capitalize">{r.status}</span></div>
 
-          <div className="text-sm text-slate-700">
-            <span className="font-semibold">Dates:</span>{" "}
-            <span className="font-medium">
-              {r.start_date} → {r.end_date}
-            </span>
-          </div>
-          <div className="text-sm text-slate-700">
+          <div>
             <span className="font-semibold">Renter:</span>{" "}
             <a
               href={`/profile/${encodeURIComponent(r.renter_id)}`}
@@ -266,115 +237,85 @@ async function onComplete(rentalId: string) {
             {renterCompany ? <span> — {renterCompany}</span> : null}
           </div>
 
-          <div className="text-sm text-slate-700">
-            <span className="font-semibold">Rating:</span>{" "}
-            {renterRatingAvg
-              ? `★ ${renterRatingAvg} (${renterRatingCount} review${renterRatingCount === 1 ? "" : "s"})`
-              : "No reviews yet"}
-          </div>
-                    <div className="text-sm text-slate-700">
-            <span className="font-semibold">Status:</span>{" "}
-            <span className="capitalize">{r.status}</span>
-          </div>
-
-          <div className="text-sm text-slate-700">
+          <div>
             <span className="font-semibold">Return:</span>{" "}
             <span className={r.renter_returned ? "text-emerald-700 font-medium" : "text-amber-700 font-medium"}>
               {r.renter_returned ? "Returned by renter" : "Waiting on renter"}
             </span>
           </div>
 
-          {r.message && (
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Message:</span>{" "}
-              {r.message}
-            </div>
-          )}
-
-          {/* Optional quick hourly/operator info so it feels like the listings summary rows */}
-          {r.operator_selected && (
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Operator:</span>{" "}
-              {r.operator_rate != null
-                ? `${r.operator_rate} / ${r.operator_rate_unit ?? "hour"}`
-                : "Selected"}
-              {r.hourly_is_estimate && !r.hourly_finalized_at ? (
-                <span className="text-amber-600 font-semibold ml-1">
-                  (Estimate – needs finalize)
-                </span>
-              ) : null}
-            </div>
-          )}
+          <div className="md:col-span-2">
+            <span className="font-semibold">Rating:</span>{" "}
+            {renterRatingAvg
+              ? `★ ${renterRatingAvg} (${renterRatingCount} review${renterRatingCount === 1 ? "" : "s"})`
+              : "No reviews yet"}
+          </div>
         </div>
-      </div>
-
-      {/* RIGHT: button stack aligns like My Listings actions */}
-      <div className="flex flex-col items-end gap-2">
-       <div className="flex flex-wrap justify-end gap-2">
-  {/* Invoice – secondary button style */}
-  <a
-    href={`/api/invoice?rental_id=${r.id}`}
-    target="_blank"
-    rel="noreferrer"
-    className="rr-btn rr-btn-secondary"
-  >
-    Invoice
-  </a>
-
-  {/* Approve – same base as listings, with green override when approved */}
-  <button
-    onClick={() => onApprove(r.id)}
-    disabled={isPending || isApproved || isRejected}
-    className={`rr-btn rr-btn-primary ${
-      isApproved
-        ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700"
-        : ""
-    }`}
-  >
-    {isApproved ? "Approved" : "Approve & Email"}
-  </button>
-
-  {/* Reject – same danger style as Delete on listings */}
-  {!isApproved && !isRejected ? (
-  <button
-    onClick={() => onReject(r.id)}
-    disabled={isPending}
-    className="rr-btn rr-btn-danger"
-  >
-    Reject
-  </button>
-) : null}
-</div>
-
-<Link
-  href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}`}
-  className="rr-btn rr-btn-secondary"
->
-  View Rental
-</Link>
-<a
-  href={`/profile/${encodeURIComponent(r.renter_id)}`}
-  className="rr-btn rr-btn-secondary"
->
-  View Profile
-</a>
-<button
-  onClick={() => onComplete(r.id)}
-  disabled={isPending || r.status !== "approved" || !r.renter_returned}
-  className="rr-btn rr-btn-secondary"
->
-  {r.renter_returned ? "Complete" : "Waiting on Return"}
-</button>
-<a
-  href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}/inspection`}
-  className="rr-btn rr-btn-secondary"
->
-  Record / view condition
-</a>
       </div>
     </div>
 
-    {/* Finalize hourly operator if needed (unchanged logic) */}
+    {r.message && (
+      <div className="mt-3 border-t pt-3 text-sm text-slate-700">
+        <span className="font-semibold">Message:</span> {r.message}
+      </div>
+    )}
+
+    {r.operator_selected && (
+      <div className="mt-2 text-sm text-slate-700">
+        <span className="font-semibold">Operator:</span>{" "}
+        {r.operator_rate != null
+          ? `${r.operator_rate} / ${r.operator_rate_unit ?? "hour"}`
+          : "Selected"}
+        {r.hourly_is_estimate && !r.hourly_finalized_at ? (
+          <span className="text-amber-600 font-semibold ml-1">
+            (Estimate – needs finalize)
+          </span>
+        ) : null}
+      </div>
+    )}
+
+    <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+      <Link href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}`} className="rr-btn rr-btn-secondary">
+        View Rental
+      </Link>
+
+      <a href={`/profile/${encodeURIComponent(r.renter_id)}`} className="rr-btn rr-btn-secondary">
+        View Profile
+      </a>
+
+      <a href={`/api/invoice?rental_id=${r.id}`} target="_blank" rel="noreferrer" className="rr-btn rr-btn-secondary">
+        Invoice
+      </a>
+
+      <a href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}/inspection`} className="rr-btn rr-btn-secondary">
+        Record / view condition
+      </a>
+
+      <button
+        onClick={() => onApprove(r.id)}
+        disabled={isPending || isApproved || isRejected}
+        className={`rr-btn rr-btn-primary ${
+          isApproved ? "bg-emerald-600 border-emerald-700 hover:bg-emerald-700" : ""
+        }`}
+      >
+        {isApproved ? "Approved" : "Approve & Email"}
+      </button>
+
+      <button
+        onClick={() => onComplete(r.id)}
+        disabled={isPending || r.status !== "approved" || !r.renter_returned}
+        className="rr-btn rr-btn-secondary"
+      >
+        {r.renter_returned ? "Complete" : "Waiting on Return"}
+      </button>
+
+      {!isApproved && !isRejected ? (
+        <button onClick={() => onReject(r.id)} disabled={isPending} className="rr-btn rr-btn-danger">
+          Reject
+        </button>
+      ) : null}
+    </div>
+
     {showFinalize ? (
       <div className="mt-4 border-t pt-3">
         <FinalizeHourlyService
@@ -388,7 +329,6 @@ async function onComplete(rentalId: string) {
     ) : null}
   </div>
 );
-
       })}
     </div>
   );

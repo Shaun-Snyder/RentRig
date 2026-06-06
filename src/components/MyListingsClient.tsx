@@ -443,6 +443,7 @@ const [isPending, startTransition] = useTransition();
     fd.set("is_published", boolStr(x.is_published));
 
     fd.set("delivery_mode", ((x as any).delivery_mode ?? "pickup_only").toString());
+    fd.set("delivery_miles", numStr((x as any).delivery_miles));
     fd.set("delivery_fee", numStr((x as any).delivery_fee));
     fd.set(
       "delivery_service_discount_enabled",
@@ -1057,36 +1058,36 @@ router.refresh();
       bg-white
     "
   >
-            {/* TOP ROW: photo + summary + actions */}
-            <div className="flex items-start justify-between gap-4">
+                  {/* TOP ROW: photo + summary */}
+            <div className="flex items-start gap-4">
               {/* Left: big thumbnail and text */}
               <div className="flex gap-4">
                 <div className="flex flex-col flex-shrink-0">
                   {thumb ? (
-  <img
-    src={thumb}
-    alt=""
-    className="
-      w-60 md:w-80
-      h-40 md:h-48
-      object-cover
-      border border-slate-200
-    "
-  />
-) : (
-  <div
-    className="
-      w-60 md:w-80
-      h-40 md:h-48
-      border border-dashed border-slate-300
-      bg-slate-50
-      grid place-items-center
-      text-xs text-slate-500
-    "
-  >
-    No photo
-  </div>
-)}
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="
+                        w-60 md:w-80
+                        h-40 md:h-48
+                        object-cover
+                        border border-slate-200
+                      "
+                    />
+                  ) : (
+                    <div
+                      className="
+                        w-60 md:w-80
+                        h-40 md:h-48
+                        border border-dashed border-slate-300
+                        bg-slate-50
+                        grid place-items-center
+                        text-xs text-slate-500
+                      "
+                    >
+                      No photo
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -1124,6 +1125,7 @@ router.refresh();
                       • Deposit: {money(l.security_deposit)}
                     </span>
                   </div>
+
                   <div className="text-sm text-slate-700">
                     <span className="font-semibold">License required:</span>{" "}
                     {l.license_required ? "Yes" : "No"}
@@ -1157,81 +1159,71 @@ router.refresh();
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right: action buttons */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  {/* Edit / Close */}
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-sm font-semibold rounded-md bg-slate-100 text-slate-800 hover:bg-slate-200"
-                    disabled={isPending}
-                    onClick={() => {
-                      setOpenId(isOpen ? null : l.id);
-                      setEditOperatorRateUnit((p) => ({ ...p, [l.id]: unit }));
-                      if (!isOpen) refreshPhotos(l.id);
-                    }}
-                  >
-                    {isOpen ? "Close" : "Edit"}
-                  </button>
+                        <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+              <button
+                type="button"
+                className="rr-btn rr-btn-secondary"
+                disabled={isPending}
+                onClick={() => {
+                  setOpenId(isOpen ? null : l.id);
+                  setEditOperatorRateUnit((p) => ({ ...p, [l.id]: unit }));
+                  if (!isOpen) refreshPhotos(l.id);
+                }}
+              >
+                {isOpen ? "Close" : "Edit"}
+              </button>
 
-                  {/* Publish / Unpublish */}
-                  <button
-                    type="button"
-                    className={`px-4 py-2 text-sm font-semibold rounded-md ${
-                      l.is_published
-                        ? "bg-slate-900 text-white hover:bg-slate-700"
-                        : "bg-slate-700 text-white hover:bg-slate-900"
-                    }`}
-                    disabled={isPending}
-                    onClick={() => {
-                      setMsg("");
-                      startTransition(async () => {
-                        try {
-                          const nextPublished = !l.is_published;
-                          const fd = buildUpdateFD(l, {
-                            is_published: nextPublished,
-                          });
-                          const res: any = await updateListing(fd);
-                          setMsg(
-                            res?.message ??
-                              (nextPublished ? "Published." : "Unpublished."),
-                          );
-                          router.refresh();
-                        } catch (e: any) {
-                          setMsg(e?.message ?? "Publish toggle failed.");
-                        }
+              <button
+                type="button"
+                className="rr-btn rr-btn-primary"
+                disabled={isPending}
+                onClick={() => {
+                  setMsg("");
+                  startTransition(async () => {
+                    try {
+                      const nextPublished = !l.is_published;
+                      const fd = buildUpdateFD(l, {
+                        is_published: nextPublished,
                       });
-                    }}
-                  >
-                    {l.is_published ? "Unpublish" : "Publish"}
-                  </button>
+                      const res: any = await updateListing(fd);
+                      setMsg(
+                        res?.message ??
+                          (nextPublished ? "Published." : "Unpublished."),
+                      );
+                      router.refresh();
+                    } catch (e: any) {
+                      setMsg(e?.message ?? "Publish toggle failed.");
+                    }
+                  });
+                }}
+              >
+                {l.is_published ? "Unpublish" : "Publish"}
+              </button>
 
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-sm font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
-                    disabled={isPending}
-                    onClick={() => {
-                      if (!confirm("Delete this listing?")) return;
-                      setMsg("");
-                      startTransition(async () => {
-                        try {
-                          const fd = new FormData();
-                          fd.set("id", l.id);
-                          const res: any = await deleteListing(fd);
-                          setMsg(res?.message ?? "Deleted.");
-                          router.refresh();
-                        } catch (e: any) {
-                          setMsg(e?.message ?? "Delete failed.");
-                        }
-                      });
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                className="rr-btn rr-btn-danger"
+                disabled={isPending}
+                onClick={() => {
+                  if (!confirm("Delete this listing?")) return;
+                  setMsg("");
+                  startTransition(async () => {
+                    try {
+                      const fd = new FormData();
+                      fd.set("id", l.id);
+                      const res: any = await deleteListing(fd);
+                      setMsg(res?.message ?? "Deleted.");
+                      router.refresh();
+                    } catch (e: any) {
+                      setMsg(e?.message ?? "Delete failed.");
+                    }
+                  });
+                }}
+              >
+                Delete
+              </button>
             </div>
 
 
@@ -1287,7 +1279,7 @@ router.refresh();
                 <div className="flex items-center gap-2">
 <button
   type="button"
-  className="rounded-md border px-2 py-1 text-xs hover:rr-card"
+  className="rr-btn rr-btn-secondary rr-btn-sm"
   onClick={() => {
     if (idx === 0) return;
     setPhotosByListing((prev) => {
@@ -1311,7 +1303,7 @@ router.refresh();
                   {/* move up */}
                   <button
                     type="button"
-                    className="rounded-md border px-2 py-1 text-xs hover:rr-card"
+                    className="rr-btn rr-btn-secondary rr-btn-sm"
                     onClick={() => {
                       if (idx <= 0) return;
                       setPhotosByListing((prev) => {
@@ -1339,7 +1331,7 @@ router.refresh();
                   {/* move down */}
                   <button
                     type="button"
-                    className="rounded-md border px-2 py-1 text-xs hover:rr-card"
+                    className="rr-btn rr-btn-secondary rr-btn-sm"
                     onClick={() => {
                       if (idx >= arr.length - 1) return;
                       setPhotosByListing((prev) => {
@@ -1367,7 +1359,7 @@ router.refresh();
                   {/* delete */}
                   <button
                     type="button"
-                    className="rounded-md border px-2 py-1 text-xs text-red-600 hover:rr-card"
+                    className="rr-btn rr-btn-danger rr-btn-sm"
                     onClick={() => deletePhoto(p.id, l.id)}
                   >
                     Delete
@@ -1379,7 +1371,7 @@ router.refresh();
 
         <button
           type="button"
-          className="rounded-md border px-3 py-1.5 text-sm w-fit hover:rr-card"
+          className="rr-btn rr-btn-secondary rr-btn-sm w-fit"
           onClick={() => savePhotoOrder(l.id)}
         >
           Save photo order
@@ -1878,17 +1870,17 @@ router.refresh();
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2 border-t pt-4">
   <button
     disabled={isPending}
-    className="rounded-md bg-black text-white px-4 py-2"
+    className="rr-btn rr-btn-primary"
   >
     {isPending ? "Saving..." : "Save"}
   </button>
 
   <button
     type="button"
-    className="rounded-md border px-4 py-2"
+    className="rr-btn rr-btn-secondary"
     onClick={() => setOpenId(null)}
   >
     Close

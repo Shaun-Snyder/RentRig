@@ -200,11 +200,13 @@ export default async function OwnerRentalsPage() {
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="Owner Requests"
-          subtitle="Approve or reject rental requests for your listings."
-        />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Owner Requests"
+    subtitle="Approve or reject rental requests for your listings."
+  />
+</div>
 
         <div className="mt-2 mb-4 flex justify-end">
           <a
