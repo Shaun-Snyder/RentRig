@@ -149,7 +149,7 @@ export default function ProfileForm({
           router.refresh();
         });
       }}
-      className="rr-card grid gap-6 p-6"
+      className="rr-card grid gap-4 p-4"
     >
             <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl font-semibold">Profile</h2>
@@ -168,9 +168,9 @@ export default function ProfileForm({
         ) : null}
       </div>
 
-            <div className="grid gap-8 md:grid-cols-[auto,1fr] items-center">
+            <div className="grid gap-4 md:grid-cols-[auto,1fr] items-start">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-48 w-48 rounded-none border-4 border-black overflow-hidden bg-slate-200 flex items-center justify-center shadow-sm">
+          <div className="h-32 w-32 md:h-40 md:w-40 rounded-none border-4 border-black overflow-hidden bg-slate-200 flex items-center justify-center shadow-sm">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -212,54 +212,52 @@ export default function ProfileForm({
         </div>
 
         {!isEditing ? (
-          <div className="grid gap-4">
-            <div>
-              <div className="text-sm text-slate-500">Full name</div>
-              <div className="mt-1 font-medium">
-                {initialFullName || "Not added yet"}
-              </div>
-            </div>
-<div>
-  <div className="text-sm text-slate-500">Company</div>
-  <div className="mt-1 font-medium">
-    {initialCompanyName || "Not added yet"}
-  </div>
-</div>
-<div>
-  <div className="text-sm text-slate-500">City</div>
-  <div className="mt-1 font-medium">
-    {initialCity || "Not added yet"}
-  </div>
-</div>
+  <div className="grid gap-4">
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div>
+        <div className="text-sm text-slate-500">Full name</div>
+        <div className="mt-1 font-medium">
+          {initialFullName || "Not added yet"}
+        </div>
+      </div>
 
-<div>
-  <div className="text-sm text-slate-500">State</div>
-  <div className="mt-1 font-medium">
-    {initialState || "Not added yet"}
-  </div>
-</div>
+      <div>
+        <div className="text-sm text-slate-500">Company</div>
+        <div className="mt-1 font-medium">
+          {initialCompanyName || "Not added yet"}
+        </div>
+      </div>
 
-<div>
-  <div className="text-sm text-slate-500">Occupation</div>
-  <div className="mt-1 font-medium">
-    {initialOccupation || "Not added yet"}
-  </div>
-</div>
-            <div>
-              <div className="text-sm text-slate-500">Phone</div>
-              <div className="mt-1 font-medium">
-                {initialPhone || "Not added yet"}
-              </div>
-            </div>
+      <div>
+        <div className="text-sm text-slate-500">Location</div>
+        <div className="mt-1 font-medium">
+          {[initialCity, initialState].filter(Boolean).join(", ") || "Not added yet"}
+        </div>
+      </div>
 
-            <div>
-              <div className="text-sm text-slate-500">Profile summary</div>
-              <div className="mt-1 text-sm text-slate-800 whitespace-pre-wrap">
-                {initialSummary || "No summary added yet."}
-              </div>
-            </div>
-          </div>
-        ) : (
+      <div>
+        <div className="text-sm text-slate-500">Occupation</div>
+        <div className="mt-1 font-medium">
+          {initialOccupation || "Not added yet"}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-sm text-slate-500">Phone</div>
+        <div className="mt-1 font-medium">
+          {initialPhone || "Not added yet"}
+        </div>
+      </div>
+    </div>
+
+    <div className="border-t pt-3">
+      <div className="text-sm text-slate-500">Profile summary</div>
+      <div className="mt-1 text-sm text-slate-800 whitespace-pre-wrap">
+        {initialSummary || "No summary added yet."}
+      </div>
+    </div>
+  </div>
+) : (
           <div className="grid gap-4">
             <div className="grid gap-1">
               <label className="text-sm font-medium">Full name</label>

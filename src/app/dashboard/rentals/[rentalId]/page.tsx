@@ -80,7 +80,7 @@ export default async function RentalDetailsPage({
     <>
       <ServerHeader />
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="mb-4">
           <Link
             href="/dashboard/rentals"
@@ -90,13 +90,15 @@ export default async function RentalDetailsPage({
           </Link>
         </div>
 
-        <PageHeader
-          title="Rental Details"
-          subtitle="View the full details for this rental."
-        />
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Rental Details"
+    subtitle="View the full details for this rental."
+  />
+</div>
 
-        <div className="mt-6 grid gap-6">
-          <div className="rr-card p-5">
+        <div className="grid gap-4">
+          <div className="rr-card p-4">
             <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-lg border border-black/60 bg-slate-50 shadow-sm aspect-square">
                 {thumbUrl ? (

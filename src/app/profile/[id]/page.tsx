@@ -41,13 +41,15 @@ if (ratingCount > 0) {
     <div>
       <ServerHeader />
 
-      <div className="mx-auto max-w-3xl px-6 py-6">
-        <PageHeader title={profile.full_name || "User Profile"} />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader title={profile.full_name || "User Profile"} />
+</div>
 
         <div className="rr-card mt-4 p-5 rounded-none border shadow-sm space-y-3">
 
                     <div className="flex items-start gap-5">
-            <div className="w-44 h-44 md:w-56 md:h-56 border border-slate-300 bg-slate-100 overflow-hidden">
+            <div className="w-32 h-32 md:w-40 md:h-40 border border-slate-300 bg-slate-100 overflow-hidden">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -121,7 +123,7 @@ if (ratingCount > 0) {
           )}
 
         </div>
-      </div>
+      </main>
     </div>
   );
 }

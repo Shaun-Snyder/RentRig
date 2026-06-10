@@ -8,10 +8,12 @@ export default function FAQPage() {
     <div>
       <ServerHeader />
 
-      <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-        <PageHeader title="Frequently Asked Questions" />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader title="Frequently Asked Questions" />
+</div>
 
-        <div className="rr-card mt-4 p-4 rounded-none border shadow-sm space-y-4">
+        <div className="grid gap-3">
 
   <div>
     <h3 className="font-semibold">What is RentRig?</h3>
@@ -131,7 +133,7 @@ export default function FAQPage() {
   </div>
 
 </div>
-      </div>
+      </main>
     </div>
   );
 }
