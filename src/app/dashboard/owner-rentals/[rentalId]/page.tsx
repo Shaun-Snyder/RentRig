@@ -69,69 +69,97 @@ export default async function OwnerRentalDetailsPage({
     subtitle="Full rental details for this request."
   />
 </div>
+<div className="grid gap-4">
+  <div className="grid gap-4 md:grid-cols-2">
+    <div className="rr-card p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Rental Information
+      </div>
 
-        <div className="grid gap-4">
-          <div className="rr-card p-5">
-            <div className="text-xl font-bold">
-              {rental.listing?.title ?? "Listing"}
-            </div>
+      <div className="mt-3 text-xl font-bold">
+        {rental.listing?.title ?? "Listing"}
+      </div>
 
-            <div className="mt-2 text-sm text-slate-700">
-              <span className="font-semibold">Dates:</span>{" "}
-              {rental.start_date} → {rental.end_date}
-            </div>
-
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Status:</span>{" "}
-              {rental.status}
-            </div>
-
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Return:</span>{" "}
-              {rental.renter_returned ? "Returned" : "Not returned"}
-            </div>
-
-            <div className="mt-4 text-sm">
-              <span className="font-semibold">Renter:</span>{" "}
-              {rental.renter?.full_name ?? "Renter"}
-              {rental.renter?.company_name
-                ? ` — ${rental.renter.company_name}`
-                : ""}
-            </div>
-
-            {rental.message && (
-              <div className="mt-4 text-sm text-slate-700">
-                <span className="font-semibold">Message:</span>{" "}
-                {rental.message}
-              </div>
-            )}
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href={`/api/invoice?rental_id=${rental.id}`}
-                target="_blank"
-                className="rr-btn rr-btn-primary"
-              >
-                Download Invoice
-              </a>
-
-              <Link
-                href={`/dashboard/messages/${rental.id}`}
-                className="rr-btn rr-btn-secondary"
-              >
-                Open Messages
-              </Link>
-
-              <Link
-                href={`/dashboard/owner-rentals/${rental.id}/inspection`}
-                className="rr-btn rr-btn-secondary"
-              >
-                Record / View Condition
-              </Link>
-            </div>
-          </div>
+      <div className="mt-3 grid gap-2 text-sm text-slate-700">
+        <div>
+          <span className="font-semibold">Dates:</span>{" "}
+          {rental.start_date} → {rental.end_date}
         </div>
-      </main>
+
+        <div>
+          <span className="font-semibold">Status:</span>{" "}
+          <span className="capitalize">{rental.status}</span>
+        </div>
+
+        <div>
+          <span className="font-semibold">Return:</span>{" "}
+          {rental.renter_returned ? "Returned" : "Not returned"}
+        </div>
+      </div>
+    </div>
+
+    <div className="rr-card p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Renter Information
+      </div>
+
+      <div className="mt-3 grid gap-2 text-sm text-slate-700">
+        <div>
+          <span className="font-semibold">Name:</span>{" "}
+          {rental.renter?.full_name ?? "Renter"}
+        </div>
+
+        <div>
+          <span className="font-semibold">Company:</span>{" "}
+          {rental.renter?.company_name ?? "Not provided"}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {rental.message && (
+    <div className="rr-card p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Request Message
+      </div>
+
+      <div className="mt-3 text-sm text-slate-700">
+        {rental.message}
+      </div>
+    </div>
+  )}
+
+  <div className="rr-card p-4">
+    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      Actions
+    </div>
+
+    <div className="mt-3 flex flex-wrap gap-3">
+      <a
+        href={`/api/invoice?rental_id=${rental.id}`}
+        target="_blank"
+        className="rr-btn rr-btn-primary"
+      >
+        Download Invoice
+      </a>
+
+      <Link
+        href={`/dashboard/messages/${rental.id}`}
+        className="rr-btn rr-btn-secondary"
+      >
+        Open Messages
+      </Link>
+
+      <Link
+        href={`/dashboard/owner-rentals/${rental.id}/inspection`}
+        className="rr-btn rr-btn-secondary"
+      >
+        Record / View Condition
+      </Link>
+    </div>
+  </div>
+</div>
+             </main>
     </>
   );
 }
