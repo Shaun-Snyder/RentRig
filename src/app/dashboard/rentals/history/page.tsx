@@ -53,12 +53,13 @@ export default async function RenterHistoryPage() {
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="Past rentals"
-          subtitle="Returned rentals and their history."
-        />
-
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Past Rentals"
+    subtitle="Returned rentals and rental history."
+  />
+</div>
         <div className="mt-2 mb-4">
           <a href="/dashboard/rentals" className="rr-btn rr-btn-secondary rr-btn-sm">
             ← Back to current rentals

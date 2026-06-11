@@ -78,11 +78,13 @@ export default async function OwnerRentalsHistoryPage() {
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="Owner History"
-          subtitle="Past rentals for your listings, including inspections and invoices."
-        />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Owner History"
+    subtitle="Past rentals for your listings, including inspections and invoices."
+  />
+</div>
 
         <div className="mt-2 mb-4">
           <a
