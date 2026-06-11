@@ -74,7 +74,7 @@ export default function Header({
           {/* TOP ROW: NAV | BRAND | LOGOUT */}
           <div className="grid items-center gap-2 md:grid-cols-[1fr_auto_1fr]">
             {/* Left: Nav */}
-            <nav className="flex items-center gap-2 justify-start">
+            <nav className="hidden md:flex items-center gap-2 justify-start">
               <NavLink href="/dashboard" label="Dashboard" />
               {role === "admin" && <NavLink href="/admin" label="Admin" />}
             </nav>
@@ -83,7 +83,7 @@ export default function Header({
             <div className="relative flex flex-col items-center justify-center">
               <div
                 className="
-                  text-4xl md:text-5xl 
+                  text-2xl md:text-5xl 
                   font-extrabold 
                   tracking-tight
                   text-black
@@ -97,24 +97,25 @@ export default function Header({
                 RentRig
               </div>
 
-              <div className="text-[0.70rem] md:text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+              <div className="hidden sm:block text-[0.70rem] md:text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
                 Heavy Equipment Rentals
               </div>
             </div>
 
             {/* Right: Logout */}
-            <div className="flex justify-end">
-              <LogoutButton />
-            </div>
+            <div className="hidden md:flex justify-end">
+  <LogoutButton />
+</div>
           </div>
 
           {/* PAGE TITLE + SUBTITLE (small, clean, modern) */}
-          <div className="flex flex-col gap-0.5 text-sm md:flex-row md:items-baseline md:justify-between mt-1">
+          <div className="hidden sm:flex flex-col gap-0.5 text-sm md:flex-row md:items-baseline md:justify-between mt-1">
             <div className="text-base font-semibold text-slate-900">{title}</div>
             <div className="text-xs font-medium text-slate-600">{subtitle}</div>
           </div>
           {/* GLOBAL NAV ROW: visible on every page that uses ServerHeader */}
-          <div className="mt-2 flex flex-wrap gap-2 text-xs md:text-sm">
+          <div className="mt-2 hidden flex-wrap gap-2 text-xs md:flex md:text-sm">
+  
   <NavLink href="/dashboard/listings" label="My Listings" />
   <NavLink href="/dashboard/listings/new" label="Create Listing" />
   <NavLink href="/dashboard/rentals" label="My Rentals" />
@@ -131,6 +132,33 @@ export default function Header({
   <NavLink href="/listings" label="Browse Listings" />
 </div>
 
+<details className="mt-2 md:hidden">
+  <summary className="rr-btn rr-btn-secondary cursor-pointer list-none text-center">
+    Menu
+  </summary>
+
+  <div className="mt-2 grid gap-2">
+<NavLink href="/dashboard" label="Dashboard" />
+{role === "admin" && <NavLink href="/admin" label="Admin" />}
+    <NavLink href="/dashboard/listings" label="My Listings" />
+    <NavLink href="/dashboard/listings/new" label="Create Listing" />
+    <NavLink href="/dashboard/rentals" label="My Rentals" />
+    <NavLink
+      href="/dashboard/messages"
+      label="Messages"
+      badge={unreadMessageCount}
+    />
+    <NavLink
+      href="/dashboard/owner-rentals"
+      label="Owner Requests"
+      badge={pendingCount}
+    />
+    <NavLink href="/listings" label="Browse Listings" />
+  </div>
+<div className="mt-2">
+  <LogoutButton />
+</div>
+</details>
 
         </div>
       </div>
