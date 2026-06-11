@@ -22,7 +22,7 @@ export default async function ServerHeader() {
 
   // Logged out: no role, no pending badge
   if (!user) {
-    return <Header role={undefined} pendingCount={0} />;
+    return <Header role={undefined} pendingCount={0} unreadMessageCount={0} />;
   }
 
   const { data: profile } = await supabase
@@ -35,7 +35,7 @@ export default async function ServerHeader() {
 
   // ---------- Owner Requests pending count ----------
   let pendingCount = 0;
-
+  let unreadMessageCount = 0;
   try {
     // Step 1: get rentals visible for this user (RLS should already limit by listing owner)
     const { data: rentalsRaw, error: rentalsError } = await supabase
@@ -81,7 +81,92 @@ export default async function ServerHeader() {
   } catch {
     // If anything fails, leave pendingCount = 0 (no badge)
   }
+  // ---------- Messages unread count ----------
+  try {
+    const { data: ownedListings } = await supabase
+      .from("listings")
+      .select("id")
+      .eq("owner_id", user.id);
+
+    const ownedListingIds = (ownedListings ?? []).map((l) => l.id);
+
+    const { data: renterRentals } = await supabase
+      .from("rentals")
+      .select("id, listing_id, renter_id, created_at")
+      .eq("renter_id", user.id);
+
+    const { data: ownerRentals } = ownedListingIds.length
+      ? await supabase
+          .from("rentals")
+          .select("id, listing_id, renter_id, created_at")
+          .in("listing_id", ownedListingIds)
+      : { data: [] };
+
+    const rentalMap = new Map<string, any>();
+
+    for (const r of [...(renterRentals ?? []), ...(ownerRentals ?? [])]) {
+      if (r?.id) rentalMap.set(r.id, r);
+    }
+
+    const messageRentalIds = Array.from(rentalMap.keys());
+
+    if (messageRentalIds.length > 0) {
+      const latestMessageByRental = new Map<
+        string,
+        { created_at: string; sender_id: string }
+      >();
+
+      const { data: msgRows } = await supabase
+        .from("rental_messages")
+        .select("rental_id, created_at, sender_id")
+        .in("rental_id", messageRentalIds)
+        .order("created_at", { ascending: false });
+
+      for (const m of msgRows ?? []) {
+        if (!latestMessageByRental.has(m.rental_id)) {
+          latestMessageByRental.set(m.rental_id, {
+            created_at: m.created_at ?? "",
+            sender_id: m.sender_id ?? "",
+          });
+        }
+      }
+
+      const lastReadByRental = new Map<string, string>();
+
+      const { data: readRows } = await supabase
+        .from("rental_message_reads")
+        .select("rental_id, last_read_at")
+        .in("rental_id", messageRentalIds)
+        .eq("user_id", user.id);
+
+      for (const r of readRows ?? []) {
+        if (r?.rental_id) {
+          lastReadByRental.set(r.rental_id, r.last_read_at ?? "");
+        }
+      }
+
+      unreadMessageCount = messageRentalIds.filter((rentalId) => {
+        const latest = latestMessageByRental.get(rentalId);
+        const lastReadAt = lastReadByRental.get(rentalId) ?? "";
+
+        return (
+          !!latest?.created_at &&
+          latest.sender_id !== user.id &&
+          (!lastReadAt || new Date(latest.created_at) > new Date(lastReadAt))
+        );
+      }).length;
+    }
+  } catch {
+    // If anything fails, leave unreadMessageCount = 0
+  }
+  // ------------------------------------------
   // ---------------------------------------------------
 
-  return <Header role={role} pendingCount={pendingCount} />;
+  return (
+  <Header
+    role={role}
+    pendingCount={pendingCount}
+    unreadMessageCount={unreadMessageCount}
+  />
+);
 }

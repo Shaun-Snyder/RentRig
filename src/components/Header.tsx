@@ -38,9 +38,11 @@ function NavLink({
 export default function Header({
   role,
   pendingCount,
+  unreadMessageCount,
 }: {
   role?: string;
   pendingCount?: number;
+  unreadMessageCount?: number;
 }) {
 
   const title = role === "admin" ? "Admin" : "Dashboard";
@@ -116,7 +118,11 @@ export default function Header({
   <NavLink href="/dashboard/listings" label="My Listings" />
   <NavLink href="/dashboard/listings/new" label="Create Listing" />
   <NavLink href="/dashboard/rentals" label="My Rentals" />
-  <NavLink href="/dashboard/messages" label="Messages" />
+  <NavLink
+  href="/dashboard/messages"
+  label="Messages"
+  badge={unreadMessageCount}
+/>
   <NavLink
     href="/dashboard/owner-rentals"
     label="Owner Requests"
