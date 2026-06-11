@@ -183,7 +183,9 @@ async function onComplete(rentalId: string) {
       {rentals.map((r) => {
         const isRejected = r.status === "rejected";
         const isApproved = r.status === "approved";
-
+const isNewRequest =
+  r.created_at &&
+  Date.now() - new Date(r.created_at).getTime() < 24 * 60 * 60 * 1000;
         const showFinalize =
           r.status === "approved" &&
           Boolean(r.operator_selected) &&
@@ -193,6 +195,7 @@ async function onComplete(rentalId: string) {
 
                 const thumb = getThumb(r.listing_id);
         const renterName = r.renter?.full_name?.trim() || "Renter";
+        const renterAvatar = r.renter?.avatar_url ?? "";
         const renterCompany = r.renter?.company_name?.trim() || "";
         const renterRatingAvg = r.renter_rating?.avg ?? null;
         const renterRatingCount = r.renter_rating?.count ?? 0;
@@ -218,38 +221,76 @@ async function onComplete(rentalId: string) {
       </div>
 
       <div className="min-w-0 flex-1">
+{isNewRequest && (
+  <div className="mb-1 inline-flex w-fit items-center border border-amber-700 bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 shadow-sm">
+    New Request
+  </div>
+)}
         <div className="text-lg font-extrabold text-slate-900">
           {r.listing?.title ?? "Listing"}
         </div>
 
         <div className="mt-2 grid gap-1 text-sm text-slate-700 md:grid-cols-2">
           <div><span className="font-semibold">Dates:</span> {r.start_date} → {r.end_date}</div>
-          <div><span className="font-semibold">Status:</span> <span className="capitalize">{r.status}</span></div>
+          <div>
+  <span className="font-semibold">Status:</span>{" "}
+  <span
+    className={`
+      inline-flex items-center
+      rounded-full border
+      px-2 py-0.5
+      text-xs font-semibold uppercase
+      shadow-sm
+      ${
+        r.status === "approved"
+          ? "border-emerald-700 bg-emerald-100 text-emerald-800"
+          : r.status === "rejected"
+          ? "border-red-700 bg-red-100 text-red-800"
+          : r.status === "completed"
+          ? "border-blue-700 bg-blue-100 text-blue-800"
+          : "border-amber-700 bg-amber-100 text-amber-800"
+      }
+    `}
+  >
+    {r.status}
+  </span>
+</div>
 
           <div>
             <span className="font-semibold">Renter:</span>{" "}
-            <a
-              href={`/profile/${encodeURIComponent(r.renter_id)}`}
-              className="font-medium underline-offset-2 hover:underline"
-            >
-              {renterName}
-            </a>
-            {renterCompany ? <span> — {renterCompany}</span> : null}
+<a
+  href={`/profile/${encodeURIComponent(r.renter_id)}`}
+  className="font-medium underline-offset-2 hover:underline"
+>
+  {renterName}
+</a>
+{renterCompany ? <span> — {renterCompany}</span> : null}
           </div>
 
           <div>
-            <span className="font-semibold">Return:</span>{" "}
-            <span className={r.renter_returned ? "text-emerald-700 font-medium" : "text-amber-700 font-medium"}>
-              {r.renter_returned ? "Returned by renter" : "Waiting on renter"}
-            </span>
-          </div>
+  <span className="font-semibold">Return:</span>{" "}
+  <span
+    className={`
+      inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold shadow-sm
+      ${
+        r.renter_returned
+          ? "border-emerald-700 bg-emerald-100 text-emerald-800"
+          : "border-amber-700 bg-amber-100 text-amber-800"
+      }
+    `}
+  >
+    {r.renter_returned ? "Returned" : "Waiting"}
+  </span>
+</div>
 
-          <div className="md:col-span-2">
-            <span className="font-semibold">Rating:</span>{" "}
-            {renterRatingAvg
-              ? `★ ${renterRatingAvg} (${renterRatingCount} review${renterRatingCount === 1 ? "" : "s"})`
-              : "No reviews yet"}
-          </div>
+          <div>
+  <span className="font-semibold">Rating:</span>{" "}
+  <span className="inline-flex items-center rounded-full border border-slate-400 bg-white px-2 py-0.5 text-xs font-semibold shadow-sm">
+    {renterRatingAvg
+      ? `★ ${renterRatingAvg} (${renterRatingCount})`
+      : "No reviews"}
+  </span>
+</div>
         </div>
       </div>
     </div>

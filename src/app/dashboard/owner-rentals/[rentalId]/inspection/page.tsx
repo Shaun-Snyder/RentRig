@@ -212,13 +212,15 @@ export default async function OwnerInspectionPage({
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="Rental condition (owner)"
-          subtitle="Record check-in / check-out condition and manage the rental agreement."
-        />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Rental Condition"
+    subtitle="Record check-in / check-out condition and manage the rental agreement."
+  />
+</div>
 
-        <div className="mt-2 mb-6 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <a href="/dashboard/owner-rentals" className="rr-btn rr-btn-secondary">
             ← Back to rental requests
           </a>
@@ -227,8 +229,10 @@ export default async function OwnerInspectionPage({
         {/* Rental agreement upload / view (owner only) */}
         <section className="mb-6 space-y-2">
           <div className="rr-card p-4">
-            <h2 className="text-sm font-semibold">Rental agreement</h2>
-            <p className="mt-1 text-xs text-slate-600">
+            <h2 className="text-base font-semibold">
+  Rental Agreement
+</h2>
+            <p className="mt-1 text-sm text-slate-600">
               Upload your signed rental agreement (PDF, DocuSign export, etc.).
               This will be stored with this rental so you can reference it
               later.
@@ -295,9 +299,9 @@ export default async function OwnerInspectionPage({
 
             {/* Agreement history list */}
             <div className="mt-4 border-t pt-3">
-              <h3 className="text-[11px] font-semibold uppercase text-slate-600">
-                Agreement history
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-700">
+  Agreement History
+</h3>
 
               {agreementList.length === 0 ? (
                 <p className="mt-1 text-[11px] text-slate-500">

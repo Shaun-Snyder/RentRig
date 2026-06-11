@@ -185,13 +185,15 @@ export default async function RenterInspectionPage({
   return (
     <>
       <ServerHeader />
-      <main className="mx-auto max-w-5xl px-6 py-10">
-        <PageHeader
-          title="Rental condition (renter)"
-          subtitle="Record check-in / check-out condition for this rental."
-        />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+  <PageHeader
+    title="Rental Condition"
+    subtitle="Record check-in / check-out condition for this rental."
+  />
+</div>
 
-        <div className="mt-2 mb-6 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <a href="/dashboard/rentals" className="rr-btn rr-btn-secondary">
             ← Back to my rentals
           </a>
@@ -230,7 +232,9 @@ export default async function RenterInspectionPage({
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold">Existing inspections</h2>
+          <h2 className="mb-3 text-base font-semibold text-slate-800">
+  Inspection History
+</h2>
 
           {inspections.length === 0 ? (
             <p className="text-sm text-slate-600">
@@ -242,8 +246,8 @@ export default async function RenterInspectionPage({
               {inspections.map((insp) => (
                 <div
                   key={insp.id}
-                  className="rr-card space-y-2 p-3 text-xs text-slate-700"
-                >
+                     className="rr-card space-y-3 p-4 text-sm text-slate-700"   
+          >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       {/* Role bubble */}

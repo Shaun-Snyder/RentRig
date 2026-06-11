@@ -143,17 +143,25 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
                   {/* BUBBLES: black outline + shadow */}
                                     <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
-                      className="
-                        inline-flex items-center
-                        rounded-full border border-black
-                        bg-white
-                        px-3 py-1
-                        text-xs font-semibold uppercase
-                        shadow-sm
-                      "
-                    >
-                      {r.status}
-                    </span>
+  className={`
+    inline-flex items-center
+    rounded-full border
+    px-3 py-1
+    text-xs font-semibold uppercase
+    shadow-sm
+    ${
+      r.status === "approved"
+        ? "border-emerald-700 bg-emerald-100 text-emerald-800"
+        : r.status === "rejected"
+        ? "border-red-700 bg-red-100 text-red-800"
+        : r.status === "completed"
+        ? "border-blue-700 bg-blue-100 text-blue-800"
+        : "border-amber-700 bg-amber-100 text-amber-800"
+    }
+  `}
+>
+  {r.status}
+</span>
 
                     {typeof r.buffer_days === "number" && (
                       <span

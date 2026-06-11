@@ -210,33 +210,26 @@ export default function RenterInspectionForm({
 
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
               {/* Status bubble */}
-              <span
-                className="
-                  inline-flex items-center
-                  rounded-full border border-black
-                  bg-white
-                  px-3 py-1
-                  text-[11px] font-semibold uppercase
-                  shadow-sm
-                "
-              >
-                {rental.status}
-              </span>
-
-              {typeof rental.buffer_days === "number" && (
-                <span
-                  className="
-                    inline-flex items-center
-                    rounded-full border border-black
-                    bg-white
-                    px-3 py-1
-                    text-[11px]
-                    shadow-sm
-                  "
-                >
-                  Buffer: {rental.buffer_days}d
-                </span>
-              )}
+<span
+  className={`
+    inline-flex items-center
+    rounded-full border
+    px-3 py-1
+    text-[11px] font-semibold uppercase
+    shadow-sm
+    ${
+      rental.status === "approved"
+        ? "border-emerald-700 bg-emerald-100 text-emerald-800"
+        : rental.status === "rejected"
+        ? "border-red-700 bg-red-100 text-red-800"
+        : rental.status === "completed"
+        ? "border-blue-700 bg-blue-100 text-blue-800"
+        : "border-amber-700 bg-amber-100 text-amber-800"
+    }
+  `}
+>
+  {rental.status}
+</span>
             </div>
 
             {/* Renter view of agreement: only if owner uploaded one */}
