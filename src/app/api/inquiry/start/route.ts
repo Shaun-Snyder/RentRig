@@ -62,25 +62,32 @@ export async function GET(req: NextRequest) {
       const { data: created, error: createError } = await supabase
     .from("rentals")
     .insert({
-      listing_id: listingId,
-      renter_id: user.id,
-      status: "pending",
-      is_inquiry: true,
-      message: null,
-      start_date: startDate,
-      end_date: endDate,
-    })
+  listing_id: listingId,
+  renter_id: user.id,
+  status: "pending",
+  is_inquiry: true,
+  message: "Inquiry started.",
+  start_date: startDate,
+  end_date: endDate,
+  buffer_days: 0,
+  delivery_selected: false,
+  delivery_fee: 0,
+  operator_selected: false,
+  operator_total: 0,
+  hourly_is_estimate: false,
+})
     .select("id")
     .single();
 
     if (createError || !created?.id) {
-    return NextResponse.json(
-      {
-        error: createError?.message ?? "Failed to create inquiry thread",
-      },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json(
+    {
+      error: createError?.message ?? "Failed to create inquiry thread",
+      details: createError,
+    },
+    { status: 500 }
+  );
+}
 
   return NextResponse.redirect(
     new URL(`/dashboard/messages/${created.id}`, req.url),

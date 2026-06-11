@@ -1059,20 +1059,20 @@ router.refresh();
     "
   >
                   {/* TOP ROW: photo + summary */}
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col md:flex-row items-start gap-4">
               {/* Left: big thumbnail and text */}
-              <div className="flex gap-4">
+               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <div className="flex flex-col flex-shrink-0">
                   {thumb ? (
                     <img
                       src={thumb}
                       alt=""
                       className="
-                        w-60 md:w-80
-                        h-40 md:h-48
-                        object-cover
-                        border border-slate-200
-                      "
+  w-full md:w-80
+  h-48 md:h-48
+  object-cover
+  border border-slate-200
+"
                     />
                   ) : (
                     <div
@@ -1090,7 +1090,7 @@ router.refresh();
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 min-w-0">
                   <div className="text-2xl md:text-xl font-extrabold text-slate-900">
                     {l.title}
                   </div>

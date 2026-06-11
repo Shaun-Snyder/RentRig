@@ -317,7 +317,7 @@ export default function RentalRequestForm({
 
   return (
     <form
-      className="rounded-xl border bg-white p-5 shadow-sm grid gap-3 max-w-xl"
+      className="rounded-xl border bg-white p-5 shadow-sm grid gap-3 w-full max-w-xl overflow-hidden"
       action={(fd) => {
         startTransition(async () => {
           try {
@@ -362,7 +362,8 @@ export default function RentalRequestForm({
       <input type="hidden" name="operator_hours" value={String(serviceChoice === "operator" && operatorRateUnit === "hour" ? serviceHours : 0)} />
       <input type="hidden" name="operator_total" value={String(serviceChoice === "operator" ? serviceTotal : 0)} />
 
-      <DayPicker
+      <div className="hidden md:block max-w-full overflow-hidden">
+  <DayPicker
         mode="range"
         selected={range}
         onSelect={(r) => {
@@ -371,7 +372,7 @@ export default function RentalRequestForm({
           setStartDate(r.from.toISOString().slice(0, 10));
           setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
         }}
-        numberOfMonths={2}
+        numberOfMonths={1}
         disabled={(d) => {
           const now = new Date();
           // disallow past dates
@@ -386,7 +387,28 @@ export default function RentalRequestForm({
           return false;
         }}
       />
+</div>
+<div className="grid gap-3 md:hidden">
+  <label className="grid gap-1">
+    <span className="text-sm text-slate-600">Start date</span>
+    <input
+      type="date"
+      className="border rounded-lg p-2"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+    />
+  </label>
 
+  <label className="grid gap-1">
+    <span className="text-sm text-slate-600">End date</span>
+    <input
+      type="date"
+      className="border rounded-lg p-2"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+    />
+  </label>
+</div>
       {(minViolation || maxViolation) && (
         <div className="rounded-lg border bg-white p-3 text-sm text-amber-700">
           {minViolation ? <div>Minimum rental is {minRentalDays} day(s).</div> : null}

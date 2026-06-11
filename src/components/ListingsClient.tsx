@@ -465,23 +465,64 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           </label>
 
           {availEnabled && (
-            <div className="rounded-lg border border-black/20 bg-white/60 p-3">
-              <DayPicker
-                mode="range"
-                selected={range}
-                onSelect={(r) => {
-                  setRange(r);
-                  setChecked(false);
-                  setCheckedRange(null);
-                  setAvailError(null);
-                  lastAutoKey.current = null;
-                }}
-                numberOfMonths={2}
-                showOutsideDays
-              />
-            </div>
-          )}
+  <>
+    <div className="hidden md:block rounded-lg border border-black/20 bg-white/60 p-3">
+      <DayPicker
+        mode="range"
+        selected={range}
+        onSelect={(r) => {
+          setRange(r);
+          setChecked(false);
+          setCheckedRange(null);
+          setAvailError(null);
+          lastAutoKey.current = null;
+        }}
+        numberOfMonths={2}
+        showOutsideDays
+      />
+    </div>
 
+    <div className="grid gap-3 rounded-lg border border-black/20 bg-white/60 p-3 md:hidden">
+      <label className="grid gap-1">
+        <span className="text-sm text-slate-600">Start date</span>
+        <input
+          type="date"
+          className="border rounded-lg p-2"
+          onChange={(e) => {
+            const nextFrom = e.target.value ? new Date(e.target.value) : undefined;
+            setRange((prev) => ({
+              from: nextFrom,
+              to: prev?.to,
+            }));
+            setChecked(false);
+            setCheckedRange(null);
+            setAvailError(null);
+            lastAutoKey.current = null;
+          }}
+        />
+      </label>
+
+      <label className="grid gap-1">
+        <span className="text-sm text-slate-600">End date</span>
+        <input
+          type="date"
+          className="border rounded-lg p-2"
+          onChange={(e) => {
+            const nextTo = e.target.value ? new Date(e.target.value) : undefined;
+            setRange((prev) => ({
+              from: prev?.from,
+              to: nextTo,
+            }));
+            setChecked(false);
+            setCheckedRange(null);
+            setAvailError(null);
+            lastAutoKey.current = null;
+          }}
+        />
+      </label>
+    </div>
+  </>
+)}
           <div className="flex items-center gap-3">
             <button
               type="button"

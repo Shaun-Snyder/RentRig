@@ -16,7 +16,9 @@ export default async function ListingPage({
 }) {
   const supabase = await createClient();
   const id = params.id;
-
+const {
+  data: { user },
+} = await supabase.auth.getUser();
   /* =========================
      Listing (current DB schema)
   ========================== */
@@ -25,6 +27,7 @@ export default async function ListingPage({
     .select(
       `
       id,
+      owner_id,
       title,
       description,
       category,
@@ -208,14 +211,16 @@ export default async function ListingPage({
           </div>
         ) : null}
 
-<div className="mb-4">
-  <a
-    href={`/api/inquiry/start?listing_id=${listing.id}`}
-    className="rr-btn rr-btn-secondary w-full text-center block"
-  >
-    Message Owner
-  </a>
-</div>
+{user && listing.owner_id !== user.id && (
+  <div className="mb-4">
+    <a
+      href={`/api/inquiry/start?listing_id=${listing.id}`}
+      className="rr-btn rr-btn-secondary w-full text-center block"
+    >
+      Message Owner
+    </a>
+  </div>
+)}
 
         {/* Rental form */}
         <div className="rr-card p-5">
