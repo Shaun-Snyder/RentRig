@@ -232,6 +232,10 @@ const isNewRequest =
 
         <div className="mt-2 grid gap-1 text-sm text-slate-700 md:grid-cols-2">
           <div><span className="font-semibold">Dates:</span> {r.start_date} → {r.end_date}</div>
+<div>
+  <span className="font-semibold">Requested:</span>{" "}
+  {r.created_at ? new Date(r.created_at).toLocaleString() : "Unknown"}
+</div>
           <div>
   <span className="font-semibold">Status:</span>{" "}
   <span
