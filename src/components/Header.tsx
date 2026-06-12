@@ -126,7 +126,7 @@ export default function Header({
 />
   <NavLink
     href="/dashboard/owner-rentals"
-    label="Owner Requests"
+    label="Rental Requests"
     badge={pendingCount}
   />
   <NavLink href="/listings" label="Browse Listings" />
@@ -150,7 +150,7 @@ export default function Header({
     />
     <NavLink
       href="/dashboard/owner-rentals"
-      label="Owner Requests"
+      label="Rental Requests"
       badge={pendingCount}
     />
     <NavLink href="/listings" label="Browse Listings" />

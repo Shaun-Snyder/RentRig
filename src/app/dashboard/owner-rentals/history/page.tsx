@@ -81,7 +81,7 @@ export default async function OwnerRentalsHistoryPage() {
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
   <PageHeader
-    title="Owner History"
+    title="Rental Request History"
     subtitle="Past rentals for your listings, including inspections and invoices."
   />
 </div>
@@ -91,7 +91,7 @@ export default async function OwnerRentalsHistoryPage() {
             href="/dashboard/owner-rentals"
             className="rr-btn rr-btn-secondary rr-btn-sm"
           >
-            ← Back to owner requests
+            ← Back to Rental requests
           </a>
         </div>
 

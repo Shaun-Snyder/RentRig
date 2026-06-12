@@ -59,7 +59,7 @@ export default async function OwnerRentalDetailsPage({
             href="/dashboard/owner-rentals"
             className="rr-btn rr-btn-secondary rr-btn-sm"
           >
-            ← Back to Owner Requests
+            ← Back to Rental Requests
           </Link>
         </div>
 

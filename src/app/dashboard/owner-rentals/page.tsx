@@ -203,8 +203,8 @@ export default async function OwnerRentalsPage() {
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
   <PageHeader
-    title="Owner Requests"
-    subtitle="Approve or reject rental requests for your listings."
+    title="Rental Requests"
+    subtitle="Review and manage rental requests for your listings."
   />
 </div>
 

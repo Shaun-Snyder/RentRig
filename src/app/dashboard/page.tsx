@@ -116,7 +116,7 @@ export default async function DashboardPage() {
           <div className="mt-2 rounded-none border p-4 rr-card shadow-sm">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <div className="text-xs font-semibold text-slate-500 tracking-wide">Owner Requests</div>
+                <div className="text-xs font-semibold text-slate-500 tracking-wide">Rental Requests</div>
                 <p className="mt-2 text-sm text-slate-800">
                   You have{" "}
                   <span className="font-semibold">{pendingCount}</span>{" "}
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
                 href="/dashboard/owner-rentals"
                 className="rr-btn rr-btn-secondary"
               >
-                Owner Requests ({pendingCount})
+                Rental Requests ({pendingCount})
               </a>
             </div>
           </div>

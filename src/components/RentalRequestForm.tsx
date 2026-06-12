@@ -134,6 +134,7 @@ export default function RentalRequestForm({
   driverLaborMaxHours,
 }: Props) {
   const [msg, setMsg] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const [range, setRange] = useState<DateRange | undefined>();
@@ -322,7 +323,12 @@ export default function RentalRequestForm({
         startTransition(async () => {
           try {
             const res: any = await requestRental(fd);
-            setMsg(res?.message ?? "Request failed.");
+
+if (res?.ok) {
+  setRequestSent(true);
+}
+
+setMsg(res?.message ?? "Request failed.");
           } catch (e: any) {
             setMsg(e?.message ?? "Request failed.");
           }
@@ -577,9 +583,13 @@ export default function RentalRequestForm({
 
       <button
   className="rr-btn rr-btn-primary w-full"
-  disabled={isPending || !canSubmit}
+  disabled={isPending || requestSent || !canSubmit}
 >
-  {isPending ? "Sending..." : "Request rental"}
+  {requestSent
+    ? "Request sent"
+    : isPending
+      ? "Sending..."
+      : "Request rental"}
 </button>
 
       {!canSubmit && (

@@ -339,15 +339,56 @@ export async function requestRental(formData: FormData) {
     "hourly_finalized_at",
   ]);
 
-  const { error: insertError } = await supabase.from("rentals").insert(rentalInsert);
+  const { data: existingInquiry } = await supabase
+  .from("rentals")
+  .select("id")
+  .eq("listing_id", listing_id)
+  .eq("renter_id", user.id)
+  .eq("is_inquiry", true)
+  .order("created_at", { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+let rentalId: string | null = null;
+
+if (existingInquiry?.id) {
+  const { error: updateError } = await supabase
+    .from("rentals")
+    .update({
+      ...rentalInsert,
+      is_inquiry: false,
+    })
+    .eq("id", existingInquiry.id);
+
+  if (updateError) return { ok: false, message: updateError.message };
+
+  rentalId = existingInquiry.id;
+} else {
+  const { data: createdRental, error: insertError } = await supabase
+    .from("rentals")
+    .insert({
+      ...rentalInsert,
+      is_inquiry: false,
+    })
+    .select("id")
+    .single();
 
   if (insertError) return { ok: false, message: insertError.message };
 
+  rentalId = createdRental?.id ?? null;
+}
+if (rentalId && message) {
+  await supabase.from("rental_messages").insert({
+    rental_id: rentalId,
+    sender_id: user.id,
+    body: message,
+  });
+}
   revalidatePath(`/listings/${listing_id}`);
   revalidatePath("/dashboard/rentals");
   revalidatePath("/dashboard/owner-rentals");
 
-  return { ok: true, message: "Rental request sent." };
+  return { ok: true, message: "Rental request sent.", rentalId };
 }
 
 /* ---------------- Step 3.3 finalize hourly (unchanged behavior) ---------------- */

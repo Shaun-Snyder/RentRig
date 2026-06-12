@@ -34,7 +34,7 @@ export default async function MessageThreadPage({
   "id, listing_id, renter_id, start_date, end_date, status, is_inquiry, created_at, listing:listings(id,title,owner_id), renter:profiles!rentals_renter_id_fkey(id,full_name,avatar_url)"
 )
     .eq("id", rentalId)
-    .single();
+    .maybeSingle();
 
   // Show the real error (so we stop guessing)
   if (error || !rental) {

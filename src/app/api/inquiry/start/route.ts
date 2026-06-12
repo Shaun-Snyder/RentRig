@@ -34,22 +34,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL(`/listings/${listingId}`, req.url));
   }
 
-  // Reuse an existing inquiry thread first
-      const { data: existingInquiry } = await supabase
-    .from("rentals")
-    .select("id")
-    .eq("listing_id", listingId)
-    .eq("renter_id", user.id)
-    .eq("is_inquiry", true)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Reuse an existing thread first
+const { data: existingThread, error: existingThreadError } = await supabase
+  .from("rentals")
+  .select("id")
+  .eq("listing_id", listingId)
+  .eq("renter_id", user.id)
+  .order("created_at", { ascending: false })
+  .limit(1)
+  .maybeSingle();
 
-  if (existingInquiry?.id) {
-    return NextResponse.redirect(
-      new URL(`/dashboard/messages/${existingInquiry.id}`, req.url),
-    );
-  }
+if (existingThreadError) {
+  return NextResponse.json(
+    {
+      error: existingThreadError.message,
+      details: existingThreadError,
+    },
+    { status: 500 }
+  );
+}
+
+if (existingThread?.id) {
+  return NextResponse.redirect(
+    new URL(`/dashboard/messages/${existingThread.id}`, req.url),
+  );
+}
 
   // Create a lightweight inquiry thread
      const start = new Date();

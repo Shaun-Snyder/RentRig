@@ -61,7 +61,8 @@ export default async function DashboardMessagesPage() {
   .from("rentals")
   .select("id, listing_id, renter_id, start_date, end_date, status, created_at, message")
     .eq("renter_id", user.id)
-    .order("created_at", { ascending: false });
+
+.order("created_at", { ascending: false });
 
   // Rentals where user is owner
   const { data: ownerRentals } = ownedListingIds.length
@@ -69,7 +70,8 @@ export default async function DashboardMessagesPage() {
       .from("rentals")
       .select("id, listing_id, renter_id, start_date, end_date, status, created_at, message")
         .in("listing_id", ownedListingIds)
-        .order("created_at", { ascending: false })
+
+.order("created_at", { ascending: false })
     : { data: [] as RentalRow[] };
 
   // Merge + de-dupe
@@ -176,17 +178,20 @@ for (const r of readRows ?? []) {
      4) FINAL SHAPE — SINGLE SOURCE OF TRUTH
      ------------------------------------------------------- */
 
-  const threads = rentals.map((r) => {
+  const threads = rentals
+  .map((r) => {
     const listing = listingMap.get(r.listing_id);
-     const latest = latestMessageByRental.get(r.id);
-const lastReadAt = lastReadByRental.get(r.id) ?? "";
+    const latest = latestMessageByRental.get(r.id);
+    const lastReadAt = lastReadByRental.get(r.id) ?? "";
 
-const isUnread =
-  !!latest?.created_at &&
-  latest.sender_id !== user.id &&
-  (!lastReadAt || new Date(latest.created_at) > new Date(lastReadAt));   return {
-  ...r,
-  is_unread: isUnread,
+    const isUnread =
+      !!latest?.created_at &&
+      latest.sender_id !== user.id &&
+      (!lastReadAt || new Date(latest.created_at) > new Date(lastReadAt));
+
+    return {
+      ...r,
+      is_unread: isUnread,
       listing: listing
         ? {
             id: listing.id,
@@ -196,12 +201,17 @@ const isUnread =
           }
         : null,
       latest_message_body: latest?.body ?? (r as any)?.message ?? "",
-latest_message_at: latest?.created_at ?? r.created_at ?? "",
+      latest_message_at: latest?.created_at ?? r.created_at ?? "",
     };
+  })
+  .sort((a, b) => {
+    const aTime = new Date(a.latest_message_at || a.created_at || 0).getTime();
+    const bTime = new Date(b.latest_message_at || b.created_at || 0).getTime();
+    return bTime - aTime;
   });
-
- return (
+return (
   <div>
+
     <ServerHeader />
 
     <main className="mx-auto max-w-6xl px-6 py-4">
