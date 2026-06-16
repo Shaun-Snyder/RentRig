@@ -609,38 +609,60 @@ router.refresh();
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="grid gap-1">
-              <label className="text-sm">$ / day</label>
-              <input
-                className="rounded-md border px-3 py-2"
-                name="price_per_day"
-                type="number"
-                min="1"
-                step="1"
-                required
-                defaultValue={1}
-              />
-            </div>
+  <label className="text-sm">$ / day</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="price_per_day"
+      type="number"
+      min="1"
+      step="0.01"
+      required
+      defaultValue={1}
+    />
+  </div>
+</div>
+            
+              <div className="grid gap-1">
+  <label className="text-sm">$ / week</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="price_per_week"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
             <div className="grid gap-1">
-              <label className="text-sm">$ / week</label>
-              <input
-                className="rounded-md border px-3 py-2"
-                name="price_per_week"
-                type="number"
-                min="0"
-                step="1"
-              />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm">$ / month</label>
-              <input
-                className="rounded-md border px-3 py-2"
-                name="price_per_month"
-                type="number"
-                min="0"
-                step="1"
-              />
-            </div>
-          </div>
+  <label className="text-sm">$ / month</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="price_per_month"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
+</div>
 {/* Hourly Rental (NEW) */}
 <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
   <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
@@ -651,27 +673,41 @@ router.refresh();
   </label>
 
   <div className="grid gap-1">
-    <label className="text-sm">$ / hour</label>
+  <label className="text-sm">$ / hour</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
     <input
-      className="rounded-md border px-3 py-2"
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
       name="rental_hour_rate"
       type="number"
       min="0"
-      step="1"
+      step="0.01"
       placeholder="e.g. 75"
     />
   </div>
 </div>
+</div>
           <div className="grid gap-1">
-            <label className="text-sm">Security deposit</label>
-            <input
-              className="rounded-md border px-3 py-2"
-              name="security_deposit"
-              type="number"
-              min="0"
-              step="1"
-            />
-          </div>
+  <label className="text-sm">Security deposit</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="security_deposit"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
 
           {/* License (create) */}
           <div className="grid gap-2">
@@ -725,18 +761,26 @@ router.refresh();
               </div>
 
               <div className="grid gap-1">
-                <label className="text-sm">Delivery fee</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="delivery_fee"
-                  type="number"
-                  min="0"
-                  step="1"
-                  defaultValue={0}
-                />
-              </div>
-            </div>
-          </div>
+  <label className="text-sm">Delivery fee</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="delivery_fee"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={0}
+    />
+  </div>
+</div>
+
+</div>
+</div>
 
           {/* Operator */}
           <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
@@ -747,15 +791,22 @@ router.refresh();
             </label>
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-                <label className="text-sm">Operator rate</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="operator_rate"
-                  type="number"
-                  min="0"
-                  step="1"
-                />
-              </div>
+  <label className="text-sm">Operator rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="operator_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
               <div className="grid gap-1">
                 <label className="text-sm">Rate unit</label>
                 <select
@@ -809,25 +860,39 @@ router.refresh();
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-                <label className="text-sm">Driver day rate</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="driver_day_rate"
-                  type="number"
-                  min="0"
-                  step="1"
-                />
-              </div>
+  <label className="text-sm">Driver day rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_day_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
               <div className="grid gap-1">
-                <label className="text-sm">Driver hour rate</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="driver_hour_rate"
-                  type="number"
-                  min="0"
-                  step="1"
-                />
-              </div>
+  <label className="text-sm">Driver hour rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_hour_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
               <div className="grid gap-1">
                 <label className="text-sm">Max hours (if hourly)</label>
                 <input
@@ -874,25 +939,39 @@ router.refresh();
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-                <label className="text-sm">Driver+Labor day rate</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="driver_labor_day_rate"
-                  type="number"
-                  min="0"
-                  step="1"
-                />
-              </div>
+  <label className="text-sm">Driver+Labor day rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_labor_day_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
               <div className="grid gap-1">
-                <label className="text-sm">Driver+Labor hour rate</label>
-                <input
-                  className="rounded-md border px-3 py-2"
-                  name="driver_labor_hour_rate"
-                  type="number"
-                  min="0"
-                  step="1"
-                />
-              </div>
+  <label className="text-sm">Driver+Labor hour rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_labor_hour_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
               <div className="grid gap-1">
                 <label className="text-sm">Max hours (if hourly)</label>
                 <input
@@ -1265,18 +1344,18 @@ router.refresh();
             .map((p, idx, arr) => (
               <div
                 key={p.id}
-                className="flex items-center gap-3 rounded-md border rr-card p-2"
+                className="grid grid-cols-[96px_1fr] md:grid-cols-[140px_1fr_auto] gap-3 items-center rounded-md border rr-card p-3"
               >
                 <img
                   src={storageUrl(p.path)}
                   alt=""
                   className="h-16 w-24 rounded object-cover border"
                 />
-                <div className="flex-1 text-sm text-slate-600 break-all">
-                  {p.path}
-                </div>
+                <div className="flex-1 text-sm text-slate-600 truncate">
+  Photo {idx + 1}
+</div>
 
-                <div className="flex items-center gap-2">
+                <div className="col-span-2 md:col-span-1 flex flex-wrap justify-end gap-2">
 <button
   type="button"
   className="rr-btn rr-btn-secondary rr-btn-sm"
@@ -1478,7 +1557,7 @@ router.refresh();
                         name="price_per_day"
                         type="number"
                         min="1"
-                        step="1"
+                        step="0.01"
                         required
                         defaultValue={l.price_per_day ?? 1}
                       />
@@ -1490,7 +1569,7 @@ router.refresh();
                         name="price_per_week"
                         type="number"
                         min="0"
-                        step="1"
+                        step="0.01"
                         defaultValue={l.price_per_week ?? 0}
                       />
                     </div>
@@ -1501,7 +1580,7 @@ router.refresh();
                         name="price_per_month"
                         type="number"
                         min="0"
-                        step="1"
+                        step="0.01"
                         defaultValue={l.price_per_month ?? 0}
                       />
                     </div>
@@ -1521,28 +1600,43 @@ router.refresh();
   </label>
 
   <div className="grid gap-1">
-    <label className="text-sm">$ / hour</label>
+  <label className="text-sm">$ / hour</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
     <input
-      className="rounded-md border px-3 py-2"
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
       name="rental_hour_rate"
       type="number"
       min="0"
-      step="1"
-      defaultValue={(l as any).rental_hour_rate ?? ""}
+      step="0.01"
+      placeholder="e.g. 75"
     />
   </div>
 </div>
+</div>
                   <div className="grid gap-1">
-                    <label className="text-sm">Security deposit</label>
-                    <input
-                      className="rounded-md border px-3 py-2"
-                      name="security_deposit"
-                      type="number"
-                      min="0"
-                      step="1"
-                      defaultValue={l.security_deposit ?? 0}
-                    />
-                  </div>
+  <label className="text-sm">Security deposit</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="security_deposit"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={l.security_deposit ?? 0}
+    />
+  </div>
+</div>
+
                   <div className="grid gap-2">
                     <label className="text-sm font-semibold">Required license</label>
 
@@ -1603,7 +1697,7 @@ router.refresh();
                           name="delivery_miles"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={(l as any).delivery_miles ?? 0}
                         />
                       </div>
@@ -1615,7 +1709,7 @@ router.refresh();
                           name="delivery_fee"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.delivery_fee ?? 0}
                         />
                       </div>
@@ -1637,16 +1731,22 @@ router.refresh();
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-                        <label className="text-sm">Operator rate</label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="operator_rate"
-                          type="number"
-                          min="0"
-                          step="1"
-                          defaultValue={l.operator_rate ?? 0}
-                        />
-                      </div>
+  <label className="text-sm">Operator rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="operator_rate"
+      type="number"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
 
                       <div className="grid gap-1">
                         <label className="text-sm">Rate unit</label>
@@ -1676,7 +1776,7 @@ router.refresh();
                           name="operator_max_hours"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.operator_max_hours ?? 24}
                         />
                       </div>
@@ -1725,7 +1825,7 @@ router.refresh();
                           name="driver_day_rate"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.driver_day_rate ?? 0}
                         />
                       </div>
@@ -1736,7 +1836,7 @@ router.refresh();
                           name="driver_hour_rate"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.driver_hour_rate ?? 0}
                         />
                       </div>
@@ -1802,7 +1902,7 @@ router.refresh();
                           name="driver_labor_day_rate"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.driver_labor_day_rate ?? 0}
                         />
                       </div>
@@ -1815,7 +1915,7 @@ router.refresh();
                           name="driver_labor_hour_rate"
                           type="number"
                           min="0"
-                          step="1"
+                          step="0.01"
                           defaultValue={l.driver_labor_hour_rate ?? 0}
                         />
                       </div>
