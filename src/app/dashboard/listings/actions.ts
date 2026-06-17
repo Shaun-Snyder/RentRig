@@ -47,15 +47,10 @@ export async function createListing(arg1: any, arg2?: any) {
   const description = toStr(fd.get("description")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
-  const price_per_week = toNum(fd.get("price_per_week"));
-  const price_per_month = toNum(fd.get("price_per_month"));
-  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
-  const rental_hour_rate = toNum(fd.get("rental_hour_rate"));
   const security_deposit = toNum(fd.get("security_deposit"));
 
   const city = toStr(fd.get("city")) || null;
   const state = toStr(fd.get("state")) || null;
-  const zip = toStr(fd.get("zip")) || null;
 
   const cancellation_policy = toStr(fd.get("cancellation_policy")) || null;
 
@@ -63,7 +58,6 @@ export async function createListing(arg1: any, arg2?: any) {
   const license_type = toStr(fd.get("license_type")) || null;
 
   const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
-  const delivery_miles = toNum(fd.get("delivery_miles"));
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
 
   const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
@@ -88,31 +82,30 @@ export async function createListing(arg1: any, arg2?: any) {
   const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate"));
   const driver_labor_max_hours = toNum(fd.get("driver_labor_max_hours"));
 
-  const turnaround_days = toNum(fd.get("turnaround_days")) ?? 0;
-  const min_rental_days = toNum(fd.get("min_rental_days")) ?? 1;
+  const turnaround_days = toNum(fd.get("turnaround_days"));
+  const min_rental_days = toNum(fd.get("min_rental_days"));
   const max_rental_days = toNum(fd.get("max_rental_days"));
+
+  if (!title) return { ok: false, message: "Title is required." };
+  if (!category) return { ok: false, message: "Category is required." };
+  if (price_per_day == null) return { ok: false, message: "Price per day is required." };
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;
+
   if (!userId) return { ok: false, message: "Not signed in." };
 
-  const payload: any = {
+  const { error } = await supabase.from("listings").insert({
     owner_id: userId,
     title,
     category,
     description,
-
     price_per_day,
-    price_per_week,
-    price_per_month,
-    rental_hourly_enabled,
-    rental_hour_rate,
     security_deposit,
 
     city,
     state,
-    zip,
 
     cancellation_policy,
 
@@ -120,8 +113,8 @@ export async function createListing(arg1: any, arg2?: any) {
     license_type,
 
     delivery_mode,
-    delivery_miles,
     delivery_fee,
+
     delivery_service_discount_enabled,
     delivery_service_discount_amount,
 
@@ -146,24 +139,13 @@ export async function createListing(arg1: any, arg2?: any) {
 
     turnaround_days,
     min_rental_days,
-    max_rental_days: Number.isFinite(max_rental_days as any) ? max_rental_days : null,
+    max_rental_days,
 
     is_published: false,
-  };
-
-  const { data, error } = await supabase
-    .from("listings")
-    .insert(payload)
-    .select("id")
-    .single();
+  });
 
   if (error) return { ok: false, message: error.message };
-
-  const listingId = (data as any)?.id as string | undefined;
-  if (!listingId) return { ok: false, message: "Created listing but missing id." };
-
-  // ✅ This is the contract Create Photos relies on:
-  return { ok: true, message: "Created.", listingId };
+  return { ok: true, message: "Created." };
 }
 
 export async function updateListing(arg1: any, arg2?: any) {
@@ -177,29 +159,19 @@ export async function updateListing(arg1: any, arg2?: any) {
   const description = toStr(fd.get("description")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
-  const price_per_week = toNum(fd.get("price_per_week"));
-  const price_per_month = toNum(fd.get("price_per_month"));
-  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
-  const rental_hour_rate = toNum(fd.get("rental_hour_rate"));
   const security_deposit = toNum(fd.get("security_deposit"));
 
   const city = toStr(fd.get("city")) || null;
   const state = toStr(fd.get("state")) || null;
-  const zip = toStr(fd.get("zip")) || null;
 
   const cancellation_policy = toStr(fd.get("cancellation_policy")) || null;
 
-  // Only update publish status if explicitly sent
-const has_is_published = fd.has("is_published");
-const is_published = has_is_published
-  ? toBool(fd.get("is_published"))
-  : undefined;
+  const is_published = toBool(fd.get("is_published"));
 
   const license_required = toBool(fd.get("license_required"));
   const license_type = toStr(fd.get("license_type")) || null;
 
-  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode")) || "pickup_only");
-  const delivery_miles = toNum(fd.get("delivery_miles"));
+  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
 
   const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
@@ -240,26 +212,20 @@ const is_published = has_is_published
       category: category || undefined,
       description,
 
-      license_required: fd.get("license_required") ? true : false,
-      license_type: String(fd.get("license_type") ?? "") || null,
-
       price_per_day,
-      price_per_week,
-      price_per_month,
-      rental_hourly_enabled,
-      rental_hour_rate,
       security_deposit,
 
       city,
       state,
-      zip,
 
       cancellation_policy,
 
       is_published,
 
+      license_required,
+      license_type,
+
       delivery_mode,
-      delivery_miles,
       delivery_fee,
 
       delivery_service_discount_enabled,
@@ -325,3 +291,882 @@ export async function togglePublish(listingId: string, nextPublished: boolean) {
   if (error) return { ok: false, message: error.message };
   return { ok: true, message: nextPublished ? "Published." : "Unpublished." };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

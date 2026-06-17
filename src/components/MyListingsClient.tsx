@@ -31,7 +31,12 @@ type Listing = {
   security_deposit: number | null;
   is_published: boolean;
 
-  delivery_mode?: "pickup_only" | "pickup_or_delivery" | "delivery_only" | string | null;
+  delivery_mode?:
+    | "pickup_only"
+    | "pickup_or_delivery"
+    | "delivery_only"
+    | string
+    | null;
   delivery_miles?: number | null;
   delivery_fee?: number | null;
   delivery_service_discount_enabled?: boolean | null;
@@ -103,13 +108,13 @@ export default function MyListingsClient({
   const router = useRouter();
   const supabase = createClient();
 
- const [zip, setZip] = useState("");
-const [createFiles, setCreateFiles] = useState<FileList | null>(null);
-const [createPhotoInputKey, setCreatePhotoInputKey] = useState(0);
-const [createFormKey, setCreateFormKey] = useState(0);
-const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
-const [msg, setMsg] = useState("");
-const [isPending, startTransition] = useTransition();
+  const [zip, setZip] = useState("");
+  const [createFiles, setCreateFiles] = useState<FileList | null>(null);
+  const [createPhotoInputKey, setCreatePhotoInputKey] = useState(0);
+  const [createFormKey, setCreateFormKey] = useState(0);
+  const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
+  const [msg, setMsg] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -442,16 +447,19 @@ const [isPending, startTransition] = useTransition();
 
     fd.set("is_published", boolStr(x.is_published));
 
-    fd.set("delivery_mode", ((x as any).delivery_mode ?? "pickup_only").toString());
+    fd.set(
+      "delivery_mode",
+      ((x as any).delivery_mode ?? "pickup_only").toString(),
+    );
     fd.set("delivery_miles", numStr((x as any).delivery_miles));
     fd.set("delivery_fee", numStr((x as any).delivery_fee));
     fd.set(
       "delivery_service_discount_enabled",
-      boolStr((x as any).delivery_service_discount_enabled)
+      boolStr((x as any).delivery_service_discount_enabled),
     );
     fd.set(
       "delivery_service_discount_amount",
-      numStr((x as any).delivery_service_discount_amount)
+      numStr((x as any).delivery_service_discount_amount),
     );
 
     fd.set("operator_enabled", boolStr(x.operator_enabled));
@@ -467,10 +475,7 @@ const [isPending, startTransition] = useTransition();
     fd.set("driver_max_hours", numStr(x.driver_max_hours ?? 24));
 
     fd.set("driver_labor_enabled", boolStr(x.driver_labor_enabled));
-    fd.set(
-      "driver_labor_daily_enabled",
-      boolStr(x.driver_labor_daily_enabled),
-    );
+    fd.set("driver_labor_daily_enabled", boolStr(x.driver_labor_daily_enabled));
     fd.set(
       "driver_labor_hourly_enabled",
       boolStr(x.driver_labor_hourly_enabled),
@@ -519,32 +524,32 @@ const [isPending, startTransition] = useTransition();
     <div className="grid gap-6">
       {/* CREATE FORM (unchanged behavior) */}
       {showCreate && (
-          <form
-  key={createFormKey}
-  className="rounded-lg border rr-card p-4 grid gap-3"       
-            action={(fd) => {
+        <form
+          key={createFormKey}
+          className="rounded-lg border rr-card p-4 grid gap-3"
+          action={(fd) => {
             setMsg("");
             startTransition(async () => {
               try {
                 const res: any = await createListing(fd);
-const newId = res?.listingId;
+                const newId = res?.listingId;
 
-if (!res?.ok) {
-  setMsg(res?.message ?? "Create failed.");
-  return;
-}
+                if (!res?.ok) {
+                  setMsg(res?.message ?? "Create failed.");
+                  return;
+                }
 
-if (newId && createFiles) {
-  await uploadQueuedCreatePhotos(newId, createFiles);
-  await refreshPhotos(newId);
-}
+                if (newId && createFiles) {
+                  await uploadQueuedCreatePhotos(newId, createFiles);
+                  await refreshPhotos(newId);
+                }
 
-setMsg(res?.message ?? "Created.");
-setZip("");
-setCreateFiles(null);
-setCreatePhotoInputKey((k) => k + 1);
-setCreateFormKey((k) => k + 1);
-router.refresh();
+                setMsg(res?.message ?? "Created.");
+                setZip("");
+                setCreateFiles(null);
+                setCreatePhotoInputKey((k) => k + 1);
+                setCreateFormKey((k) => k + 1);
+                router.refresh();
               } catch (e: any) {
                 setMsg(e?.message ?? "Create failed.");
               }
@@ -555,7 +560,11 @@ router.refresh();
 
           <div className="grid gap-1">
             <label className="text-sm">Title</label>
-            <input className="rounded-md border px-3 py-2" name="title" required />
+            <input
+              className="rounded-md border px-3 py-2"
+              name="title"
+              required
+            />
           </div>
 
           <div className="grid gap-1">
@@ -590,12 +599,12 @@ router.refresh();
           <label className="grid gap-1">
             <span className="text-sm text-slate-600">ZIP code (optional)</span>
             <input
-  className="border rounded-lg p-2"
-  name="zip"
-  placeholder="e.g. 32817"
-  value={zip}
-  onChange={(e) => setZip(e.target.value)}
-/>
+              className="border rounded-lg p-2"
+              name="zip"
+              placeholder="e.g. 32817"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+            />
           </label>
 
           <div className="grid gap-1">
@@ -609,105 +618,109 @@ router.refresh();
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="grid gap-1">
-  <label className="text-sm">$ / day</label>
+              <label className="text-sm">$ / day</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  $
+                </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="price_per_day"
-      type="number"
-      min="1"
-      step="0.01"
-      required
-      defaultValue={1}
-    />
-  </div>
-</div>
-            
-              <div className="grid gap-1">
-  <label className="text-sm">$ / week</label>
+                <input
+                  className="rounded-md border pl-8 pr-3 py-2 w-full"
+                  name="price_per_day"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  required
+                  defaultValue={1}
+                />
+              </div>
+            </div>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
-
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="price_per_week"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
             <div className="grid gap-1">
-  <label className="text-sm">$ / month</label>
+              <label className="text-sm">$ / week</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  $
+                </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="price_per_month"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
-</div>
-{/* Hourly Rental (NEW) */}
-<div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
-  <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
+                <input
+                  className="rounded-md border pl-8 pr-3 py-2 w-full"
+                  name="price_per_week"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm">$ / month</label>
 
-  <label className="flex items-center gap-2 text-sm">
-    <input type="checkbox" name="rental_hourly_enabled" value="true" />
-    Allow hourly rental
-  </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  $
+                </span>
 
-  <div className="grid gap-1">
-  <label className="text-sm">$ / hour</label>
+                <input
+                  className="rounded-md border pl-8 pr-3 py-2 w-full"
+                  name="price_per_month"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          </div>
+          {/* Hourly Rental (NEW) */}
+          <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
+            <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="rental_hourly_enabled"
+                value="true"
+              />
+              Allow hourly rental
+            </label>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="rental_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      placeholder="e.g. 75"
-    />
-  </div>
-</div>
-</div>
+            <div className="grid gap-1">
+              <label className="text-sm">$ / hour</label>
+
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  $
+                </span>
+
+                <input
+                  className="rounded-md border pl-8 pr-3 py-2 w-full"
+                  name="rental_hour_rate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 75"
+                />
+              </div>
+            </div>
+          </div>
           <div className="grid gap-1">
-  <label className="text-sm">Security deposit</label>
+            <label className="text-sm">Security deposit</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                $
+              </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="security_deposit"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+              <input
+                className="rounded-md border pl-8 pr-3 py-2 w-full"
+                name="security_deposit"
+                type="number"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
 
           {/* License (create) */}
           <div className="grid gap-2">
@@ -730,7 +743,8 @@ router.refresh();
             </div>
           </div>
 
-                              {/* Delivery */}
+          {/* Delivery */}
+          {/* Delivery */}
           <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
             <div className="text-sm font-medium">Delivery</div>
 
@@ -761,52 +775,52 @@ router.refresh();
               </div>
 
               <div className="grid gap-1">
-  <label className="text-sm">Delivery fee</label>
+                <label className="text-sm">Delivery fee</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="delivery_fee"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={0}
-    />
-  </div>
-</div>
-
-</div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="delivery_fee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={0}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Operator */}
           <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
             <div className="text-sm font-medium">Operator</div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="operator_enabled" value="true" /> Offer
-              operator
+              <input type="checkbox" name="operator_enabled" value="true" />{" "}
+              Offer operator
             </label>
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-  <label className="text-sm">Operator rate</label>
+                <label className="text-sm">Operator rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="operator_rate"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="operator_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={0}
+                  />
+                </div>
+              </div>
               <div className="grid gap-1">
                 <label className="text-sm">Rate unit</label>
                 <select
@@ -860,39 +874,39 @@ router.refresh();
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-  <label className="text-sm">Driver day rate</label>
+                <label className="text-sm">Driver day rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_day_rate"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="driver_day_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
               <div className="grid gap-1">
-  <label className="text-sm">Driver hour rate</label>
+                <label className="text-sm">Driver hour rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="driver_hour_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
               <div className="grid gap-1">
                 <label className="text-sm">Max hours (if hourly)</label>
                 <input
@@ -910,11 +924,7 @@ router.refresh();
           <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
             <div className="text-sm font-medium">Driver + Labor</div>
             <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name="driver_labor_enabled"
-                value="true"
-              />{" "}
+              <input type="checkbox" name="driver_labor_enabled" value="true" />{" "}
               Offer driver + labor
             </label>
 
@@ -939,22 +949,22 @@ router.refresh();
 
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-  <label className="text-sm">Driver+Labor day rate</label>
+                <label className="text-sm">Driver+Labor day rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_labor_day_rate"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="driver_labor_day_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
               <div className="grid gap-1">
   <label className="text-sm">Driver+Labor hour rate</label>
 
@@ -969,6 +979,7 @@ router.refresh();
       type="number"
       min="0"
       step="0.01"
+      defaultValue={0}
     />
   </div>
 </div>
@@ -1020,58 +1031,60 @@ router.refresh();
               />
             </div>
           </div>
-<div style={{ marginTop: 16 }}>
-  <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
-    Photos
-  </label>
+          <div style={{ marginTop: 16 }}>
+            <label
+              style={{ fontWeight: 600, display: "block", marginBottom: 6 }}
+            >
+              Photos
+            </label>
 
-  <input
-  key={createPhotoInputKey}
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={(e) => {
-    const files = e.target.files;
-    setCreateFiles(files);
+            <input
+              key={createPhotoInputKey}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = e.target.files;
+                setCreateFiles(files);
 
-    const urls = files
-      ? Array.from(files).map((f) => URL.createObjectURL(f))
-      : [];
+                const urls = files
+                  ? Array.from(files).map((f) => URL.createObjectURL(f))
+                  : [];
 
-    setCreatePreviewUrls(urls);
-  }}
-/>
+                setCreatePreviewUrls(urls);
+              }}
+            />
 
-{createPreviewUrls.length > 0 ? (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-      gap: 12,
-      marginTop: 12,
-    }}
-  >
-    {createPreviewUrls.map((url, i) => (
-      <img
-        key={`${url}-${i}`}
-        src={url}
-        alt={`Preview ${i + 1}`}
-        style={{
-          width: "100%",
-          height: 110,
-          objectFit: "cover",
-          border: "1px solid #d1d5db",
-          borderRadius: 8,
-        }}
-      />
-    ))}
-  </div>
-) : null}
+            {createPreviewUrls.length > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                  gap: 12,
+                  marginTop: 12,
+                }}
+              >
+                {createPreviewUrls.map((url, i) => (
+                  <img
+                    key={`${url}-${i}`}
+                    src={url}
+                    alt={`Preview ${i + 1}`}
+                    style={{
+                      width: "100%",
+                      height: 110,
+                      objectFit: "cover",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                    }}
+                  />
+                ))}
+              </div>
+            ) : null}
 
-<div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-    Add photos now, or upload more later from Edit Listing.
-  </div>
-</div>
+            <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+              Add photos now, or upload more later from Edit Listing.
+            </div>
+          </div>
           <button
             disabled={isPending}
             className="rounded-md bg-black text-white px-4 py-2 w-fit"
@@ -1127,35 +1140,35 @@ router.refresh();
                 .join(" • ")
             : "Not offered";
 
-                  return (
+          return (
             <div
-    key={l.id}
-    className="
+              key={l.id}
+              className="
       border border-slate-200 rr-card
       px-5 py-4
       shadow-[0_18px_40px_rgba(15,23,42,0.22)]
       bg-white
     "
-  >
-                  {/* TOP ROW: photo + summary */}
-            <div className="flex flex-col md:flex-row items-start gap-4">
-              {/* Left: big thumbnail and text */}
-               <div className="flex flex-col md:flex-row gap-4 w-full">
-                <div className="flex flex-col flex-shrink-0">
-                  {thumb ? (
-                    <img
-                      src={thumb}
-                      alt=""
-                      className="
+            >
+              {/* TOP ROW: photo + summary */}
+              <div className="flex flex-col md:flex-row items-start gap-4">
+                {/* Left: big thumbnail and text */}
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                  <div className="flex flex-col flex-shrink-0">
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt=""
+                        className="
   w-full md:w-80
   h-48 md:h-48
   object-cover
   border border-slate-200
 "
-                    />
-                  ) : (
-                    <div
-                      className="
+                      />
+                    ) : (
+                      <div
+                        className="
                         w-60 md:w-80
                         h-40 md:h-48
                         border border-dashed border-slate-300
@@ -1163,305 +1176,313 @@ router.refresh();
                         grid place-items-center
                         text-xs text-slate-500
                       "
-                    >
-                      No photo
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="text-2xl md:text-xl font-extrabold text-slate-900">
-                    {l.title}
+                      >
+                        No photo
+                      </div>
+                    )}
                   </div>
 
-                  {l.description && (
-                    <div className="text-sm text-slate-700">
-                      {l.description}
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="text-2xl md:text-xl font-extrabold text-slate-900">
+                      {l.title}
                     </div>
-                  )}
 
-                  <div className="text-sm text-slate-600">
-                    <span className="font-semibold">Category:</span>{" "}
-                    {l.category}
-                  </div>
+                    {l.description && (
+                      <div className="text-sm text-slate-700">
+                        {l.description}
+                      </div>
+                    )}
 
-                  {(l.city || l.state) && (
                     <div className="text-sm text-slate-600">
-                      <span className="font-semibold">Location:</span>{" "}
-                      <span className="font-medium">
-                        {l.city ?? ""}
-                        {l.city && l.state ? ", " : ""}
-                        {l.state ?? ""}
+                      <span className="font-semibold">Category:</span>{" "}
+                      {l.category}
+                    </div>
+
+                    {(l.city || l.state) && (
+                      <div className="text-sm text-slate-600">
+                        <span className="font-semibold">Location:</span>{" "}
+                        <span className="font-medium">
+                          {l.city ?? ""}
+                          {l.city && l.state ? ", " : ""}
+                          {l.state ?? ""}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold">
+                        Price: {money(l.price_per_day)} /day
+                      </span>{" "}
+                      <span className="text-slate-500">
+                        • Deposit: {money(l.security_deposit)}
                       </span>
                     </div>
-                  )}
 
-                  <div className="text-sm text-slate-700">
-                    <span className="font-semibold">
-                      Price: {money(l.price_per_day)} /day
-                    </span>{" "}
-                    <span className="text-slate-500">
-                      • Deposit: {money(l.security_deposit)}
-                    </span>
-                  </div>
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold">License required:</span>{" "}
+                      {l.license_required ? "Yes" : "No"}
+                      {l.license_required && l.license_type
+                        ? ` — ${l.license_type}`
+                        : ""}
+                    </div>
 
-                  <div className="text-sm text-slate-700">
-                    <span className="font-semibold">License required:</span>{" "}
-                    {l.license_required ? "Yes" : "No"}
-                    {l.license_required && l.license_type ? ` — ${l.license_type}` : ""}
-                  </div>
-
-                  <div className="text-sm text-slate-700">
-                    <span className="font-semibold">Operator:</span>{" "}
-                    {operatorEnabled
-                      ? `Available (${money(operatorRate)}${rateLabel(unit)})`
-                      : "Not included"}
-                    {operatorEnabled && unit === "hour" ? (
-                      <span>
-                        {" "}
-                        • Hour cap:{" "}
-                        <span className="font-semibold">
-                          {l.operator_max_hours ?? 24}
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold">Operator:</span>{" "}
+                      {operatorEnabled
+                        ? `Available (${money(operatorRate)}${rateLabel(unit)})`
+                        : "Not included"}
+                      {operatorEnabled && unit === "hour" ? (
+                        <span>
+                          {" "}
+                          • Hour cap:{" "}
+                          <span className="font-semibold">
+                            {l.operator_max_hours ?? 24}
+                          </span>
                         </span>
-                      </span>
-                    ) : null}
-                  </div>
+                      ) : null}
+                    </div>
 
-                  <div className="text-sm text-slate-700">
-                    <span className="font-semibold">Driver:</span>{" "}
-                    {driverSummary || "Not included"}
-                  </div>
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold">Driver:</span>{" "}
+                      {driverSummary || "Not included"}
+                    </div>
 
-                  <div className="text-sm text-slate-700">
-                    <span className="font-semibold">Driver + Labor:</span>{" "}
-                    {driverLaborSummary || "Not included"}
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold">Driver + Labor:</span>{" "}
+                      {driverLaborSummary || "Not included"}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-                        <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
-              <button
-                type="button"
-                className="rr-btn rr-btn-secondary"
-                disabled={isPending}
-                onClick={() => {
-                  setOpenId(isOpen ? null : l.id);
-                  setEditOperatorRateUnit((p) => ({ ...p, [l.id]: unit }));
-                  if (!isOpen) refreshPhotos(l.id);
-                }}
-              >
-                {isOpen ? "Close" : "Edit"}
-              </button>
+              <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+                <button
+                  type="button"
+                  className="rr-btn rr-btn-secondary"
+                  disabled={isPending}
+                  onClick={() => {
+                    setOpenId(isOpen ? null : l.id);
+                    setEditOperatorRateUnit((p) => ({ ...p, [l.id]: unit }));
+                    if (!isOpen) refreshPhotos(l.id);
+                  }}
+                >
+                  {isOpen ? "Close" : "Edit"}
+                </button>
 
-              <button
-                type="button"
-                className="rr-btn rr-btn-primary"
-                disabled={isPending}
-                onClick={() => {
-                  setMsg("");
-                  startTransition(async () => {
-                    try {
-                      const nextPublished = !l.is_published;
-                      const fd = buildUpdateFD(l, {
-                        is_published: nextPublished,
-                      });
-                      const res: any = await updateListing(fd);
-                      setMsg(
-                        res?.message ??
-                          (nextPublished ? "Published." : "Unpublished."),
-                      );
-                      router.refresh();
-                    } catch (e: any) {
-                      setMsg(e?.message ?? "Publish toggle failed.");
-                    }
-                  });
-                }}
-              >
-                {l.is_published ? "Unpublish" : "Publish"}
-              </button>
+                <button
+                  type="button"
+                  className="rr-btn rr-btn-primary"
+                  disabled={isPending}
+                  onClick={() => {
+                    setMsg("");
+                    startTransition(async () => {
+                      try {
+                        const nextPublished = !l.is_published;
+                        const fd = buildUpdateFD(l, {
+                          is_published: nextPublished,
+                        });
+                        const res: any = await updateListing(fd);
+                        setMsg(
+                          res?.message ??
+                            (nextPublished ? "Published." : "Unpublished."),
+                        );
+                        router.refresh();
+                      } catch (e: any) {
+                        setMsg(e?.message ?? "Publish toggle failed.");
+                      }
+                    });
+                  }}
+                >
+                  {l.is_published ? "Unpublish" : "Publish"}
+                </button>
 
-              <button
-                type="button"
-                className="rr-btn rr-btn-danger"
-                disabled={isPending}
-                onClick={() => {
-                  if (!confirm("Delete this listing?")) return;
-                  setMsg("");
-                  startTransition(async () => {
-                    try {
-                      const fd = new FormData();
-                      fd.set("id", l.id);
-                      const res: any = await deleteListing(fd);
-                      setMsg(res?.message ?? "Deleted.");
-                      router.refresh();
-                    } catch (e: any) {
-                      setMsg(e?.message ?? "Delete failed.");
-                    }
-                  });
-                }}
-              >
-                Delete
-              </button>
-            </div>
-
+                <button
+                  type="button"
+                  className="rr-btn rr-btn-danger"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (!confirm("Delete this listing?")) return;
+                    setMsg("");
+                    startTransition(async () => {
+                      try {
+                        const fd = new FormData();
+                        fd.set("id", l.id);
+                        const res: any = await deleteListing(fd);
+                        setMsg(res?.message ?? "Deleted.");
+                        router.refresh();
+                      } catch (e: any) {
+                        setMsg(e?.message ?? "Delete failed.");
+                      }
+                    });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
 
               {/* PHOTOS (only visible when Edit is open) */}
-{isOpen && (
-  <div className="rounded-xl border bg-slate-50 p-4 grid gap-2 mt-2">
-    <div className="flex items-center justify-between">
-      <div className="text-sm font-medium">Photos</div>
-      <button
-        type="button"
-        className="rr-btn rr-btn-secondary px-3 py-1.5 text-xs rounded-full"
-        onClick={() => refreshPhotos(l.id)}
-      >
-        Refresh
-      </button>
-    </div>
+              {isOpen && (
+                <div className="rounded-xl border bg-slate-50 p-4 grid gap-2 mt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">Photos</div>
+                    <button
+                      type="button"
+                      className="rr-btn rr-btn-secondary px-3 py-1.5 text-xs rounded-full"
+                      onClick={() => refreshPhotos(l.id)}
+                    >
+                      Refresh
+                    </button>
+                  </div>
 
-    {photoMsgByListing[l.id] ? (
-      <div className="text-sm text-slate-600">
-        {photoMsgByListing[l.id]}
-      </div>
-    ) : null}
+                  {photoMsgByListing[l.id] ? (
+                    <div className="text-sm text-slate-600">
+                      {photoMsgByListing[l.id]}
+                    </div>
+                  ) : null}
 
-    <input
-      type="file"
-      multiple
-      accept="image/*,.heic,.heif"
-      onChange={(e) => uploadPhotos(l.id, e.target.files)}
-    />
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.heic,.heif"
+                    onChange={(e) => uploadPhotos(l.id, e.target.files)}
+                  />
 
-    {(photosByListing[l.id] ?? []).length > 0 ? (
-      <>
-        <div className="grid gap-2">
-          {(photosByListing[l.id] ?? [])
-            .slice()
-            .sort(
-              (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-            )
-            .map((p, idx, arr) => (
-              <div
-                key={p.id}
-                className="grid grid-cols-[96px_1fr] md:grid-cols-[140px_1fr_auto] gap-3 items-center rounded-md border rr-card p-3"
-              >
-                <img
-                  src={storageUrl(p.path)}
-                  alt=""
-                  className="h-16 w-24 rounded object-cover border"
-                />
-                <div className="flex-1 text-sm text-slate-600 truncate">
-  Photo {idx + 1}
-</div>
-
-                <div className="col-span-2 md:col-span-1 flex flex-wrap justify-end gap-2">
-<button
-  type="button"
-  className="rr-btn rr-btn-secondary rr-btn-sm"
-  onClick={() => {
-    if (idx === 0) return;
-    setPhotosByListing((prev) => {
-      const list = (prev[l.id] ?? [])
-        .slice()
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-
-      const picked = list[idx];
-      const rest = list.filter((x) => x.id !== picked.id);
-      const reordered = [picked, ...rest].map((x, i) => ({
-        ...x,
-        sort_order: i,
-      }));
-
-      return { ...prev, [l.id]: reordered };
-    });
-  }}
->
-  Set cover
-</button>
-                  {/* move up */}
-                  <button
-                    type="button"
-                    className="rr-btn rr-btn-secondary rr-btn-sm"
-                    onClick={() => {
-                      if (idx <= 0) return;
-                      setPhotosByListing((prev) => {
-                        const list = (prev[l.id] ?? [])
+                  {(photosByListing[l.id] ?? []).length > 0 ? (
+                    <>
+                      <div className="grid gap-2">
+                        {(photosByListing[l.id] ?? [])
                           .slice()
                           .sort(
-                            (a, b) =>
-                              (a.sort_order ?? 0) -
-                              (b.sort_order ?? 0),
-                          );
-                        const tmp = list[idx - 1];
-                        list[idx - 1] = list[idx];
-                        list[idx] = tmp;
-                        const normalized = list.map((x, i) => ({
-                          ...x,
-                          sort_order: i,
-                        }));
-                        return { ...prev, [l.id]: normalized };
-                      });
-                    }}
-                  >
-                    ↑
-                  </button>
+                            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+                          )
+                          .map((p, idx, arr) => (
+                            <div
+                              key={p.id}
+                              className="grid grid-cols-[96px_1fr] md:grid-cols-[140px_1fr_auto] gap-3 items-center rounded-md border rr-card p-3"
+                            >
+                              <img
+                                src={storageUrl(p.path)}
+                                alt=""
+                                className="h-16 w-24 rounded object-cover border"
+                              />
+                              <div className="flex-1 text-sm text-slate-600 truncate">
+                                Photo {idx + 1}
+                              </div>
 
-                  {/* move down */}
-                  <button
-                    type="button"
-                    className="rr-btn rr-btn-secondary rr-btn-sm"
-                    onClick={() => {
-                      if (idx >= arr.length - 1) return;
-                      setPhotosByListing((prev) => {
-                        const list = (prev[l.id] ?? [])
-                          .slice()
-                          .sort(
-                            (a, b) =>
-                              (a.sort_order ?? 0) -
-                              (b.sort_order ?? 0),
-                          );
-                        const tmp = list[idx + 1];
-                        list[idx + 1] = list[idx];
-                        list[idx] = tmp;
-                        const normalized = list.map((x, i) => ({
-                          ...x,
-                          sort_order: i,
-                        }));
-                        return { ...prev, [l.id]: normalized };
-                      });
-                    }}
-                  >
-                    ↓
-                  </button>
+                              <div className="col-span-2 md:col-span-1 flex flex-wrap justify-end gap-2">
+                                <button
+                                  type="button"
+                                  className="rr-btn rr-btn-secondary rr-btn-sm"
+                                  onClick={() => {
+                                    if (idx === 0) return;
+                                    setPhotosByListing((prev) => {
+                                      const list = (prev[l.id] ?? [])
+                                        .slice()
+                                        .sort(
+                                          (a, b) =>
+                                            (a.sort_order ?? 0) -
+                                            (b.sort_order ?? 0),
+                                        );
 
-                  {/* delete */}
-                  <button
-                    type="button"
-                    className="rr-btn rr-btn-danger rr-btn-sm"
-                    onClick={() => deletePhoto(p.id, l.id)}
-                  >
-                    Delete
-                  </button>
+                                      const picked = list[idx];
+                                      const rest = list.filter(
+                                        (x) => x.id !== picked.id,
+                                      );
+                                      const reordered = [picked, ...rest].map(
+                                        (x, i) => ({
+                                          ...x,
+                                          sort_order: i,
+                                        }),
+                                      );
+
+                                      return { ...prev, [l.id]: reordered };
+                                    });
+                                  }}
+                                >
+                                  Set cover
+                                </button>
+                                {/* move up */}
+                                <button
+                                  type="button"
+                                  className="rr-btn rr-btn-secondary rr-btn-sm"
+                                  onClick={() => {
+                                    if (idx <= 0) return;
+                                    setPhotosByListing((prev) => {
+                                      const list = (prev[l.id] ?? [])
+                                        .slice()
+                                        .sort(
+                                          (a, b) =>
+                                            (a.sort_order ?? 0) -
+                                            (b.sort_order ?? 0),
+                                        );
+                                      const tmp = list[idx - 1];
+                                      list[idx - 1] = list[idx];
+                                      list[idx] = tmp;
+                                      const normalized = list.map((x, i) => ({
+                                        ...x,
+                                        sort_order: i,
+                                      }));
+                                      return { ...prev, [l.id]: normalized };
+                                    });
+                                  }}
+                                >
+                                  ↑
+                                </button>
+
+                                {/* move down */}
+                                <button
+                                  type="button"
+                                  className="rr-btn rr-btn-secondary rr-btn-sm"
+                                  onClick={() => {
+                                    if (idx >= arr.length - 1) return;
+                                    setPhotosByListing((prev) => {
+                                      const list = (prev[l.id] ?? [])
+                                        .slice()
+                                        .sort(
+                                          (a, b) =>
+                                            (a.sort_order ?? 0) -
+                                            (b.sort_order ?? 0),
+                                        );
+                                      const tmp = list[idx + 1];
+                                      list[idx + 1] = list[idx];
+                                      list[idx] = tmp;
+                                      const normalized = list.map((x, i) => ({
+                                        ...x,
+                                        sort_order: i,
+                                      }));
+                                      return { ...prev, [l.id]: normalized };
+                                    });
+                                  }}
+                                >
+                                  ↓
+                                </button>
+
+                                {/* delete */}
+                                <button
+                                  type="button"
+                                  className="rr-btn rr-btn-danger rr-btn-sm"
+                                  onClick={() => deletePhoto(p.id, l.id)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="rr-btn rr-btn-secondary rr-btn-sm w-fit"
+                        onClick={() => savePhotoOrder(l.id)}
+                      >
+                        Save photo order
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-sm text-slate-500">No photos yet.</div>
+                  )}
                 </div>
-              </div>
-            ))}
-        </div>
-
-        <button
-          type="button"
-          className="rr-btn rr-btn-secondary rr-btn-sm w-fit"
-          onClick={() => savePhotoOrder(l.id)}
-        >
-          Save photo order
-        </button>
-      </>
-    ) : (
-      <div className="text-sm text-slate-500">No photos yet.</div>
-    )}
-  </div>
-)}
-
+              )}
 
               {/* EDIT FORM */}
               {isOpen ? (
@@ -1510,34 +1531,34 @@ router.refresh();
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-3">
-  <div className="grid gap-1">
-    <label className="text-sm">City</label>
-    <input
-      className="rounded-md border px-3 py-2"
-      name="city"
-      defaultValue={l.city ?? ""}
-    />
-  </div>
+                    <div className="grid gap-1">
+                      <label className="text-sm">City</label>
+                      <input
+                        className="rounded-md border px-3 py-2"
+                        name="city"
+                        defaultValue={l.city ?? ""}
+                      />
+                    </div>
 
-  <div className="grid gap-1">
-    <label className="text-sm">State</label>
-    <input
-      className="rounded-md border px-3 py-2"
-      name="state"
-      defaultValue={l.state ?? ""}
-    />
-  </div>
+                    <div className="grid gap-1">
+                      <label className="text-sm">State</label>
+                      <input
+                        className="rounded-md border px-3 py-2"
+                        name="state"
+                        defaultValue={l.state ?? ""}
+                      />
+                    </div>
 
-  <div className="grid gap-1">
-    <label className="text-sm">ZIP</label>
-    <input
-      className="rounded-md border px-3 py-2"
-      name="zip"
-      defaultValue={String(l.zip ?? "")}
-      placeholder="e.g. 32817"
-    />
-  </div>
-</div>
+                    <div className="grid gap-1">
+                      <label className="text-sm">ZIP</label>
+                      <input
+                        className="rounded-md border px-3 py-2"
+                        name="zip"
+                        defaultValue={String(l.zip ?? "")}
+                        placeholder="e.g. 32817"
+                      />
+                    </div>
+                  </div>
 
                   <div className="grid gap-1">
                     <label className="text-sm">Description</label>
@@ -1552,93 +1573,102 @@ router.refresh();
                   <div className="grid gap-3 md:grid-cols-3">
                     <div className="grid gap-1">
                       <label className="text-sm">$ / day</label>
-                      <input
-                        className="rounded-md border px-3 py-2"
-                        name="price_per_day"
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        required
-                        defaultValue={l.price_per_day ?? 1}
-                      />
+
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                          $
+                        </span>
+
+                        <input
+                          className="rounded-md border pl-8 pr-3 py-2 w-full"
+                          name="price_per_day"
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          required
+                          defaultValue={l.price_per_day ?? 1}
+                        />
+                      </div>
                     </div>
                     <div className="grid gap-1">
                       <label className="text-sm">$ / week</label>
-                      <input
-                        className="rounded-md border px-3 py-2"
-                        name="price_per_week"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        defaultValue={l.price_per_week ?? 0}
-                      />
+
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                          $
+                        </span>
+
+                        <input
+                          className="rounded-md border pl-8 pr-3 py-2 w-full"
+                          name="price_per_week"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          defaultValue={l.price_per_week ?? 0}
+                        />
+                      </div>
                     </div>
-                    <div className="grid gap-1">
-                      <label className="text-sm">$ / month</label>
+                  </div>
+                  {/* Hourly Rental (EDIT) */}
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
+                    <div className="text-sm font-medium">
+                      Hourly Rental (Equipment)
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm">
                       <input
-                        className="rounded-md border px-3 py-2"
-                        name="price_per_month"
+                        type="checkbox"
+                        name="rental_hourly_enabled"
+                        value="true"
+                        defaultChecked={Boolean(
+                          (l as any).rental_hourly_enabled,
+                        )}
+                      />
+                      Allow hourly rental
+                    </label>
+
+                    <div className="grid gap-1">
+                      <label className="text-sm">$ / hour</label>
+
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                          $
+                        </span>
+
+                        <input
+                          className="rounded-md border pl-8 pr-3 py-2 w-full"
+                          name="rental_hour_rate"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          defaultValue={(l as any).rental_hour_rate ?? ""}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-sm">Security deposit</label>
+
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+
+                      <input
+                        className="rounded-md border pl-8 pr-3 py-2 w-full"
+                        name="security_deposit"
                         type="number"
                         min="0"
                         step="0.01"
-                        defaultValue={l.price_per_month ?? 0}
+                        defaultValue={l.security_deposit ?? 0}
                       />
                     </div>
                   </div>
-{/* Hourly Rental (EDIT) */}
-<div className="rounded-lg border rr-card p-4 grid gap-2">
-  <div className="text-sm font-medium">Hourly Rental (Equipment)</div>
-
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="checkbox"
-      name="rental_hourly_enabled"
-      value="true"
-      defaultChecked={Boolean((l as any).rental_hourly_enabled)}
-    />
-    Allow hourly rental
-  </label>
-
-  <div className="grid gap-1">
-  <label className="text-sm">$ / hour</label>
-
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
-
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="rental_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      placeholder="e.g. 75"
-    />
-  </div>
-</div>
-</div>
-                  <div className="grid gap-1">
-  <label className="text-sm">Security deposit</label>
-
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
-
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="security_deposit"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={l.security_deposit ?? 0}
-    />
-  </div>
-</div>
 
                   <div className="grid gap-2">
-                    <label className="text-sm font-semibold">Required license</label>
+                    <label className="text-sm font-semibold">
+                      Required license
+                    </label>
 
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -1672,7 +1702,7 @@ router.refresh();
                     Published
                   </label>
 
-                                     {/* Delivery */}
+                  {/* Delivery */}
                   <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Delivery</div>
 
@@ -1684,7 +1714,9 @@ router.refresh();
                         defaultValue={l.delivery_mode ?? "pickup_only"}
                       >
                         <option value="pickup_only">Local pickup only</option>
-                        <option value="pickup_or_delivery">Pickup or delivery</option>
+                        <option value="pickup_or_delivery">
+                          Pickup or delivery
+                        </option>
                         <option value="delivery_only">Delivery only</option>
                       </select>
                     </div>
@@ -1704,14 +1736,21 @@ router.refresh();
 
                       <div className="grid gap-1">
                         <label className="text-sm">Delivery fee</label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="delivery_fee"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={l.delivery_fee ?? 0}
-                        />
+
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
+
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="delivery_fee"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.delivery_fee ?? 0}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1731,22 +1770,23 @@ router.refresh();
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-  <label className="text-sm">Operator rate</label>
+                        <label className="text-sm">Operator rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="operator_rate"
-      type="number"
-      min="0"
-      step="0.01"
-    />
-  </div>
-</div>
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="operator_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.operator_rate ?? 0}
+                          />
+                        </div>
+                      </div>
 
                       <div className="grid gap-1">
                         <label className="text-sm">Rate unit</label>
@@ -1819,27 +1859,41 @@ router.refresh();
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-                        <label className="text-sm">Driver day rate</label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="driver_day_rate"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={l.driver_day_rate ?? 0}
-                        />
-                      </div>
+  <label className="text-sm">Driver day rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_day_rate"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={l.driver_day_rate ?? 0}
+    />
+  </div>
+</div>
                       <div className="grid gap-1">
-                        <label className="text-sm">Driver hour rate</label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="driver_hour_rate"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={l.driver_hour_rate ?? 0}
-                        />
-                      </div>
+  <label className="text-sm">Driver hour rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_hour_rate"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={l.driver_hour_rate ?? 0}
+    />
+  </div>
+</div>
                       <div className="grid gap-1">
                         <label className="text-sm">Max hours (if hourly)</label>
                         <input
@@ -1873,9 +1927,7 @@ router.refresh();
                           type="checkbox"
                           name="driver_labor_daily_enabled"
                           value="true"
-                          defaultChecked={Boolean(
-                            l.driver_labor_daily_enabled,
-                          )}
+                          defaultChecked={Boolean(l.driver_labor_daily_enabled)}
                         />{" "}
                         Daily rate
                       </label>
@@ -1894,32 +1946,42 @@ router.refresh();
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-                        <label className="text-sm">
-                          Driver+Labor day rate
-                        </label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="driver_labor_day_rate"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={l.driver_labor_day_rate ?? 0}
-                        />
-                      </div>
-                      <div className="grid gap-1">
-                        <label className="text-sm">
-                          Driver+Labor hour rate
-                        </label>
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          name="driver_labor_hour_rate"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          defaultValue={l.driver_labor_hour_rate ?? 0}
-                        />
-                      </div>
-                      <div className="grid gap-1">
+  <label className="text-sm">Driver+Labor day rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_labor_day_rate"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={l.driver_labor_day_rate ?? 0}
+    />
+  </div>
+</div>
+                       <div className="grid gap-1">
+  <label className="text-sm">Driver+Labor hour rate</label>
+
+  <div className="relative">
+    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+      $
+    </span>
+
+    <input
+      className="rounded-md border pl-8 pr-3 py-2 w-full"
+      name="driver_labor_hour_rate"
+      type="number"
+      min="0"
+      step="0.01"
+      defaultValue={l.driver_labor_hour_rate ?? 0}
+    />
+  </div>
+</div>    
+                 <div className="grid gap-1">
                         <label className="text-sm">Max hours (if hourly)</label>
                         <input
                           className="rounded-md border px-3 py-2"
@@ -1971,21 +2033,21 @@ router.refresh();
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 border-t pt-4">
-  <button
-    disabled={isPending}
-    className="rr-btn rr-btn-primary"
-  >
-    {isPending ? "Saving..." : "Save"}
-  </button>
+                    <button
+                      disabled={isPending}
+                      className="rr-btn rr-btn-primary"
+                    >
+                      {isPending ? "Saving..." : "Save"}
+                    </button>
 
-  <button
-    type="button"
-    className="rr-btn rr-btn-secondary"
-    onClick={() => setOpenId(null)}
-  >
-    Close
-  </button>
-</div>
+                    <button
+                      type="button"
+                      className="rr-btn rr-btn-secondary"
+                      onClick={() => setOpenId(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
 
                   {msg ? <p className="text-sm">{msg}</p> : null}
                 </form>
@@ -1997,4 +2059,3 @@ router.refresh();
     </div>
   );
 }
-
