@@ -76,8 +76,13 @@ export async function requestRental(formData: FormData) {
   const operator_selected =
     String(formData.get("operator_selected") ?? "").toLowerCase() === "true";
   const operator_rate_unit =
-    String(formData.get("operator_rate_unit") ?? "") === "hour" ? "hour" : "day";
-  const operator_rate = Math.max(0, Number(formData.get("operator_rate") ?? 0) || 0);
+    String(formData.get("operator_rate_unit") ?? "") === "hour"
+      ? "hour"
+      : "day";
+  const operator_rate = Math.max(
+    0,
+    Number(formData.get("operator_rate") ?? 0) || 0,
+  );
   const operator_hours = toInt(formData.get("operator_hours"), 0);
 
   // load listing (includes all caps and service enable flags + delivery discount fields)
@@ -117,39 +122,62 @@ export async function requestRental(formData: FormData) {
       driver_labor_day_rate,
       driver_labor_hour_rate,
       driver_labor_max_hours
-      `
+      `,
     )
     .eq("id", listing_id)
     .single();
 
-  if (listingErr || !listing) return { ok: false, message: "Listing not found." };
-  if (!listing.is_published) return { ok: false, message: "This listing is not published." };
+  if (listingErr || !listing)
+    return { ok: false, message: "Listing not found." };
+  if (!listing.is_published)
+    return { ok: false, message: "This listing is not published." };
+
+if (listing.owner_id === user.id)
+  return { ok: false, message: "You cannot request your own listing." };
 
   const isHeavy = HEAVY_CATEGORIES.has(listing.category);
 
   // STEP #3 optional rule
   if (OPERATOR_ONLY_HEAVY_LIFTS && service_choice === "operator" && !isHeavy) {
-    return { ok: false, message: "Operator is only available for heavy equipment and lifts." };
+    return {
+      ok: false,
+      message: "Operator is only available for heavy equipment and lifts.",
+    };
   }
 
   // HARD LICENSE BLOCK: heavy/lifts w/ license required -> must confirm license OR choose operator
-  if (isHeavy && listing.license_required && !renter_has_license && service_choice !== "operator") {
-    return { ok: false, message: "This equipment requires a license or an operator." };
+  if (
+    isHeavy &&
+    listing.license_required &&
+    !renter_has_license &&
+    service_choice !== "operator"
+  ) {
+    return {
+      ok: false,
+      message: "This equipment requires a license or an operator.",
+    };
   }
 
   // date math
   const start = parseISODate(start_date);
   const end = parseISODate(end_date);
   const diffDays = Math.round((end.getTime() - start.getTime()) / 86400000);
-  if (diffDays < 0) return { ok: false, message: "End date must be after start date." };
+  if (diffDays < 0)
+    return { ok: false, message: "End date must be after start date." };
 
   const rental_days = diffDays + 1;
 
   if (listing.min_rental_days && rental_days < listing.min_rental_days) {
-    return { ok: false, message: `Minimum rental is ${listing.min_rental_days} days.` };
+    return {
+      ok: false,
+      message: `Minimum rental is ${listing.min_rental_days} days.`,
+    };
   }
   if (listing.max_rental_days && rental_days > listing.max_rental_days) {
-    return { ok: false, message: `Maximum rental is ${listing.max_rental_days} days.` };
+    return {
+      ok: false,
+      message: `Maximum rental is ${listing.max_rental_days} days.`,
+    };
   }
 
   // availability (approved + buffer)
@@ -166,7 +194,10 @@ export async function requestRental(formData: FormData) {
 
   for (const r of approved ?? []) {
     const rStart = parseISODate(r.start_date);
-    const rEnd = addDaysUTC(parseISODate(r.end_date), 1 + Number(r.buffer_days ?? 0));
+    const rEnd = addDaysUTC(
+      parseISODate(r.end_date),
+      1 + Number(r.buffer_days ?? 0),
+    );
     if (rangesOverlap(reqStart, reqEnd, rStart, rEnd)) {
       return { ok: false, message: "Listing not available for those dates." };
     }
@@ -174,7 +205,9 @@ export async function requestRental(formData: FormData) {
 
   // STEP #2: validate service choice + enforce caps server-side
   const driverHourCap =
-    Number(listing.driver_max_hours) > 0 ? Number(listing.driver_max_hours) : DEFAULT_HOURLY_CAP;
+    Number(listing.driver_max_hours) > 0
+      ? Number(listing.driver_max_hours)
+      : DEFAULT_HOURLY_CAP;
   const driverLaborHourCap =
     Number(listing.driver_labor_max_hours) > 0
       ? Number(listing.driver_labor_max_hours)
@@ -185,36 +218,51 @@ export async function requestRental(formData: FormData) {
       : DEFAULT_HOURLY_CAP;
 
   // Keep operator_selected in sync with unified service_choice
-  const operatorSelectedFinal = service_choice === "operator" ? true : operator_selected;
+  const operatorSelectedFinal =
+    service_choice === "operator" ? true : operator_selected;
 
   if (service_choice === "driver") {
-    if (!listing.driver_enabled) return { ok: false, message: "Driver not available." };
+    if (!listing.driver_enabled)
+      return { ok: false, message: "Driver not available." };
     if (service_unit === "day") {
-      if (!listing.driver_daily_enabled) return { ok: false, message: "Driver daily not available." };
-      if (!(Number(listing.driver_day_rate) > 0)) return { ok: false, message: "Driver rate missing." };
+      if (!listing.driver_daily_enabled)
+        return { ok: false, message: "Driver daily not available." };
+      if (!(Number(listing.driver_day_rate) > 0))
+        return { ok: false, message: "Driver rate missing." };
     } else {
-      if (!listing.driver_hourly_enabled) return { ok: false, message: "Driver hourly not available." };
-      if (!(Number(listing.driver_hour_rate) > 0)) return { ok: false, message: "Driver rate missing." };
+      if (!listing.driver_hourly_enabled)
+        return { ok: false, message: "Driver hourly not available." };
+      if (!(Number(listing.driver_hour_rate) > 0))
+        return { ok: false, message: "Driver rate missing." };
       if (service_hours < 1 || service_hours > driverHourCap) {
-        return { ok: false, message: `Driver hours must be 1–${driverHourCap}.` };
+        return {
+          ok: false,
+          message: `Driver hours must be 1–${driverHourCap}.`,
+        };
       }
     }
   }
 
   if (service_choice === "driver_labor") {
-    if (!listing.driver_labor_enabled) return { ok: false, message: "Driver + Labor not available." };
+    if (!listing.driver_labor_enabled)
+      return { ok: false, message: "Driver + Labor not available." };
     if (service_unit === "day") {
       if (!listing.driver_labor_daily_enabled) {
         return { ok: false, message: "Driver + Labor daily not available." };
       }
-      if (!(Number(listing.driver_labor_day_rate) > 0)) return { ok: false, message: "Driver + Labor rate missing." };
+      if (!(Number(listing.driver_labor_day_rate) > 0))
+        return { ok: false, message: "Driver + Labor rate missing." };
     } else {
       if (!listing.driver_labor_hourly_enabled) {
         return { ok: false, message: "Driver + Labor hourly not available." };
       }
-      if (!(Number(listing.driver_labor_hour_rate) > 0)) return { ok: false, message: "Driver + Labor rate missing." };
+      if (!(Number(listing.driver_labor_hour_rate) > 0))
+        return { ok: false, message: "Driver + Labor rate missing." };
       if (service_hours < 1 || service_hours > driverLaborHourCap) {
-        return { ok: false, message: `Driver + Labor hours must be 1–${driverLaborHourCap}.` };
+        return {
+          ok: false,
+          message: `Driver + Labor hours must be 1–${driverLaborHourCap}.`,
+        };
       }
     }
   }
@@ -227,7 +275,10 @@ export async function requestRental(formData: FormData) {
     if (String(listing.operator_rate_unit ?? "day") === "hour") {
       const hours = service_hours || operator_hours;
       if (hours < 1 || hours > operatorHourCap) {
-        return { ok: false, message: `Operator hours must be 1–${operatorHourCap}.` };
+        return {
+          ok: false,
+          message: `Operator hours must be 1–${operatorHourCap}.`,
+        };
       }
     }
   }
@@ -249,10 +300,20 @@ export async function requestRental(formData: FormData) {
       delivery_fee_final = 0;
     } else {
       let discount = 0;
-      const discountEnabled = Boolean(listing.delivery_service_discount_enabled);
-      const discountAmount = Math.max(0, Number(listing.delivery_service_discount_amount ?? 0) || 0);
+      const discountEnabled = Boolean(
+        listing.delivery_service_discount_enabled,
+      );
+      const discountAmount = Math.max(
+        0,
+        Number(listing.delivery_service_discount_amount ?? 0) || 0,
+      );
 
-      if (discountEnabled && service_choice !== "none" && baseDeliveryFee > 0 && discountAmount > 0) {
+      if (
+        discountEnabled &&
+        service_choice !== "none" &&
+        baseDeliveryFee > 0 &&
+        discountAmount > 0
+      ) {
         discount = Math.min(baseDeliveryFee, discountAmount);
       }
 
@@ -266,9 +327,9 @@ export async function requestRental(formData: FormData) {
   let hourly_is_estimate = false;
   let hourly_estimated_hours: number | null = null;
 
-  const operatorUnit = (String(listing.operator_rate_unit ?? "day") === "hour" ? "hour" : "day") as
-    | "day"
-    | "hour";
+  const operatorUnit = (
+    String(listing.operator_rate_unit ?? "day") === "hour" ? "hour" : "day"
+  ) as "day" | "hour";
   const operatorRate = Math.max(0, Number(listing.operator_rate ?? 0) || 0);
 
   if (operatorSelectedFinal) {
@@ -276,14 +337,69 @@ export async function requestRental(formData: FormData) {
       operator_days = rental_days;
       operator_total = operator_days * operatorRate;
     } else {
-      const hours = service_choice === "operator" ? service_hours : operator_hours;
+      const hours =
+        service_choice === "operator" ? service_hours : operator_hours;
       hourly_is_estimate = true;
       hourly_estimated_hours = hours;
       operator_total = hours * operatorRate;
     }
   }
 
-    const rentalInsert = {
+  // unified service snapshot
+  let service_rate = 0;
+  let service_days = 0;
+  let service_hours_final = 0;
+  let service_total = 0;
+
+  if (service_choice === "operator") {
+    service_rate = operatorRate;
+    if (operatorUnit === "day") {
+      service_days = rental_days;
+      service_total = service_rate * service_days;
+    } else {
+      service_hours_final = service_hours;
+      service_total = service_rate * service_hours_final;
+    }
+  }
+
+  if (service_choice === "driver") {
+    if (service_unit === "day") {
+      service_rate = Math.max(0, Number(listing.driver_day_rate ?? 0) || 0);
+      service_days = rental_days;
+      service_total = service_rate * service_days;
+    } else {
+      service_rate = Math.max(0, Number(listing.driver_hour_rate ?? 0) || 0);
+      service_hours_final = service_hours;
+      service_total = service_rate * service_hours_final;
+    }
+  }
+
+  if (service_choice === "driver_labor") {
+    if (service_unit === "day") {
+      service_rate = Math.max(
+        0,
+        Number(listing.driver_labor_day_rate ?? 0) || 0,
+      );
+      service_days = rental_days;
+      service_total = service_rate * service_days;
+    } else {
+      service_rate = Math.max(
+        0,
+        Number(listing.driver_labor_hour_rate ?? 0) || 0,
+      );
+      service_hours_final = service_hours;
+      service_total = service_rate * service_hours_final;
+    }
+  }
+
+  const service_unit_final =
+    service_choice === "none"
+      ? null
+      : service_choice === "operator"
+        ? operatorUnit
+        : service_unit;
+
+  const rentalInsert = {
     listing_id,
     renter_id: user.id,
     start_date,
@@ -295,6 +411,14 @@ export async function requestRental(formData: FormData) {
 
     delivery_selected,
     delivery_fee: delivery_fee_final,
+
+    // unified service snapshot
+    service_choice,
+    service_unit: service_unit_final,
+    service_rate,
+    service_days,
+    service_hours: service_hours_final,
+    service_total,
 
     // operator snapshot (kept for existing invoice + finalize)
     operator_selected: operatorSelectedFinal,
@@ -312,7 +436,7 @@ export async function requestRental(formData: FormData) {
     hourly_finalized_at: null,
   };
 
-    assertAllowedInsertKeys("rentals", rentalInsert, [
+  assertAllowedInsertKeys("rentals", rentalInsert, [
     "listing_id",
     "renter_id",
     "start_date",
@@ -324,6 +448,13 @@ export async function requestRental(formData: FormData) {
 
     "delivery_selected",
     "delivery_fee",
+
+    "service_choice",
+    "service_unit",
+    "service_rate",
+    "service_days",
+    "service_hours",
+    "service_total",
 
     "operator_selected",
     "operator_rate",
@@ -340,50 +471,50 @@ export async function requestRental(formData: FormData) {
   ]);
 
   const { data: existingInquiry } = await supabase
-  .from("rentals")
-  .select("id")
-  .eq("listing_id", listing_id)
-  .eq("renter_id", user.id)
-  .eq("is_inquiry", true)
-  .order("created_at", { ascending: false })
-  .limit(1)
-  .maybeSingle();
-
-let rentalId: string | null = null;
-
-if (existingInquiry?.id) {
-  const { error: updateError } = await supabase
     .from("rentals")
-    .update({
-      ...rentalInsert,
-      is_inquiry: false,
-    })
-    .eq("id", existingInquiry.id);
-
-  if (updateError) return { ok: false, message: updateError.message };
-
-  rentalId = existingInquiry.id;
-} else {
-  const { data: createdRental, error: insertError } = await supabase
-    .from("rentals")
-    .insert({
-      ...rentalInsert,
-      is_inquiry: false,
-    })
     .select("id")
-    .single();
+    .eq("listing_id", listing_id)
+    .eq("renter_id", user.id)
+    .eq("is_inquiry", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (insertError) return { ok: false, message: insertError.message };
+  let rentalId: string | null = null;
 
-  rentalId = createdRental?.id ?? null;
-}
-if (rentalId && message) {
-  await supabase.from("rental_messages").insert({
-    rental_id: rentalId,
-    sender_id: user.id,
-    body: message,
-  });
-}
+  if (existingInquiry?.id) {
+    const { error: updateError } = await supabase
+      .from("rentals")
+      .update({
+        ...rentalInsert,
+        is_inquiry: false,
+      })
+      .eq("id", existingInquiry.id);
+
+    if (updateError) return { ok: false, message: updateError.message };
+
+    rentalId = existingInquiry.id;
+  } else {
+    const { data: createdRental, error: insertError } = await supabase
+      .from("rentals")
+      .insert({
+        ...rentalInsert,
+        is_inquiry: false,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) return { ok: false, message: insertError.message };
+
+    rentalId = createdRental?.id ?? null;
+  }
+  if (rentalId && message) {
+    await supabase.from("rental_messages").insert({
+      rental_id: rentalId,
+      sender_id: user.id,
+      body: message,
+    });
+  }
   revalidatePath(`/listings/${listing_id}`);
   revalidatePath("/dashboard/rentals");
   revalidatePath("/dashboard/owner-rentals");
@@ -393,14 +524,18 @@ if (rentalId && message) {
 
 /* ---------------- Step 3.3 finalize hourly (unchanged behavior) ---------------- */
 
-export async function ownerFinalizeHourly(rentalId: string, finalHoursInput: number) {
+export async function ownerFinalizeHourly(
+  rentalId: string,
+  finalHoursInput: number,
+) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
   const user = data?.user;
   if (!user) redirect("/login");
 
   const final_hours = toInt(finalHoursInput);
-  if (final_hours < 1) return { ok: false, message: "Final hours must be at least 1." };
+  if (final_hours < 1)
+    return { ok: false, message: "Final hours must be at least 1." };
 
   const { data: row } = await supabase
     .from("rentals")
@@ -413,25 +548,29 @@ export async function ownerFinalizeHourly(rentalId: string, finalHoursInput: num
       operator_rate_unit,
       hourly_finalized_at,
       listings:listing_id ( owner_id, operator_max_hours )
-      `
+      `,
     )
     .eq("id", rentalId)
     .single();
 
   if (!row) return { ok: false, message: "Rental not found." };
-  if ((row as any).listings.owner_id !== user.id) return { ok: false, message: "Not allowed." };
-  if (row.status !== "approved") return { ok: false, message: "Rental not approved." };
+  if ((row as any).listings.owner_id !== user.id)
+    return { ok: false, message: "Not allowed." };
+  if (row.status !== "approved")
+    return { ok: false, message: "Rental not approved." };
   if (!row.operator_selected || row.operator_rate_unit !== "hour") {
     return { ok: false, message: "Not an hourly operator rental." };
   }
-  if (row.hourly_finalized_at) return { ok: false, message: "Already finalized." };
+  if (row.hourly_finalized_at)
+    return { ok: false, message: "Already finalized." };
 
   const cap =
     Number((row as any).listings.operator_max_hours) > 0
       ? Number((row as any).listings.operator_max_hours)
       : DEFAULT_HOURLY_CAP;
 
-  if (final_hours > cap) return { ok: false, message: `Hours cannot exceed ${cap}.` };
+  if (final_hours > cap)
+    return { ok: false, message: `Hours cannot exceed ${cap}.` };
 
   const final_total = final_hours * Number(row.operator_rate);
 
@@ -460,7 +599,7 @@ export type CreateRentalInspectionResult = {
 };
 
 export async function createRentalInspection(
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateRentalInspectionResult> {
   const supabase = await createClient();
 
@@ -611,7 +750,7 @@ export async function createRentalInspection(
     if (photoError) {
       console.error(
         "createRentalInspection photo insert error:",
-        photoError.message
+        photoError.message,
       );
       // We don't fail the whole action here; the main inspection saved.
     }
