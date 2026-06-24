@@ -46,6 +46,14 @@ type RentalRow = {
   operator_rate?: number | null;
   operator_hours?: number | null;
   operator_total?: number | null;
+
+  // unified service snapshot
+  service_choice?: string | null;
+  service_unit?: "day" | "hour" | string | null;
+  service_rate?: number | null;
+  service_days?: number | null;
+  service_hours?: number | null;
+  service_total?: number | null;
 };
 
 type ListingPhoto = {
@@ -55,6 +63,19 @@ type ListingPhoto = {
   sort_order: number | null;
   created_at?: string;
 };
+
+function money(v: any) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "$0.00";
+  return `$${n.toFixed(2)}`;
+}
+
+function serviceLabel(choice?: string | null) {
+  if (choice === "operator") return "Operator";
+  if (choice === "driver") return "Driver";
+  if (choice === "driver_labor") return "Driver + Labor";
+  return "None";
+}
 
 export default function OwnerRentalsClient({
   rentals,
@@ -305,20 +326,36 @@ const isNewRequest =
       </div>
     )}
 
-    {r.operator_selected && (
-      <div className="mt-2 text-sm text-slate-700">
-        <span className="font-semibold">Operator:</span>{" "}
-        {r.operator_rate != null
-          ? `${r.operator_rate} / ${r.operator_rate_unit ?? "hour"}`
-          : "Selected"}
-        {r.hourly_is_estimate && !r.hourly_finalized_at ? (
-          <span className="text-amber-600 font-semibold ml-1">
-            (Estimate – needs finalize)
-          </span>
-        ) : null}
-      </div>
-    )}
+    {r.service_choice && r.service_choice !== "none" ? (
+  <div className="mt-3 border-t pt-3 text-sm text-slate-700">
+    <div>
+      <span className="font-semibold">Service:</span>{" "}
+      {serviceLabel(r.service_choice)}
+    </div>
 
+    <div>
+      <span className="font-semibold">Rate:</span>{" "}
+      {money(r.service_rate)} / {r.service_unit ?? "day"}
+    </div>
+
+    <div>
+      <span className="font-semibold">
+        {r.service_unit === "hour" ? "Hours:" : "Days:"}
+      </span>{" "}
+      {r.service_unit === "hour" ? r.service_hours ?? 0 : r.service_days ?? 0}
+    </div>
+
+    <div>
+      <span className="font-semibold">Service total:</span>{" "}
+      {money(r.service_total)}
+      {r.hourly_is_estimate && !r.hourly_finalized_at ? (
+        <span className="text-amber-600 font-semibold ml-1">
+          (Estimate – needs finalize)
+        </span>
+      ) : null}
+    </div>
+  </div>
+) : null}
     <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
       <Link href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}`} className="rr-btn rr-btn-secondary">
         View Rental

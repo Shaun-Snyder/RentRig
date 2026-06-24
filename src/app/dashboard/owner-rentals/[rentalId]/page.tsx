@@ -21,23 +21,41 @@ export default async function OwnerRentalDetailsPage({
     .from("rentals")
     .select(
       `
-        id,
-        listing_id,
-        renter_id,
-        start_date,
-        end_date,
-        status,
-        renter_returned,
-        message,
-        created_at,
-        listing:listings ( id, title, owner_id ),
-        renter:profiles!rentals_renter_id_fkey (
-          id,
-          full_name,
-          company_name
-        )
-      `
+
+    id,
+    listing_id,
+    renter_id,
+    start_date,
+    end_date,
+    status,
+    renter_returned,
+
+    service_choice,
+    service_unit,
+    service_rate,
+    service_days,
+    service_hours,
+    service_total,
+
+    delivery_selected,
+    delivery_fee,
+
+    operator_selected,
+    operator_rate_unit,
+    operator_rate,
+    operator_total,
+
+    message,
+    created_at,
+
+    listing:listings ( id, title, owner_id ),
+    renter:profiles!rentals_renter_id_fkey (
+      id,
+      full_name,
+      company_name
     )
+  `
+)
     .eq("id", params.rentalId)
     .maybeSingle();
 
@@ -116,6 +134,58 @@ export default async function OwnerRentalDetailsPage({
       </div>
     </div>
   </div>
+
+<div className="rr-card p-4">
+  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    Pricing & Services
+  </div>
+
+  <div className="mt-3 grid gap-2 text-sm text-slate-700">
+    <div>
+      <span className="font-semibold">Service:</span>{" "}
+      {rental.service_choice && rental.service_choice !== "none"
+        ? rental.service_choice === "driver_labor"
+          ? "Driver + Labor"
+          : rental.service_choice === "driver"
+          ? "Driver"
+          : rental.service_choice === "operator"
+          ? "Operator"
+          : rental.service_choice
+        : "None"}
+    </div>
+
+    {rental.service_choice && rental.service_choice !== "none" ? (
+      <>
+        <div>
+          <span className="font-semibold">Rate:</span>{" "}
+          ${Number(rental.service_rate ?? 0).toFixed(2)} /{" "}
+          {rental.service_unit ?? "day"}
+        </div>
+
+        <div>
+          <span className="font-semibold">
+            {rental.service_unit === "hour" ? "Hours:" : "Days:"}
+          </span>{" "}
+          {rental.service_unit === "hour"
+            ? rental.service_hours ?? 0
+            : rental.service_days ?? 0}
+        </div>
+
+        <div>
+          <span className="font-semibold">Service Total:</span>{" "}
+          ${Number(rental.service_total ?? 0).toFixed(2)}
+        </div>
+      </>
+    ) : null}
+
+    <div>
+      <span className="font-semibold">Delivery:</span>{" "}
+      {rental.delivery_selected
+        ? `$${Number(rental.delivery_fee ?? 0).toFixed(2)}`
+        : "Not selected"}
+    </div>
+  </div>
+</div>
 
   {rental.message && (
     <div className="rr-card p-4">

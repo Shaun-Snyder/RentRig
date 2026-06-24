@@ -43,6 +43,14 @@ export default async function OwnerRentalsPage() {
         "operator_hours",
         "operator_total",
 
+        // Unified service snapshot
+        "service_choice",
+        "service_unit",
+        "service_rate",
+        "service_days",
+        "service_hours",
+        "service_total",
+
         // Inspections + photos nested under each rental
         "inspections:rental_inspections(id, role, phase, odometer, hours_used, fuel_percent, notes, created_at, photos:rental_inspection_photos(id, url))",
       ].join(", ")
