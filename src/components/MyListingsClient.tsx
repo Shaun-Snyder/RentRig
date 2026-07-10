@@ -1808,7 +1808,7 @@ export default function MyListingsClient({
                   </div>
 
                   {/* Operator */}
-                  <div className="rounded-lg border bg-slate-50 p-4 grid gap-3">
+                  <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Operator</div>
 
                     <label className="flex items-center gap-2 text-sm">

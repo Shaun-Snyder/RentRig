@@ -62,6 +62,7 @@ type Props = {
   // delivery
   deliveryMode?: "pickup_only" | "pickup_or_delivery" | "delivery_only";
   deliveryFee?: number;
+  deliveryMiles: number;
 
   // ✅ delivery discount bundle (Step 4.3)
   deliveryDiscountEnabled?: boolean;
