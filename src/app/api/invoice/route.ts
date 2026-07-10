@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
@@ -71,7 +70,13 @@ export async function GET(req: Request) {
         owner_discount_amount,
         owner_discount_note,
 
-        
+        service_choice,
+        service_unit,
+        service_rate,
+        service_days,
+        service_hours,
+        service_total,
+
         operator_selected,
         operator_rate,
         operator_rate_unit,
@@ -89,7 +94,7 @@ export async function GET(req: Request) {
           security_deposit,
           cancellation_policy
         )
-      `
+      `,
       )
       .eq("id", rentalId)
       .single();
@@ -113,16 +118,26 @@ export async function GET(req: Request) {
     // Service-role client for profile names
     const admin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
     const renterId = rental.renter_id;
     const ownerId = listing.owner_id;
 
-    const [{ data: renterProfile }, { data: ownerProfile }] = await Promise.all([
-      admin.from("profiles").select("full_name").eq("id", renterId).maybeSingle(),
-      admin.from("profiles").select("full_name").eq("id", ownerId).maybeSingle(),
-    ]);
+    const [{ data: renterProfile }, { data: ownerProfile }] = await Promise.all(
+      [
+        admin
+          .from("profiles")
+          .select("full_name")
+          .eq("id", renterId)
+          .maybeSingle(),
+        admin
+          .from("profiles")
+          .select("full_name")
+          .eq("id", ownerId)
+          .maybeSingle(),
+      ],
+    );
 
     const renterName =
       renterProfile?.full_name?.trim() || `User ${renterId.slice(0, 8)}`;
@@ -131,20 +146,20 @@ export async function GET(req: Request) {
 
     /* -------- Pricing -------- */
 
-    const pricePerDay = Number(listing.price_per_day ?? 0);
-    const start = rental.start_date;
-    const endExclusive = rental.end_date;
+    const pricePerDay = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
 
-    const days =
-      Math.max(
-        0,
-        Math.round(
-          (Date.parse(`${endExclusive}T00:00:00Z`) -
-            Date.parse(`${start}T00:00:00Z`)) /
-            86400000
-        )
+    const start = rental.start_date;
+    const end = rental.end_date;
+
+    // Rental dates are inclusive.
+    // Example: July 10 through July 10 = 1 rental day.
+    const dateDifference =
+      Math.round(
+        (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) /
+          86400000,
       ) || 0;
 
+    const days = Math.max(1, dateDifference + 1);
     const rentalSubtotal = days * pricePerDay;
 
     // Delivery snapshot
@@ -152,27 +167,52 @@ export async function GET(req: Request) {
     const deliveryFee = Math.max(0, Number(rental.delivery_fee ?? 0) || 0);
     const deliveryCharge = deliverySelected ? deliveryFee : 0;
 
-    // ✅ Operator snapshot (authoritative from rentals)
+    // Unified service snapshot
+    const serviceChoice = String(rental.service_choice ?? "none");
+    const serviceUnit = rental.service_unit === "hour" ? "hour" : "day";
+
+    const serviceRate = Math.max(0, Number(rental.service_rate ?? 0) || 0);
+    const serviceDays = Math.max(0, Number(rental.service_days ?? 0) || 0);
+    const serviceHours = Math.max(0, Number(rental.service_hours ?? 0) || 0);
+    const storedServiceTotal = Math.max(
+      0,
+      Number(rental.service_total ?? 0) || 0,
+    );
+
+    // Legacy operator fallback for rentals created before unified service fields.
     const operatorSelected = Boolean(rental.operator_selected);
-    const operatorRateUnit: "day" | "hour" = rental.operator_rate_unit === "hour" ? "hour" : "day";
+    const operatorRateUnit: "day" | "hour" =
+      rental.operator_rate_unit === "hour" ? "hour" : "day";
     const operatorRate = Math.max(0, Number(rental.operator_rate ?? 0) || 0);
     const operatorDays = Math.max(0, Number(rental.operator_days ?? 0) || 0);
     const operatorHours = Math.max(0, Number(rental.operator_hours ?? 0) || 0);
     const operatorTotal = Math.max(0, Number(rental.operator_total ?? 0) || 0);
 
-    const operatorCharge = operatorSelected ? operatorTotal : 0;
+    const hasUnifiedService =
+      serviceChoice !== "none" && storedServiceTotal > 0;
 
-        // Service fee applied to (rental subtotal + add-ons - discount)
-    const preDiscount = rentalSubtotal + deliveryCharge + operatorCharge;
+    const serviceCharge = hasUnifiedService
+      ? storedServiceTotal
+      : operatorSelected
+        ? operatorTotal
+        : 0;
 
-    const rawDiscount = Math.max(0, Number(rental.owner_discount_amount ?? 0) || 0);
-    const discount = Math.min(rawDiscount, preDiscount); // never exceed charges
+    // Charges before owner discount
+    const preDiscount = rentalSubtotal + deliveryCharge + serviceCharge;
+
+    const rawDiscount = Math.max(
+      0,
+      Number(rental.owner_discount_amount ?? 0) || 0,
+    );
+    const discount = Math.min(rawDiscount, preDiscount);
 
     const preFee = preDiscount - discount;
 
+    // Temporary 10% RentRig service fee.
+    // We will revise this when payment-processor fees are finalized.
     const serviceFee = Math.round(preFee * 0.1 * 100) / 100;
-    const total = preFee + serviceFee;
 
+    const total = preFee + serviceFee;
 
     const deposit = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
 
@@ -249,7 +289,7 @@ export async function GET(req: Request) {
 
     draw("Rental Dates", 12, true);
     draw(`Start: ${formatDate(start)}`, 11);
-    draw(`End (exclusive): ${formatDate(endExclusive)}`, 11);
+    draw(`End: ${formatDate(end)}`, 11);
     draw(`Status: ${rental.status}`, 11);
     y -= 6;
 
@@ -263,18 +303,40 @@ export async function GET(req: Request) {
       draw(`Discount: -${money(discount)}${note ? ` (${note})` : ""}`, 11);
     }
 
+    if (serviceCharge > 0) {
+      if (hasUnifiedService) {
+        const serviceName =
+          serviceChoice === "driver_labor"
+            ? "Driver + Labor"
+            : serviceChoice === "driver"
+              ? "Driver"
+              : serviceChoice === "operator"
+                ? "Operator"
+                : "Service";
 
-    if (operatorSelected && operatorCharge > 0) {
-      if (operatorRateUnit === "day") {
-        draw(
-          `Operator service: ${operatorDays} day(s) @ ${money(operatorRate)}/day = ${money(operatorCharge)}`,
-          11
-        );
-      } else {
-        draw(
-          `Operator service: ${operatorHours} hour(s) @ ${money(operatorRate)}/hour = ${money(operatorCharge)}`,
-          11
-        );
+        if (serviceUnit === "day") {
+          draw(
+            `${serviceName}: ${serviceDays} day(s) @ ${money(serviceRate)}/day = ${money(serviceCharge)}`,
+            11,
+          );
+        } else {
+          draw(
+            `${serviceName}: ${serviceHours} hour(s) @ ${money(serviceRate)}/hour = ${money(serviceCharge)}`,
+            11,
+          );
+        }
+      } else if (operatorSelected) {
+        if (operatorRateUnit === "day") {
+          draw(
+            `Operator service: ${operatorDays} day(s) @ ${money(operatorRate)}/day = ${money(serviceCharge)}`,
+            11,
+          );
+        } else {
+          draw(
+            `Operator service: ${operatorHours} hour(s) @ ${money(operatorRate)}/hour = ${money(serviceCharge)}`,
+            11,
+          );
+        }
       }
     }
 
@@ -294,7 +356,10 @@ export async function GET(req: Request) {
     y -= 12;
     draw("Notes:", 11, true);
     draw("- Taxes not included.", 10);
-    draw("- Deposit shown for transparency (payments not implemented yet).", 10);
+    draw(
+      "- Deposit shown for transparency (payments not implemented yet).",
+      10,
+    );
 
     const pdfBytes = await pdfDoc.save();
 
@@ -310,7 +375,7 @@ export async function GET(req: Request) {
     console.error(e);
     return NextResponse.json(
       { error: e?.message || "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

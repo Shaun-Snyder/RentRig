@@ -75,6 +75,20 @@ const {
 
   if (listingErr || !listing) notFound();
 
+console.log("DRIVER DEBUG:", {
+  driver_enabled: listing.driver_enabled,
+  driver_daily_enabled: listing.driver_daily_enabled,
+  driver_hourly_enabled: listing.driver_hourly_enabled,
+  driver_day_rate: listing.driver_day_rate,
+  driver_hour_rate: listing.driver_hour_rate,
+
+  driver_labor_enabled: listing.driver_labor_enabled,
+  driver_labor_daily_enabled: listing.driver_labor_daily_enabled,
+  driver_labor_hourly_enabled: listing.driver_labor_hourly_enabled,
+  driver_labor_day_rate: listing.driver_labor_day_rate,
+  driver_labor_hour_rate: listing.driver_labor_hour_rate,
+});
+
   /* =========================
      Photos
   ========================== */
@@ -235,6 +249,7 @@ const {
             /* delivery */
             deliveryMode={deliveryMode}
             deliveryFee={deliveryFee}
+            deliveryMiles={Number(listing.delivery_miles ?? 0)}
             deliveryDiscountEnabled={Boolean(listing.delivery_service_discount_enabled)}
             deliveryDiscountAmount={Number(listing.delivery_service_discount_amount ?? 0)}
             /* category/license */

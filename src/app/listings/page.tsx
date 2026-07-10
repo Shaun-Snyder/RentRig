@@ -108,6 +108,11 @@ export default async function ListingsPage({
     license_required,
     license_type,
     security_deposit,
+
+    delivery_mode,
+    delivery_fee,
+    delivery_miles,
+
     operator_enabled,
     operator_rate,
     operator_rate_unit,

@@ -32,11 +32,7 @@ type Listing = {
   is_published: boolean;
 
   delivery_mode?:
-    | "pickup_only"
-    | "pickup_or_delivery"
-    | "delivery_only"
-    | string
-    | null;
+    "pickup_only" | "pickup_or_delivery" | "delivery_only" | string | null;
   delivery_miles?: number | null;
   delivery_fee?: number | null;
   delivery_service_discount_enabled?: boolean | null;
@@ -46,6 +42,13 @@ type Listing = {
   rental_hour_rate?: number | null;
 
   operator_enabled: boolean;
+
+  operator_daily_enabled?: boolean | null;
+  operator_hourly_enabled?: boolean | null;
+  operator_day_rate?: number | null;
+  operator_hour_rate?: number | null;
+
+  // Legacy fields kept temporarily for compatibility
   operator_rate: number | null;
   operator_rate_unit: "day" | "hour" | string | null;
   operator_max_hours: number | null;
@@ -94,10 +97,6 @@ function numStr(v: any) {
   return Number.isFinite(n) ? String(n) : "";
 }
 
-function rateLabel(unit: string | null | undefined) {
-  return unit === "hour" ? "/hr" : "/day";
-}
-
 export default function MyListingsClient({
   listings,
   showCreate = false,
@@ -129,9 +128,6 @@ export default function MyListingsClient({
   >({});
 
   // controlled so the unit label doesn’t feel stale in the edit UI
-  const [editOperatorRateUnit, setEditOperatorRateUnit] = useState<
-    Record<string, "day" | "hour">
-  >({});
 
   function storageUrl(path: string) {
     const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
@@ -463,9 +459,29 @@ export default function MyListingsClient({
     );
 
     fd.set("operator_enabled", boolStr(x.operator_enabled));
-    fd.set("operator_rate", numStr(x.operator_rate));
-    fd.set("operator_rate_unit", (x.operator_rate_unit ?? "day").toString());
+
+    fd.set(
+      "operator_daily_enabled",
+      boolStr(Boolean(x.operator_daily_enabled)),
+    );
+    fd.set(
+      "operator_hourly_enabled",
+      boolStr(Boolean(x.operator_hourly_enabled)),
+    );
+    fd.set("operator_day_rate", numStr(x.operator_day_rate ?? 0));
+    fd.set("operator_hour_rate", numStr(x.operator_hour_rate ?? 0));
+
     fd.set("operator_max_hours", numStr(x.operator_max_hours ?? 24));
+
+    // Legacy compatibility fields
+    const legacyOperatorUnit = x.operator_daily_enabled ? "day" : "hour";
+
+    const legacyOperatorRate = x.operator_daily_enabled
+      ? x.operator_day_rate
+      : x.operator_hour_rate;
+
+    fd.set("operator_rate_unit", legacyOperatorUnit);
+    fd.set("operator_rate", numStr(legacyOperatorRate ?? 0));
 
     fd.set("driver_enabled", boolStr(x.driver_enabled));
     fd.set("driver_daily_enabled", boolStr(x.driver_daily_enabled));
@@ -796,15 +812,44 @@ export default function MyListingsClient({
           </div>
 
           {/* Operator */}
-          <div className="rounded-lg border bg-slate-50 p-4 grid gap-2">
+          <div className="rounded-lg border bg-slate-50 p-4 grid gap-3">
             <div className="text-sm font-medium">Operator</div>
+
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="operator_enabled" value="true" />{" "}
+              <input
+                type="checkbox"
+                name="operator_enabled"
+                value="true"
+                defaultChecked={Boolean(l.operator_enabled)}
+              />
               Offer operator
             </label>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="operator_daily_enabled"
+                  value="true"
+                  defaultChecked={Boolean(l.operator_daily_enabled)}
+                />
+                Daily rate
+              </label>
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="operator_hourly_enabled"
+                  value="true"
+                  defaultChecked={Boolean(l.operator_hourly_enabled)}
+                />
+                Hourly rate
+              </label>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-3">
               <div className="grid gap-1">
-                <label className="text-sm">Operator rate</label>
+                <label className="text-sm">Operator day rate</label>
 
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
@@ -813,25 +858,34 @@ export default function MyListingsClient({
 
                   <input
                     className="rounded-md border pl-8 pr-3 py-2 w-full"
-                    name="operator_rate"
+                    name="operator_day_rate"
                     type="number"
                     min="0"
                     step="0.01"
-                    defaultValue={0}
+                    defaultValue={l.operator_hour_rate ?? 0}
                   />
                 </div>
               </div>
+
               <div className="grid gap-1">
-                <label className="text-sm">Rate unit</label>
-                <select
-                  className="rounded-md border px-3 py-2"
-                  name="operator_rate_unit"
-                  defaultValue="day"
-                >
-                  <option value="day">Per day</option>
-                  <option value="hour">Per hour</option>
-                </select>
+                <label className="text-sm">Operator hour rate</label>
+
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
+
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="operator_hour_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={l.operator_hour_rate ?? 0}
+                  />
+                </div>
               </div>
+
               <div className="grid gap-1">
                 <label className="text-sm">Max hours (if hourly)</label>
                 <input
@@ -840,6 +894,7 @@ export default function MyListingsClient({
                   type="number"
                   min="0"
                   step="1"
+                  defaultValue={l.operator_max_hours ?? 24}
                 />
               </div>
             </div>
@@ -966,23 +1021,23 @@ export default function MyListingsClient({
                 </div>
               </div>
               <div className="grid gap-1">
-  <label className="text-sm">Driver+Labor hour rate</label>
+                <label className="text-sm">Driver+Labor hour rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    $
+                  </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_labor_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={0}
-    />
-  </div>
-</div>
+                  <input
+                    className="rounded-md border pl-8 pr-3 py-2 w-full"
+                    name="driver_labor_hour_rate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    defaultValue={0}
+                  />
+                </div>
+              </div>
               <div className="grid gap-1">
                 <label className="text-sm">Max hours (if hourly)</label>
                 <input
@@ -1104,11 +1159,20 @@ export default function MyListingsClient({
           const isOpen = openId === l.id;
           const thumb = getThumb(l.id);
 
-          const unit =
-            editOperatorRateUnit[l.id] ??
-            ((l.operator_rate_unit ?? "day") as "day" | "hour");
-          const operatorEnabled = Boolean(l.operator_enabled);
-          const operatorRate = Number(l.operator_rate ?? 0);
+          const operatorSummary = l.operator_enabled
+            ? [
+                l.operator_daily_enabled
+                  ? `Daily ${money(l.operator_day_rate)}`
+                  : null,
+                l.operator_hourly_enabled
+                  ? `Hourly ${money(l.operator_hour_rate)} (cap ${
+                      l.operator_max_hours ?? 24
+                    })`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" • ")
+            : "Not offered";
 
           const driverSummary = l.driver_enabled
             ? [
@@ -1228,18 +1292,7 @@ export default function MyListingsClient({
 
                     <div className="text-sm text-slate-700">
                       <span className="font-semibold">Operator:</span>{" "}
-                      {operatorEnabled
-                        ? `Available (${money(operatorRate)}${rateLabel(unit)})`
-                        : "Not included"}
-                      {operatorEnabled && unit === "hour" ? (
-                        <span>
-                          {" "}
-                          • Hour cap:{" "}
-                          <span className="font-semibold">
-                            {l.operator_max_hours ?? 24}
-                          </span>
-                        </span>
-                      ) : null}
+                      {operatorSummary || "Not included"}
                     </div>
 
                     <div className="text-sm text-slate-700">
@@ -1262,7 +1315,6 @@ export default function MyListingsClient({
                   disabled={isPending}
                   onClick={() => {
                     setOpenId(isOpen ? null : l.id);
-                    setEditOperatorRateUnit((p) => ({ ...p, [l.id]: unit }));
                     if (!isOpen) refreshPhotos(l.id);
                   }}
                 >
@@ -1756,21 +1808,41 @@ export default function MyListingsClient({
                   </div>
 
                   {/* Operator */}
-                  <div className="rounded-lg border rr-card p-4 grid gap-2">
+                  <div className="rounded-lg border bg-slate-50 p-4 grid gap-3">
                     <div className="text-sm font-medium">Operator</div>
+
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
                         name="operator_enabled"
                         value="true"
-                        defaultChecked={Boolean(l.operator_enabled)}
-                      />{" "}
+                      />
                       Offer operator
                     </label>
 
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="operator_daily_enabled"
+                          value="true"
+                        />
+                        Daily rate
+                      </label>
+
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="operator_hourly_enabled"
+                          value="true"
+                        />
+                        Hourly rate
+                      </label>
+                    </div>
+
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-                        <label className="text-sm">Operator rate</label>
+                        <label className="text-sm">Operator day rate</label>
 
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
@@ -1779,34 +1851,32 @@ export default function MyListingsClient({
 
                           <input
                             className="rounded-md border pl-8 pr-3 py-2 w-full"
-                            name="operator_rate"
+                            name="operator_day_rate"
                             type="number"
                             min="0"
                             step="0.01"
-                            defaultValue={l.operator_rate ?? 0}
+                            defaultValue={0}
                           />
                         </div>
                       </div>
 
                       <div className="grid gap-1">
-                        <label className="text-sm">Rate unit</label>
-                        <select
-                          className="rounded-md border px-3 py-2"
-                          name="operator_rate_unit"
-                          value={
-                            editOperatorRateUnit[l.id] ??
-                            ((l.operator_rate_unit ?? "day") as any)
-                          }
-                          onChange={(e) =>
-                            setEditOperatorRateUnit((p) => ({
-                              ...p,
-                              [l.id]: e.target.value as any,
-                            }))
-                          }
-                        >
-                          <option value="day">Per day</option>
-                          <option value="hour">Per hour</option>
-                        </select>
+                        <label className="text-sm">Operator hour rate</label>
+
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
+
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="operator_hour_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={0}
+                          />
+                        </div>
                       </div>
 
                       <div className="grid gap-1">
@@ -1816,13 +1886,12 @@ export default function MyListingsClient({
                           name="operator_max_hours"
                           type="number"
                           min="0"
-                          step="0.01"
-                          defaultValue={l.operator_max_hours ?? 24}
+                          step="1"
+                          defaultValue={24}
                         />
                       </div>
                     </div>
                   </div>
-
                   {/* Driver */}
                   <div className="rounded-lg border rr-card p-4 grid gap-2">
                     <div className="text-sm font-medium">Driver</div>
@@ -1859,41 +1928,41 @@ export default function MyListingsClient({
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-  <label className="text-sm">Driver day rate</label>
+                        <label className="text-sm">Driver day rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_day_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={l.driver_day_rate ?? 0}
-    />
-  </div>
-</div>
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="driver_day_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.driver_day_rate ?? 0}
+                          />
+                        </div>
+                      </div>
                       <div className="grid gap-1">
-  <label className="text-sm">Driver hour rate</label>
+                        <label className="text-sm">Driver hour rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={l.driver_hour_rate ?? 0}
-    />
-  </div>
-</div>
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="driver_hour_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.driver_hour_rate ?? 0}
+                          />
+                        </div>
+                      </div>
                       <div className="grid gap-1">
                         <label className="text-sm">Max hours (if hourly)</label>
                         <input
@@ -1946,42 +2015,44 @@ export default function MyListingsClient({
 
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="grid gap-1">
-  <label className="text-sm">Driver+Labor day rate</label>
+                        <label className="text-sm">Driver+Labor day rate</label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_labor_day_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={l.driver_labor_day_rate ?? 0}
-    />
-  </div>
-</div>
-                       <div className="grid gap-1">
-  <label className="text-sm">Driver+Labor hour rate</label>
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="driver_labor_day_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.driver_labor_day_rate ?? 0}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-sm">
+                          Driver+Labor hour rate
+                        </label>
 
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-      $
-    </span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                            $
+                          </span>
 
-    <input
-      className="rounded-md border pl-8 pr-3 py-2 w-full"
-      name="driver_labor_hour_rate"
-      type="number"
-      min="0"
-      step="0.01"
-      defaultValue={l.driver_labor_hour_rate ?? 0}
-    />
-  </div>
-</div>    
-                 <div className="grid gap-1">
+                          <input
+                            className="rounded-md border pl-8 pr-3 py-2 w-full"
+                            name="driver_labor_hour_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={l.driver_labor_hour_rate ?? 0}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-1">
                         <label className="text-sm">Max hours (if hourly)</label>
                         <input
                           className="rounded-md border px-3 py-2"

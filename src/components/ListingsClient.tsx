@@ -44,6 +44,10 @@ type Listing = {
   driver_labor_day_rate?: number | null;
   driver_labor_hour_rate?: number | null;
   driver_labor_max_hours?: number | null;
+
+  delivery_mode?: string | null;
+  delivery_fee?: number | null;
+  delivery_miles?: number | null;
 };
 
 
@@ -729,6 +733,17 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
               <span className="font-semibold">Driver + Labor:</span>{" "}
               {driverLaborSummary || "Not offered"}
             </div>
+
+<div className="text-sm text-slate-700">
+  <span className="font-semibold">Delivery:</span>{" "}
+  {l.delivery_mode === "pickup_only"
+    ? "Pickup only"
+    : l.delivery_mode === "delivery_only"
+    ? `${money(l.delivery_fee)} within ${l.delivery_miles ?? 0} miles`
+    : `Optional • ${money(l.delivery_fee)} within ${
+        l.delivery_miles ?? 0
+      } miles`}
+</div>
 
             {l.license_required && (
               <div className="mt-1 text-xs text-amber-700">

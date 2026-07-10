@@ -1,4 +1,3 @@
-
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
@@ -29,12 +28,17 @@ function normalizeFormData(arg1: any, arg2?: any): FormData {
   throw new Error("FormData not provided to action.");
 }
 
-const DELIVERY_MODES = ["pickup_only", "delivery_only", "pickup_or_delivery"] as const;
+const DELIVERY_MODES = [
+  "pickup_only",
+  "delivery_only",
+  "pickup_or_delivery",
+] as const;
 type DeliveryMode = (typeof DELIVERY_MODES)[number];
 
 function normalizeDeliveryMode(raw: string): DeliveryMode {
   const v = raw.trim();
-  if ((DELIVERY_MODES as readonly string[]).includes(v)) return v as DeliveryMode;
+  if ((DELIVERY_MODES as readonly string[]).includes(v))
+    return v as DeliveryMode;
   // safe default that satisfies NOT NULL + CHECK constraint
   return "pickup_only";
 }
@@ -57,16 +61,39 @@ export async function createListing(arg1: any, arg2?: any) {
   const license_required = toBool(fd.get("license_required"));
   const license_type = toStr(fd.get("license_type")) || null;
 
-  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
+  const delivery_mode = normalizeDeliveryMode(
+    toStr(fd.get("delivery_mode") || "pickup_only"),
+  );
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
+  const delivery_miles = toNum(fd.get("delivery_miles")) ?? 0;
 
-  const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
-  const delivery_service_discount_amount = toNum(fd.get("delivery_service_discount_amount")) ?? 0;
+  const delivery_service_discount_enabled = toBool(
+    fd.get("delivery_service_discount_enabled"),
+  );
+  const delivery_service_discount_amount =
+    toNum(fd.get("delivery_service_discount_amount")) ?? 0;
 
-  const operator_enabled = toBool(fd.get("operator_enabled"));
-  const operator_rate = toNum(fd.get("operator_rate"));
-  const operator_rate_unit = toStr(fd.get("operator_rate_unit")) || "day";
+  const operator_day_rate = toNum(fd.get("operator_day_rate")) ?? 0;
+  const operator_hour_rate = toNum(fd.get("operator_hour_rate")) ?? 0;
+
+  const operator_daily_enabled =
+    toBool(fd.get("operator_daily_enabled")) || operator_day_rate > 0;
+
+  const operator_hourly_enabled =
+    toBool(fd.get("operator_hourly_enabled")) || operator_hour_rate > 0;
+
+  const operator_enabled =
+    toBool(fd.get("operator_enabled")) ||
+    operator_daily_enabled ||
+    operator_hourly_enabled;
+
   const operator_max_hours = toNum(fd.get("operator_max_hours"));
+
+  // Keep old fields synchronized temporarily for compatibility.
+  const operator_rate_unit = operator_daily_enabled ? "day" : "hour";
+  const operator_rate = operator_daily_enabled
+    ? operator_day_rate
+    : operator_hour_rate;
 
   const driver_enabled = toBool(fd.get("driver_enabled"));
   const driver_daily_enabled = toBool(fd.get("driver_daily_enabled"));
@@ -76,8 +103,12 @@ export async function createListing(arg1: any, arg2?: any) {
   const driver_max_hours = toNum(fd.get("driver_max_hours"));
 
   const driver_labor_enabled = toBool(fd.get("driver_labor_enabled"));
-  const driver_labor_daily_enabled = toBool(fd.get("driver_labor_daily_enabled"));
-  const driver_labor_hourly_enabled = toBool(fd.get("driver_labor_hourly_enabled"));
+  const driver_labor_daily_enabled = toBool(
+    fd.get("driver_labor_daily_enabled"),
+  );
+  const driver_labor_hourly_enabled = toBool(
+    fd.get("driver_labor_hourly_enabled"),
+  );
   const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate"));
   const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate"));
   const driver_labor_max_hours = toNum(fd.get("driver_labor_max_hours"));
@@ -88,7 +119,8 @@ export async function createListing(arg1: any, arg2?: any) {
 
   if (!title) return { ok: false, message: "Title is required." };
   if (!category) return { ok: false, message: "Category is required." };
-  if (price_per_day == null) return { ok: false, message: "Price per day is required." };
+  if (price_per_day == null)
+    return { ok: false, message: "Price per day is required." };
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -113,12 +145,20 @@ export async function createListing(arg1: any, arg2?: any) {
     license_type,
 
     delivery_mode,
+    delivery_miles,
     delivery_fee,
 
     delivery_service_discount_enabled,
     delivery_service_discount_amount,
 
     operator_enabled,
+
+    operator_daily_enabled,
+    operator_hourly_enabled,
+    operator_day_rate,
+    operator_hour_rate,
+
+    // Legacy compatibility fields
     operator_rate,
     operator_rate_unit,
     operator_max_hours,
@@ -171,16 +211,39 @@ export async function updateListing(arg1: any, arg2?: any) {
   const license_required = toBool(fd.get("license_required"));
   const license_type = toStr(fd.get("license_type")) || null;
 
-  const delivery_mode = normalizeDeliveryMode(toStr(fd.get("delivery_mode") || "pickup_only"));
+  const delivery_mode = normalizeDeliveryMode(
+    toStr(fd.get("delivery_mode") || "pickup_only"),
+  );
   const delivery_fee = toNum(fd.get("delivery_fee")) ?? 0;
+  const delivery_miles = toNum(fd.get("delivery_miles")) ?? 0;
 
-  const delivery_service_discount_enabled = toBool(fd.get("delivery_service_discount_enabled"));
-  const delivery_service_discount_amount = toNum(fd.get("delivery_service_discount_amount")) ?? 0;
+  const delivery_service_discount_enabled = toBool(
+    fd.get("delivery_service_discount_enabled"),
+  );
+  const delivery_service_discount_amount =
+    toNum(fd.get("delivery_service_discount_amount")) ?? 0;
 
-  const operator_enabled = toBool(fd.get("operator_enabled"));
-  const operator_rate = toNum(fd.get("operator_rate"));
-  const operator_rate_unit = toStr(fd.get("operator_rate_unit")) || "day";
+  const operator_day_rate = toNum(fd.get("operator_day_rate")) ?? 0;
+  const operator_hour_rate = toNum(fd.get("operator_hour_rate")) ?? 0;
+
+  const operator_daily_enabled =
+    toBool(fd.get("operator_daily_enabled")) || operator_day_rate > 0;
+
+  const operator_hourly_enabled =
+    toBool(fd.get("operator_hourly_enabled")) || operator_hour_rate > 0;
+
+  const operator_enabled =
+    toBool(fd.get("operator_enabled")) ||
+    operator_daily_enabled ||
+    operator_hourly_enabled;
+
   const operator_max_hours = toNum(fd.get("operator_max_hours"));
+
+  // Keep old fields synchronized temporarily for compatibility.
+  const operator_rate_unit = operator_daily_enabled ? "day" : "hour";
+  const operator_rate = operator_daily_enabled
+    ? operator_day_rate
+    : operator_hour_rate;
 
   const driver_enabled = toBool(fd.get("driver_enabled"));
   const driver_daily_enabled = toBool(fd.get("driver_daily_enabled"));
@@ -190,8 +253,12 @@ export async function updateListing(arg1: any, arg2?: any) {
   const driver_max_hours = toNum(fd.get("driver_max_hours"));
 
   const driver_labor_enabled = toBool(fd.get("driver_labor_enabled"));
-  const driver_labor_daily_enabled = toBool(fd.get("driver_labor_daily_enabled"));
-  const driver_labor_hourly_enabled = toBool(fd.get("driver_labor_hourly_enabled"));
+  const driver_labor_daily_enabled = toBool(
+    fd.get("driver_labor_daily_enabled"),
+  );
+  const driver_labor_hourly_enabled = toBool(
+    fd.get("driver_labor_hourly_enabled"),
+  );
   const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate"));
   const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate"));
   const driver_labor_max_hours = toNum(fd.get("driver_labor_max_hours"));
@@ -226,12 +293,20 @@ export async function updateListing(arg1: any, arg2?: any) {
       license_type,
 
       delivery_mode,
+      delivery_miles,
       delivery_fee,
 
       delivery_service_discount_enabled,
       delivery_service_discount_amount,
 
       operator_enabled,
+
+      operator_daily_enabled,
+      operator_hourly_enabled,
+      operator_day_rate,
+      operator_hour_rate,
+
+      // Legacy compatibility fields
       operator_rate,
       operator_rate_unit,
       operator_max_hours,
@@ -271,7 +346,11 @@ export async function deleteListing(arg1: any, arg2?: any) {
   const userId = auth?.user?.id;
   if (!userId) return { ok: false, message: "Not signed in." };
 
-  const { error } = await supabase.from("listings").delete().eq("id", id).eq("owner_id", userId);
+  const { error } = await supabase
+    .from("listings")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", userId);
   if (error) return { ok: false, message: error.message };
   return { ok: true, message: "Deleted." };
 }
@@ -291,882 +370,3 @@ export async function togglePublish(listingId: string, nextPublished: boolean) {
   if (error) return { ok: false, message: error.message };
   return { ok: true, message: nextPublished ? "Published." : "Unpublished." };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -106,7 +106,7 @@ export default function RentalRequestForm({
 
   deliveryMode = "pickup_only",
   deliveryFee = 0,
-
+  deliveryMiles,
   deliveryDiscountEnabled = false,
   deliveryDiscountAmount = 0,
 
@@ -513,7 +513,10 @@ setMsg(res?.message ?? "Request failed.");
           ) : (
             <label className="flex items-center gap-2">
               <input checked={deliverySelected} onChange={(e) => setDeliverySelected(e.target.checked)} type="checkbox" />
-              <span>Request delivery ({formatMoney(deliveryFee)})</span>
+              <span>
+  Request delivery ({formatMoney(deliveryFee)}
+  {deliveryMiles > 0 ? ` within ${deliveryMiles} miles` : ""})
+</span>
             </label>
           )}
         </div>
