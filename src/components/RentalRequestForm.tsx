@@ -13,7 +13,10 @@ type BlockedRange = {
 };
 
 function formatMoney(amount: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
 }
 
 function parseISO(value?: string | null) {
@@ -69,7 +72,14 @@ type Props = {
   deliveryDiscountAmount?: number;
 
   // category/license (needed for license block UI)
-  category?: "heavy_equipment" | "lifts" | "trailers" | "vans_covered" | "trucks" | "other" | string;
+  category?:
+    | "heavy_equipment"
+    | "lifts"
+    | "trailers"
+    | "vans_covered"
+    | "trucks"
+    | "other"
+    | string;
   licenseRequired?: boolean;
   licenseType?: string | null;
 
@@ -158,19 +168,30 @@ export default function RentalRequestForm({
   const [serviceHours, setServiceHours] = useState(1);
 
   // license confirmation (for heavy equipment/lifts)
-  const isHeavyCategory = category === "heavy_equipment" || category === "lifts";
+  const isHeavyCategory =
+    category === "heavy_equipment" || category === "lifts";
   const needsLicenseBlock = Boolean(isHeavyCategory && licenseRequired);
   const [renterHasLicense, setRenterHasLicense] = useState(false);
 
+  const [operatorDecision, setOperatorDecision] = useState<"self" | "owner">(
+    "owner",
+  );
+
   // show options based on what listing offers
-  const showDriverOption = Boolean(driverEnabled && (driverDailyEnabled || driverHourlyEnabled));
-  const showDriverLaborOption = Boolean(driverLaborEnabled && (driverLaborDailyEnabled || driverLaborHourlyEnabled));
+  const showDriverOption = Boolean(
+    driverEnabled && (driverDailyEnabled || driverHourlyEnabled),
+  );
+  const showDriverLaborOption = Boolean(
+    driverLaborEnabled && (driverLaborDailyEnabled || driverLaborHourlyEnabled),
+  );
 
   // keep your existing “operator only heavy/lifts” toggle behavior
   const OPERATOR_ONLY_HEAVY_LIFTS = false;
 
   const showOperatorOption = Boolean(
-    operatorEnabled && operatorRate > 0 && (!OPERATOR_ONLY_HEAVY_LIFTS || isHeavyCategory)
+    operatorEnabled &&
+    operatorRate > 0 &&
+    (!OPERATOR_ONLY_HEAVY_LIFTS || isHeavyCategory),
   );
 
   // If license is required and renter doesn't confirm, force Operator (UI guard)
@@ -183,10 +204,18 @@ export default function RentalRequestForm({
 
   // If option isn't available, bounce back to none
   useEffect(() => {
-    if (serviceChoice === "driver" && !showDriverOption) setServiceChoice("none");
-    if (serviceChoice === "driver_labor" && !showDriverLaborOption) setServiceChoice("none");
-    if (serviceChoice === "operator" && !showOperatorOption) setServiceChoice("none");
-  }, [serviceChoice, showDriverOption, showDriverLaborOption, showOperatorOption]);
+    if (serviceChoice === "driver" && !showDriverOption)
+      setServiceChoice("none");
+    if (serviceChoice === "driver_labor" && !showDriverLaborOption)
+      setServiceChoice("none");
+    if (serviceChoice === "operator" && !showOperatorOption)
+      setServiceChoice("none");
+  }, [
+    serviceChoice,
+    showDriverOption,
+    showDriverLaborOption,
+    showOperatorOption,
+  ]);
 
   // If service choice changes, default unit to what’s available
   useEffect(() => {
@@ -195,8 +224,10 @@ export default function RentalRequestForm({
       if (serviceUnit === "hour" && !driverHourlyEnabled) setServiceUnit("day");
     }
     if (serviceChoice === "driver_labor") {
-      if (serviceUnit === "day" && !driverLaborDailyEnabled) setServiceUnit("hour");
-      if (serviceUnit === "hour" && !driverLaborHourlyEnabled) setServiceUnit("day");
+      if (serviceUnit === "day" && !driverLaborDailyEnabled)
+        setServiceUnit("hour");
+      if (serviceUnit === "hour" && !driverLaborHourlyEnabled)
+        setServiceUnit("day");
     }
     if (serviceChoice === "operator") {
       setServiceUnit(operatorRateUnit);
@@ -268,7 +299,14 @@ export default function RentalRequestForm({
       return operatorRateUnit === "day" ? days : serviceHours;
     }
     return serviceRateUnit === "day" ? days : serviceHours;
-  }, [serviceSelected, serviceChoice, operatorRateUnit, days, serviceRateUnit, serviceHours]);
+  }, [
+    serviceSelected,
+    serviceChoice,
+    operatorRateUnit,
+    days,
+    serviceRateUnit,
+    serviceHours,
+  ]);
 
   const serviceTotal = useMemo(() => {
     if (!serviceSelected) return 0;
@@ -293,7 +331,13 @@ export default function RentalRequestForm({
     const amt = Number(deliveryDiscountAmount ?? 0);
     if (amt <= 0) return 0;
     return Math.min(deliveryFee, amt);
-  }, [deliverySelected, serviceSelected, deliveryDiscountEnabled, deliveryDiscountAmount, deliveryFee]);
+  }, [
+    deliverySelected,
+    serviceSelected,
+    deliveryDiscountEnabled,
+    deliveryDiscountAmount,
+    deliveryFee,
+  ]);
 
   const deliveryCost = useMemo(() => {
     if (!deliverySelected) return 0;
@@ -301,7 +345,8 @@ export default function RentalRequestForm({
   }, [deliverySelected, deliveryFee, deliveryDiscount]);
 
   // Service fee (10%) based on subtotal + delivery + service
-  const serviceFee = Math.round((baseSubtotal + deliveryCost + serviceTotal) * 0.1 * 100) / 100;
+  const serviceFee =
+    Math.round((baseSubtotal + deliveryCost + serviceTotal) * 0.1 * 100) / 100;
 
   const total = baseSubtotal + deliveryCost + serviceTotal + serviceFee;
   const deposit = Number(securityDeposit ?? 0);
@@ -311,11 +356,18 @@ export default function RentalRequestForm({
   const minViolation = minRentalDays && days > 0 && days < minRentalDays;
   const maxViolation = maxRentalDays && days > 0 && days > maxRentalDays;
 
+  const ownerProvidedLicensedService =
+    serviceChoice === "operator" ||
+    serviceChoice === "driver" ||
+    serviceChoice === "driver_labor";
+
   const canSubmit =
     Boolean(startDate && endDate && days > 0) &&
     !minViolation &&
     !maxViolation &&
-    (!needsLicenseBlock || renterHasLicense || (showOperatorOption && serviceChoice === "operator"));
+    (!needsLicenseBlock || renterHasLicense || ownerProvidedLicensedService);
+
+  const showServiceSelector = true;
 
   return (
     <form
@@ -325,11 +377,11 @@ export default function RentalRequestForm({
           try {
             const res: any = await requestRental(fd);
 
-if (res?.ok) {
-  setRequestSent(true);
-}
+            if (res?.ok) {
+              setRequestSent(true);
+            }
 
-setMsg(res?.message ?? "Request failed.");
+            setMsg(res?.message ?? "Request failed.");
           } catch (e: any) {
             setMsg(e?.message ?? "Request failed.");
           }
@@ -343,12 +395,24 @@ setMsg(res?.message ?? "Request failed.");
       <input type="hidden" name="end_date" value={endDate} />
 
       {/* delivery */}
-      <input type="hidden" name="delivery_selected" value={deliverySelected ? "true" : "false"} />
+      <input
+        type="hidden"
+        name="delivery_selected"
+        value={deliverySelected ? "true" : "false"}
+      />
       {/* ✅ send discounted delivery fee (server will enforce too) */}
-      <input type="hidden" name="delivery_fee" value={deliverySelected ? String(deliveryCost) : "0"} />
+      <input
+        type="hidden"
+        name="delivery_fee"
+        value={deliverySelected ? String(deliveryCost) : "0"}
+      />
 
       {/* license confirmation snapshot */}
-      <input type="hidden" name="renter_has_license" value={renterHasLicense ? "true" : "false"} />
+      <input
+        type="hidden"
+        name="renter_has_license"
+        value={renterHasLicense ? "true" : "false"}
+      />
 
       {/* service snapshot (new unified values) */}
       <input type="hidden" name="service_choice" value={serviceChoice} />
@@ -356,168 +420,297 @@ setMsg(res?.message ?? "Request failed.");
       <input
         type="hidden"
         name="service_hours"
-        value={String(serviceChoice !== "none" && serviceRateUnit === "hour" ? serviceHours : 0)}
+        value={String(
+          serviceChoice !== "none" && serviceRateUnit === "hour"
+            ? serviceHours
+            : 0,
+        )}
       />
       <input type="hidden" name="service_rate" value={String(serviceRate)} />
       <input type="hidden" name="service_total" value={String(serviceTotal)} />
 
       {/* keep legacy operator snapshot */}
-      <input type="hidden" name="operator_selected" value={serviceChoice === "operator" ? "true" : "false"} />
+      <input
+        type="hidden"
+        name="operator_selected"
+        value={serviceChoice === "operator" ? "true" : "false"}
+      />
       <input type="hidden" name="operator_rate" value={String(operatorRate)} />
       <input type="hidden" name="operator_rate_unit" value={operatorRateUnit} />
-      <input type="hidden" name="operator_days" value={String(serviceChoice === "operator" && operatorRateUnit === "day" ? days : 0)} />
-      <input type="hidden" name="operator_hours" value={String(serviceChoice === "operator" && operatorRateUnit === "hour" ? serviceHours : 0)} />
-      <input type="hidden" name="operator_total" value={String(serviceChoice === "operator" ? serviceTotal : 0)} />
+      <input
+        type="hidden"
+        name="operator_days"
+        value={String(
+          serviceChoice === "operator" && operatorRateUnit === "day" ? days : 0,
+        )}
+      />
+      <input
+        type="hidden"
+        name="operator_hours"
+        value={String(
+          serviceChoice === "operator" && operatorRateUnit === "hour"
+            ? serviceHours
+            : 0,
+        )}
+      />
+      <input
+        type="hidden"
+        name="operator_total"
+        value={String(serviceChoice === "operator" ? serviceTotal : 0)}
+      />
 
       <div className="hidden md:block max-w-full overflow-hidden">
-  <DayPicker
-        mode="range"
-        selected={range}
-        onSelect={(r) => {
-          if (!r?.from || !r?.to) return;
-          setRange(r);
-          setStartDate(r.from.toISOString().slice(0, 10));
-          setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
-        }}
-        numberOfMonths={1}
-        disabled={(d) => {
-          const now = new Date();
-          // disallow past dates
-          if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) return true;
+        <DayPicker
+          mode="range"
+          selected={range}
+          onSelect={(r) => {
+            if (!r?.from || !r?.to) return;
+            setRange(r);
+            setStartDate(r.from.toISOString().slice(0, 10));
+            setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
+          }}
+          numberOfMonths={1}
+          disabled={(d) => {
+            const now = new Date();
+            // disallow past dates
+            if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+              return true;
 
-          // block booked ranges
-          for (const b of blocked) {
-            const start = parseISO(b.start);
-            const endEx = parseISO(b.end_exclusive);
-            if (d >= start && d < endEx) return true;
-          }
-          return false;
-        }}
-      />
-</div>
-<div className="grid gap-3 md:hidden">
-  <label className="grid gap-1">
-    <span className="text-sm text-slate-600">Start date</span>
-    <input
-      type="date"
-      className="border rounded-lg p-2"
-      value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
-    />
-  </label>
+            // block booked ranges
+            for (const b of blocked) {
+              const start = parseISO(b.start);
+              const endEx = parseISO(b.end_exclusive);
+              if (d >= start && d < endEx) return true;
+            }
+            return false;
+          }}
+        />
+      </div>
+      <div className="grid gap-3 md:hidden">
+        <label className="grid gap-1">
+          <span className="text-sm text-slate-600">Start date</span>
+          <input
+            type="date"
+            className="border rounded-lg p-2"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </label>
 
-  <label className="grid gap-1">
-    <span className="text-sm text-slate-600">End date</span>
-    <input
-      type="date"
-      className="border rounded-lg p-2"
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-    />
-  </label>
-</div>
+        <label className="grid gap-1">
+          <span className="text-sm text-slate-600">End date</span>
+          <input
+            type="date"
+            className="border rounded-lg p-2"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </label>
+      </div>
       {(minViolation || maxViolation) && (
         <div className="rounded-lg border bg-white p-3 text-sm text-amber-700">
-          {minViolation ? <div>Minimum rental is {minRentalDays} day(s).</div> : null}
-          {maxViolation ? <div>Maximum rental is {maxRentalDays} day(s).</div> : null}
+          {minViolation ? (
+            <div>Minimum rental is {minRentalDays} day(s).</div>
+          ) : null}
+          {maxViolation ? (
+            <div>Maximum rental is {maxRentalDays} day(s).</div>
+          ) : null}
         </div>
       )}
 
       {needsLicenseBlock && (
         <div className="rounded-lg border bg-white p-3 text-sm">
-          <div className="font-semibold mb-2">License required</div>
-          <div className="text-slate-600">
-            This listing requires a license{licenseType ? ` (${licenseType})` : ""}. If you don’t have it, you must add an Operator.
+          <div className="mb-2 font-semibold">
+            Who will operate the equipment?
           </div>
 
-          <label className="flex items-center gap-2 mt-2">
-            <input checked={renterHasLicense} onChange={(e) => setRenterHasLicense(e.target.checked)} type="checkbox" />
-            <span>I have the required license</span>
-          </label>
+          <div className="text-slate-600">
+            This listing requires a license
+            {licenseType ? ` (${licenseType})` : ""}.
+          </div>
+
+          <div className="mt-3 grid gap-2">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="operatorDecision"
+                value="self"
+                checked={operatorDecision === "self"}
+                onChange={() => {
+                  setOperatorDecision("self");
+                  setRenterHasLicense(true);
+
+                  if (serviceChoice === "operator") {
+                    setServiceChoice("none");
+                  }
+                }}
+              />
+              <span>I have the required {licenseType ?? "license"}.</span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="operatorDecision"
+                value="owner"
+                checked={operatorDecision === "owner"}
+                onChange={() => {
+                  setOperatorDecision("owner");
+                  setRenterHasLicense(false);
+                  setServiceChoice("none");
+                }}
+              />
+              <span>
+                I need the owner to provide a licensed driver or operator.
+              </span>
+            </label>
+          </div>
+
+          {!showOperatorOption && !renterHasLicense && (
+            <div className="mt-2 text-xs font-semibold text-red-700">
+              This listing requires a licensed operator, but the owner does not
+              currently offer one.
+            </div>
+          )}
         </div>
       )}
 
-      <div className="rounded-lg border bg-white p-3 text-sm">
-        <div className="font-semibold mb-2">Driver / Operator options</div>
+      {showServiceSelector && (
+        <div className="rounded-lg border bg-white p-3 text-sm">
+          <div className="mb-2 font-semibold">Driver / Operator options</div>
 
-        <label className="grid gap-1">
-          <span className="text-sm text-slate-600">Select service</span>
-          <select
-            value={serviceChoice}
-            onChange={(e) => setServiceChoice(e.target.value as ServiceChoice)}
-            className="border rounded-lg p-2"
-            disabled={needsLicenseBlock && !renterHasLicense}
-          >
-            <option value="none">No driver / operator</option>
-            {showDriverOption && <option value="driver">Driver</option>}
-            {showDriverLaborOption && <option value="driver_labor">Driver + Labor</option>}
-            {showOperatorOption && <option value="operator">Operator</option>}
-          </select>
-        </label>
+          <label className="grid gap-1">
+            <span className="text-sm text-slate-600">Select service</span>
 
-        {serviceChoice !== "none" && (
-          <div className="grid gap-2 mt-3">
-            <label className="grid gap-1">
-              <span className="text-sm text-slate-600">Billing</span>
-              <select
-                value={serviceRateUnit}
-                onChange={(e) => {
-                  if (serviceChoice === "operator") return;
-                  setServiceUnit(e.target.value as ServiceUnit);
-                }}
-                className="border rounded-lg p-2"
-                disabled={serviceChoice === "operator"}
+            <select
+              value={serviceChoice}
+              onChange={(e) =>
+                setServiceChoice(e.target.value as ServiceChoice)
+              }
+              className="rounded-lg border p-2"
+            >
+              <option
+                value="none"
+                disabled={needsLicenseBlock && !renterHasLicense}
               >
-                {serviceChoice === "operator" ? (
-                  <option value={operatorRateUnit}>{operatorRateUnit === "day" ? "Daily rate" : "Hourly rate (estimate)"}</option>
-                ) : (
-                  <>
-                    {serviceChoice === "driver" && driverDailyEnabled && <option value="day">Daily rate</option>}
-                    {serviceChoice === "driver" && driverHourlyEnabled && <option value="hour">Hourly rate (estimate)</option>}
-                    {serviceChoice === "driver_labor" && driverLaborDailyEnabled && <option value="day">Daily rate</option>}
-                    {serviceChoice === "driver_labor" && driverLaborHourlyEnabled && <option value="hour">Hourly rate (estimate)</option>}
-                  </>
-                )}
-              </select>
-            </label>
+                No driver / operator
+              </option>
 
-            {serviceRateUnit === "hour" && (
+              {showDriverOption && <option value="driver">Driver</option>}
+
+              {showDriverLaborOption && (
+                <option value="driver_labor">Driver + Labor</option>
+              )}
+
+              {showOperatorOption && <option value="operator">Operator</option>}
+            </select>
+          </label>
+
+          {serviceChoice !== "none" && (
+            <div className="mt-3 grid gap-2">
               <label className="grid gap-1">
-                <span className="text-sm text-slate-600">Estimated hours (max {hourlyCap})</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={hourlyCap}
-                  step={1}
-                  value={serviceHours}
-                  onChange={(e) => setServiceHours(Math.max(1, Math.min(hourlyCap, Number(e.target.value) || 1)))}
-                  className="border rounded-lg p-2"
-                />
-                <span className="text-xs text-slate-500">Hourly services are estimates at booking. Final hours are billed after completion.</span>
-              </label>
-            )}
+                <span className="text-sm text-slate-600">Billing</span>
 
-            <div className="text-slate-600">
-              {serviceLabel} rate: <span className="font-semibold">{formatMoney(serviceRate)}</span>{" "}
-              {serviceRateUnit === "day" ? "/day" : "/hour"}
+                <select
+                  value={serviceRateUnit}
+                  onChange={(e) => {
+                    if (serviceChoice === "operator") return;
+                    setServiceUnit(e.target.value as ServiceUnit);
+                  }}
+                  className="rounded-lg border p-2"
+                  disabled={serviceChoice === "operator"}
+                >
+                  {serviceChoice === "operator" ? (
+                    <option value={operatorRateUnit}>
+                      {operatorRateUnit === "day"
+                        ? "Daily rate"
+                        : "Hourly rate (estimate)"}
+                    </option>
+                  ) : (
+                    <>
+                      {serviceChoice === "driver" && driverDailyEnabled && (
+                        <option value="day">Daily rate</option>
+                      )}
+
+                      {serviceChoice === "driver" && driverHourlyEnabled && (
+                        <option value="hour">Hourly rate (estimate)</option>
+                      )}
+
+                      {serviceChoice === "driver_labor" &&
+                        driverLaborDailyEnabled && (
+                          <option value="day">Daily rate</option>
+                        )}
+
+                      {serviceChoice === "driver_labor" &&
+                        driverLaborHourlyEnabled && (
+                          <option value="hour">Hourly rate (estimate)</option>
+                        )}
+                    </>
+                  )}
+                </select>
+              </label>
+
+              {serviceRateUnit === "hour" && (
+                <label className="grid gap-1">
+                  <span className="text-sm text-slate-600">
+                    Estimated hours (max {hourlyCap})
+                  </span>
+
+                  <input
+                    type="number"
+                    min={1}
+                    max={hourlyCap}
+                    step={1}
+                    value={serviceHours}
+                    onChange={(e) =>
+                      setServiceHours(
+                        Math.max(
+                          1,
+                          Math.min(hourlyCap, Number(e.target.value) || 1),
+                        ),
+                      )
+                    }
+                    className="rounded-lg border p-2"
+                  />
+
+                  <span className="text-xs text-slate-500">
+                    Hourly services are estimates at booking. Final hours are
+                    billed after completion.
+                  </span>
+                </label>
+              )}
+
+              <div className="text-slate-600">
+                {serviceLabel} rate:{" "}
+                <span className="font-semibold">
+                  {formatMoney(serviceRate)}
+                </span>{" "}
+                {serviceRateUnit === "day" ? "/day" : "/hour"}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {deliveryAllowed && (
         <div className="rounded-lg border bg-white p-3 text-sm">
           <div className="font-semibold mb-2">Delivery</div>
 
           {deliveryForced ? (
-            <div className="text-slate-600">Delivery is required for this listing.</div>
+            <div className="text-slate-600">
+              Delivery is required for this listing.
+            </div>
           ) : (
             <label className="flex items-center gap-2">
-              <input checked={deliverySelected} onChange={(e) => setDeliverySelected(e.target.checked)} type="checkbox" />
+              <input
+                checked={deliverySelected}
+                onChange={(e) => setDeliverySelected(e.target.checked)}
+                type="checkbox"
+              />
               <span>
-  Request delivery ({formatMoney(deliveryFee)}
-  {deliveryMiles > 0 ? ` within ${deliveryMiles} miles` : ""})
-</span>
+                Request delivery ({formatMoney(deliveryFee)}
+                {deliveryMiles > 0 ? ` within ${deliveryMiles} miles` : ""})
+              </span>
             </label>
           )}
         </div>
@@ -534,7 +727,13 @@ setMsg(res?.message ?? "Request failed.");
 
           {serviceSelected && (
             <div className="flex justify-between">
-              <span>{serviceLabel} ({serviceRateUnit === "day" ? `${days} days` : `${serviceHours} hours (est.)`})</span>
+              <span>
+                {serviceLabel} (
+                {serviceRateUnit === "day"
+                  ? `${days} days`
+                  : `${serviceHours} hours (est.)`}
+                )
+              </span>
               <span>{formatMoney(serviceTotal)}</span>
             </div>
           )}
@@ -576,25 +775,29 @@ setMsg(res?.message ?? "Request failed.");
         </div>
 
         {cancellationPolicy ? (
-          <div className="mt-3 text-xs text-slate-500">Cancellation policy: {cancellationPolicy}</div>
+          <div className="mt-3 text-xs text-slate-500">
+            Cancellation policy: {cancellationPolicy}
+          </div>
         ) : null}
       </div>
 
       <label className="grid gap-1">
-        <span className="text-sm text-slate-600">Message to owner (optional)</span>
+        <span className="text-sm text-slate-600">
+          Message to owner (optional)
+        </span>
         <textarea name="message" className="border rounded-lg p-2" rows={4} />
       </label>
 
       <button
-  className="rr-btn rr-btn-primary w-full"
-  disabled={isPending || requestSent || !canSubmit}
->
-  {requestSent
-    ? "Request sent"
-    : isPending
-      ? "Sending..."
-      : "Request rental"}
-</button>
+        className="rr-btn rr-btn-primary w-full"
+        disabled={isPending || requestSent || !canSubmit}
+      >
+        {requestSent
+          ? "Request sent"
+          : isPending
+            ? "Sending..."
+            : "Request rental"}
+      </button>
 
       {!canSubmit && (
         <div className="text-xs text-amber-700">

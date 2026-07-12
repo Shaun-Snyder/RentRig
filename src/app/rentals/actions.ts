@@ -145,40 +145,27 @@ if (listing.owner_id === user.id)
     };
   }
 
-  // HARD LICENSE BLOCK: heavy/lifts w/ license required -> must confirm license OR choose operator
-  if (
-    isHeavy &&
-    listing.license_required &&
-    !renter_has_license &&
-    service_choice !== "operator"
-  ) {
-    return {
-      ok: false,
-      message: "This equipment requires a license or an operator.",
-    };
-  }
+  // HARD LICENSE BLOCK:
+// If a heavy-equipment or lift listing requires a license,
+// the renter must either confirm they have it or select
+// an owner-provided licensed service.
+const hasOwnerProvidedLicensedService =
+  service_choice === "operator" ||
+  service_choice === "driver" ||
+  service_choice === "driver_labor";
 
-  // date math
-  const start = parseISODate(start_date);
-  const end = parseISODate(end_date);
-  const diffDays = Math.round((end.getTime() - start.getTime()) / 86400000);
-  if (diffDays < 0)
-    return { ok: false, message: "End date must be after start date." };
-
-  const rental_days = diffDays + 1;
-
-  if (listing.min_rental_days && rental_days < listing.min_rental_days) {
-    return {
-      ok: false,
-      message: `Minimum rental is ${listing.min_rental_days} days.`,
-    };
-  }
-  if (listing.max_rental_days && rental_days > listing.max_rental_days) {
-    return {
-      ok: false,
-      message: `Maximum rental is ${listing.max_rental_days} days.`,
-    };
-  }
+if (
+  isHeavy &&
+  listing.license_required &&
+  !renter_has_license &&
+  !hasOwnerProvidedLicensedService
+) {
+  return {
+    ok: false,
+    message:
+      "This equipment requires the proper license or an owner-provided driver or operator.",
+  };
+}
 
   // availability (approved + buffer)
   const buffer_days = Number(listing.turnaround_days ?? 0);

@@ -95,22 +95,37 @@ export async function createListing(arg1: any, arg2?: any) {
     ? operator_day_rate
     : operator_hour_rate;
 
-  const driver_enabled = toBool(fd.get("driver_enabled"));
-  const driver_daily_enabled = toBool(fd.get("driver_daily_enabled"));
-  const driver_hourly_enabled = toBool(fd.get("driver_hourly_enabled"));
-  const driver_day_rate = toNum(fd.get("driver_day_rate"));
-  const driver_hour_rate = toNum(fd.get("driver_hour_rate"));
+  const driver_day_rate = toNum(fd.get("driver_day_rate")) ?? 0;
+  const driver_hour_rate = toNum(fd.get("driver_hour_rate")) ?? 0;
+
+  const driver_daily_enabled =
+    toBool(fd.get("driver_daily_enabled")) || driver_day_rate > 0;
+
+  const driver_hourly_enabled =
+    toBool(fd.get("driver_hourly_enabled")) || driver_hour_rate > 0;
+
+  const driver_enabled =
+    toBool(fd.get("driver_enabled")) ||
+    driver_daily_enabled ||
+    driver_hourly_enabled;
+
   const driver_max_hours = toNum(fd.get("driver_max_hours"));
 
-  const driver_labor_enabled = toBool(fd.get("driver_labor_enabled"));
-  const driver_labor_daily_enabled = toBool(
-    fd.get("driver_labor_daily_enabled"),
-  );
-  const driver_labor_hourly_enabled = toBool(
-    fd.get("driver_labor_hourly_enabled"),
-  );
-  const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate"));
-  const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate"));
+  const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate")) ?? 0;
+
+  const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate")) ?? 0;
+
+  const driver_labor_daily_enabled =
+    toBool(fd.get("driver_labor_daily_enabled")) || driver_labor_day_rate > 0;
+
+  const driver_labor_hourly_enabled =
+    toBool(fd.get("driver_labor_hourly_enabled")) || driver_labor_hour_rate > 0;
+
+  const driver_labor_enabled =
+    toBool(fd.get("driver_labor_enabled")) ||
+    driver_labor_daily_enabled ||
+    driver_labor_hourly_enabled;
+
   const driver_labor_max_hours = toNum(fd.get("driver_labor_max_hours"));
 
   const turnaround_days = toNum(fd.get("turnaround_days"));
@@ -245,22 +260,37 @@ export async function updateListing(arg1: any, arg2?: any) {
     ? operator_day_rate
     : operator_hour_rate;
 
-  const driver_enabled = toBool(fd.get("driver_enabled"));
-  const driver_daily_enabled = toBool(fd.get("driver_daily_enabled"));
-  const driver_hourly_enabled = toBool(fd.get("driver_hourly_enabled"));
-  const driver_day_rate = toNum(fd.get("driver_day_rate"));
-  const driver_hour_rate = toNum(fd.get("driver_hour_rate"));
+  const driver_day_rate = toNum(fd.get("driver_day_rate")) ?? 0;
+  const driver_hour_rate = toNum(fd.get("driver_hour_rate")) ?? 0;
+
+  const driver_daily_enabled =
+    toBool(fd.get("driver_daily_enabled")) || driver_day_rate > 0;
+
+  const driver_hourly_enabled =
+    toBool(fd.get("driver_hourly_enabled")) || driver_hour_rate > 0;
+
+  const driver_enabled =
+    toBool(fd.get("driver_enabled")) ||
+    driver_daily_enabled ||
+    driver_hourly_enabled;
+
   const driver_max_hours = toNum(fd.get("driver_max_hours"));
 
-  const driver_labor_enabled = toBool(fd.get("driver_labor_enabled"));
-  const driver_labor_daily_enabled = toBool(
-    fd.get("driver_labor_daily_enabled"),
-  );
-  const driver_labor_hourly_enabled = toBool(
-    fd.get("driver_labor_hourly_enabled"),
-  );
-  const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate"));
-  const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate"));
+  const driver_labor_day_rate = toNum(fd.get("driver_labor_day_rate")) ?? 0;
+
+  const driver_labor_hour_rate = toNum(fd.get("driver_labor_hour_rate")) ?? 0;
+
+  const driver_labor_daily_enabled =
+    toBool(fd.get("driver_labor_daily_enabled")) || driver_labor_day_rate > 0;
+
+  const driver_labor_hourly_enabled =
+    toBool(fd.get("driver_labor_hourly_enabled")) || driver_labor_hour_rate > 0;
+
+  const driver_labor_enabled =
+    toBool(fd.get("driver_labor_enabled")) ||
+    driver_labor_daily_enabled ||
+    driver_labor_hourly_enabled;
+
   const driver_labor_max_hours = toNum(fd.get("driver_labor_max_hours"));
 
   const turnaround_days = toNum(fd.get("turnaround_days"));
