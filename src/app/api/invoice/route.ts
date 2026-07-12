@@ -265,6 +265,36 @@ export async function GET(req: Request) {
       y -= size + 10;
     };
 
+    const drawChargeRow = (
+      label: string,
+      amount: number,
+      options?: {
+        bold?: boolean;
+        negative?: boolean;
+      },
+    ) => {
+      const size = 11;
+      const rowFont = options?.bold ? fontBold : font;
+      const formattedAmount = `${options?.negative ? "-" : ""}${money(amount)}`;
+      const right = 552;
+
+      page.drawText(label, {
+        x: left,
+        y,
+        size,
+        font: rowFont,
+      });
+
+      page.drawText(formattedAmount, {
+        x: right - rowFont.widthOfTextAtSize(formattedAmount, size),
+        y,
+        size,
+        font: rowFont,
+      });
+
+      y -= size + 10;
+    };
+
     /* -------- Header -------- */
 
     draw("RentRig Invoice", 18, true);
@@ -294,13 +324,22 @@ export async function GET(req: Request) {
     y -= 6;
 
     draw("Charges (estimate)", 12, true);
-    draw(`Daily rate: ${money(pricePerDay)}`, 11);
-    draw(`Days: ${days}`, 11);
-    draw(`Rental subtotal: ${money(rentalSubtotal)}`, 11);
+    draw(`Rental period: ${days} day${days === 1 ? "" : "s"}`, 10);
+    drawChargeRow(
+      `Equipment rental — ${days} day${days === 1 ? "" : "s"} @ ${money(pricePerDay)}/day`,
+      rentalSubtotal,
+    );
 
     if (discount > 0) {
       const note = String(rental.owner_discount_note ?? "").trim();
-      draw(`Discount: -${money(discount)}${note ? ` (${note})` : ""}`, 11);
+
+      drawChargeRow(
+        note ? `Owner discount — ${note}` : "Owner discount",
+        discount,
+        {
+          negative: true,
+        },
+      );
     }
 
     if (serviceCharge > 0) {
@@ -314,43 +353,53 @@ export async function GET(req: Request) {
                 ? "Operator"
                 : "Service";
 
-        if (serviceUnit === "day") {
-          draw(
-            `${serviceName}: ${serviceDays} day(s) @ ${money(serviceRate)}/day = ${money(serviceCharge)}`,
-            11,
-          );
-        } else {
-          draw(
-            `${serviceName}: ${serviceHours} hour(s) @ ${money(serviceRate)}/hour = ${money(serviceCharge)}`,
-            11,
-          );
-        }
+        const serviceQuantity =
+          serviceUnit === "day"
+            ? `${serviceDays} day${serviceDays === 1 ? "" : "s"}`
+            : `${serviceHours} hour${serviceHours === 1 ? "" : "s"}`;
+
+        drawChargeRow(
+          `${serviceName} — ${serviceQuantity} @ ${money(serviceRate)}/${serviceUnit}`,
+          serviceCharge,
+        );
       } else if (operatorSelected) {
-        if (operatorRateUnit === "day") {
-          draw(
-            `Operator service: ${operatorDays} day(s) @ ${money(operatorRate)}/day = ${money(serviceCharge)}`,
-            11,
-          );
-        } else {
-          draw(
-            `Operator service: ${operatorHours} hour(s) @ ${money(operatorRate)}/hour = ${money(serviceCharge)}`,
-            11,
-          );
-        }
+        const operatorQuantity =
+          operatorRateUnit === "day"
+            ? `${operatorDays} day${operatorDays === 1 ? "" : "s"}`
+            : `${operatorHours} hour${operatorHours === 1 ? "" : "s"}`;
+
+        drawChargeRow(
+          `Operator — ${operatorQuantity} @ ${money(operatorRate)}/${operatorRateUnit}`,
+          serviceCharge,
+        );
       }
     }
 
     if (deliverySelected && deliveryCharge > 0) {
-      draw(`Delivery fee: ${money(deliveryCharge)}`, 11);
+      drawChargeRow("Delivery fee", deliveryCharge);
     }
 
-    draw(`Service fee (10%): ${money(serviceFee)}`, 11);
-    draw(`Total (pre-tax estimate): ${money(total)}`, 11);
+    y -= 4;
+    drawChargeRow("RentRig service fee (10%)", serviceFee);
+
+    y -= 4;
+    drawChargeRow("Total before security deposit", total, {
+      bold: true,
+    });
 
     if (deposit > 0) {
-      y -= 6;
-      draw(`Security deposit (refundable): ${money(deposit)}`, 11);
-      draw(`Total + deposit: ${money(total + deposit)}`, 11);
+      y -= 8;
+      drawChargeRow("Refundable security deposit", deposit);
+
+      y -= 4;
+      drawChargeRow("Total due", total + deposit, {
+        bold: true,
+      });
+    } else {
+      y -= 4;
+      drawChargeRow("Total due", total, {
+        bold: true,
+      });
     }
 
     y -= 12;

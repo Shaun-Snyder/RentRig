@@ -9,7 +9,10 @@ import path from "path";
 import { sendInvoiceEmail } from "@/lib/email";
 
 function money(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(n);
 }
 
 function formatDate(iso: string) {
@@ -36,11 +39,19 @@ async function generateInvoicePdfBytes(opts: {
   city?: string | null;
   state?: string | null;
   start: string;
-  endExclusive: string;
+  end: string;
   status: string;
   pricePerDay: number;
   days: number;
-  subtotal: number;
+  rentalSubtotal: number;
+  deliveryCharge: number;
+  discount: number;
+  discountNote?: string | null;
+  serviceName?: string | null;
+  serviceUnit?: "day" | "hour" | null;
+  serviceRate: number;
+  serviceQuantity: number;
+  serviceCharge: number;
   serviceFee: number;
   total: number;
   deposit: number;
@@ -87,6 +98,36 @@ async function generateInvoicePdfBytes(opts: {
     y -= size + 10;
   };
 
+  const drawChargeRow = (
+    label: string,
+    amount: number,
+    options?: {
+      bold?: boolean;
+      negative?: boolean;
+    },
+  ) => {
+    const size = 11;
+    const rowFont = options?.bold ? fontBold : font;
+    const formattedAmount = `${options?.negative ? "-" : ""}${money(amount)}`;
+    const right = 552;
+
+    page.drawText(label, {
+      x: left,
+      y,
+      size,
+      font: rowFont,
+    });
+
+    page.drawText(formattedAmount, {
+      x: right - rowFont.widthOfTextAtSize(formattedAmount, size),
+      y,
+      size,
+      font: rowFont,
+    });
+
+    y -= size + 10;
+  };
+
   // Header
   draw("RentRig Invoice", 18, true);
   y -= 4;
@@ -111,22 +152,68 @@ async function generateInvoicePdfBytes(opts: {
   // Dates
   draw("Rental Dates", 12, true);
   draw(`Start: ${formatDate(opts.start)}`, 11);
-  draw(`End (exclusive): ${formatDate(opts.endExclusive)}`, 11);
+  draw(`End: ${formatDate(opts.end)}`, 11);
   draw(`Status: ${opts.status}`, 11);
   y -= 6;
 
   // Charges
   draw("Charges (estimate)", 12, true);
-  draw(`Daily rate: ${money(opts.pricePerDay)}`, 11);
-  draw(`Days: ${opts.days}`, 11);
-  draw(`Subtotal: ${money(opts.subtotal)}`, 11);
-  draw(`Service fee (10%): ${money(opts.serviceFee)}`, 11);
-  draw(`Total (pre-tax estimate): ${money(opts.total)}`, 11);
+  draw(`Rental period: ${opts.days} day${opts.days === 1 ? "" : "s"}`, 10);
+
+  drawChargeRow(
+    `Equipment rental — ${opts.days} day${opts.days === 1 ? "" : "s"} @ ${money(opts.pricePerDay)}/day`,
+    opts.rentalSubtotal,
+  );
+
+  if (opts.serviceCharge > 0 && opts.serviceName && opts.serviceUnit) {
+    const quantityLabel =
+      opts.serviceUnit === "day"
+        ? `${opts.serviceQuantity} day${opts.serviceQuantity === 1 ? "" : "s"}`
+        : `${opts.serviceQuantity} hour${opts.serviceQuantity === 1 ? "" : "s"}`;
+
+    drawChargeRow(
+      `${opts.serviceName} — ${quantityLabel} @ ${money(opts.serviceRate)}/${opts.serviceUnit}`,
+      opts.serviceCharge,
+    );
+  }
+
+  if (opts.deliveryCharge > 0) {
+    drawChargeRow("Delivery fee", opts.deliveryCharge);
+  }
+
+  if (opts.discount > 0) {
+    drawChargeRow(
+      opts.discountNote
+        ? `Owner discount — ${opts.discountNote}`
+        : "Owner discount",
+      opts.discount,
+      {
+        negative: true,
+      },
+    );
+  }
+
+  y -= 4;
+  drawChargeRow("RentRig service fee (10%)", opts.serviceFee);
+
+  y -= 4;
+  drawChargeRow("Total before security deposit", opts.total, {
+    bold: true,
+  });
 
   if (opts.deposit > 0) {
-    y -= 6;
-    draw(`Security deposit (refundable): ${money(opts.deposit)}`, 11);
-    draw(`Total + deposit: ${money(opts.total + opts.deposit)}`, 11);
+    y -= 8;
+    drawChargeRow("Refundable security deposit", opts.deposit);
+
+    y -= 4;
+    drawChargeRow("Total due", opts.total + opts.deposit, {
+      bold: true,
+    });
+  } else {
+    y -= 4;
+    drawChargeRow("Total due", opts.total, {
+      bold: true,
+    });
   }
 
   y -= 12;
@@ -158,6 +245,27 @@ export async function approveRentalAndEmail(rentalId: string) {
       end_date,
       status,
       listing_id,
+
+      delivery_selected,
+      delivery_fee,
+
+      owner_discount_amount,
+      owner_discount_note,
+
+      service_choice,
+      service_unit,
+      service_rate,
+      service_days,
+      service_hours,
+      service_total,
+
+      operator_selected,
+      operator_rate,
+      operator_rate_unit,
+      operator_days,
+      operator_hours,
+      operator_total,
+
       listings (
         id,
         owner_id,
@@ -167,13 +275,16 @@ export async function approveRentalAndEmail(rentalId: string) {
         price_per_day,
         security_deposit
       )
-    `
+    `,
     )
     .eq("id", rentalId)
     .single();
 
   if (rentalErr || !rental) {
-    return { ok: false, error: rentalErr?.message || "Rental not found" as const };
+    return {
+      ok: false,
+      error: rentalErr?.message || ("Rental not found" as const),
+    };
   }
 
   const listing: any = (rental as any).listings;
@@ -196,24 +307,33 @@ export async function approveRentalAndEmail(rentalId: string) {
   // Admin client for renter email + profile names (bypass RLS safely server-side)
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   const renterId = rental.renter_id as string;
   const ownerId = listing.owner_id as string;
 
   // renter email from auth admin
-  const { data: renterUserRes, error: renterUserErr } = await admin.auth.admin.getUserById(renterId);
+  const { data: renterUserRes, error: renterUserErr } =
+    await admin.auth.admin.getUserById(renterId);
   if (renterUserErr) {
     // Still approved; just report email failure
     revalidatePath("/dashboard/owner-rentals");
-    return { ok: true, emailed: false, error: `Approved, but email failed: ${renterUserErr.message}` as const };
+    return {
+      ok: true,
+      emailed: false,
+      error: `Approved, but email failed: ${renterUserErr.message}` as const,
+    };
   }
 
   const renterEmail = renterUserRes?.user?.email || "";
   if (!renterEmail) {
     revalidatePath("/dashboard/owner-rentals");
-    return { ok: true, emailed: false, error: "Approved, but renter has no email" as const };
+    return {
+      ok: true,
+      emailed: false,
+      error: "Approved, but renter has no email" as const,
+    };
   }
 
   const [{ data: renterProfile }, { data: ownerProfile }] = await Promise.all([
@@ -227,21 +347,98 @@ export async function approveRentalAndEmail(rentalId: string) {
     ownerProfile?.full_name?.trim() || `User ${ownerId.slice(0, 8)}`;
 
   // Pricing math (same as invoice)
-  const pricePerDay = Number(listing.price_per_day ?? 0);
-  const start = rental.start_date as string;
-  const endExclusive = rental.end_date as string;
+  const pricePerDay = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
 
-  const days =
-    Math.max(
-      0,
-      Math.round(
-        (Date.parse(`${endExclusive}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000
-      )
+  const start = rental.start_date as string;
+  const end = rental.end_date as string;
+
+  const dateDifference =
+    Math.round(
+      (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) /
+        86400000,
     ) || 0;
 
-  const subtotal = days * pricePerDay;
-  const serviceFee = Math.round(subtotal * 0.1 * 100) / 100;
-  const total = subtotal + serviceFee;
+  const days = Math.max(1, dateDifference + 1);
+  const rentalSubtotal = days * pricePerDay;
+
+  const deliverySelected = Boolean(rental.delivery_selected);
+  const deliveryFee = Math.max(0, Number(rental.delivery_fee ?? 0) || 0);
+  const deliveryCharge = deliverySelected ? deliveryFee : 0;
+
+  const serviceChoice = String(rental.service_choice ?? "none");
+  const serviceUnit: "day" | "hour" =
+    rental.service_unit === "hour" ? "hour" : "day";
+
+  const serviceRate = Math.max(0, Number(rental.service_rate ?? 0) || 0);
+  const serviceDays = Math.max(0, Number(rental.service_days ?? 0) || 0);
+  const serviceHours = Math.max(0, Number(rental.service_hours ?? 0) || 0);
+  const storedServiceTotal = Math.max(
+    0,
+    Number(rental.service_total ?? 0) || 0,
+  );
+
+  const operatorSelected = Boolean(rental.operator_selected);
+  const operatorRateUnit: "day" | "hour" =
+    rental.operator_rate_unit === "hour" ? "hour" : "day";
+  const operatorRate = Math.max(0, Number(rental.operator_rate ?? 0) || 0);
+  const operatorDays = Math.max(0, Number(rental.operator_days ?? 0) || 0);
+  const operatorHours = Math.max(0, Number(rental.operator_hours ?? 0) || 0);
+  const operatorTotal = Math.max(0, Number(rental.operator_total ?? 0) || 0);
+
+  const hasUnifiedService = serviceChoice !== "none" && storedServiceTotal > 0;
+
+  const serviceCharge = hasUnifiedService
+    ? storedServiceTotal
+    : operatorSelected
+      ? operatorTotal
+      : 0;
+
+  const serviceName = hasUnifiedService
+    ? serviceChoice === "driver_labor"
+      ? "Driver + Labor"
+      : serviceChoice === "driver"
+        ? "Driver"
+        : serviceChoice === "operator"
+          ? "Operator"
+          : "Service"
+    : operatorSelected
+      ? "Operator"
+      : null;
+
+  const invoiceServiceUnit = hasUnifiedService
+    ? serviceUnit
+    : operatorSelected
+      ? operatorRateUnit
+      : null;
+
+  const invoiceServiceRate = hasUnifiedService
+    ? serviceRate
+    : operatorSelected
+      ? operatorRate
+      : 0;
+
+  const invoiceServiceQuantity =
+    invoiceServiceUnit === "hour"
+      ? hasUnifiedService
+        ? serviceHours
+        : operatorHours
+      : hasUnifiedService
+        ? serviceDays
+        : operatorDays;
+
+  const preDiscount = rentalSubtotal + deliveryCharge + serviceCharge;
+
+  const rawDiscount = Math.max(
+    0,
+    Number(rental.owner_discount_amount ?? 0) || 0,
+  );
+  const discount = Math.min(rawDiscount, preDiscount);
+
+  const preFee = preDiscount - discount;
+  const serviceFee = Math.round(preFee * 0.1 * 100) / 100;
+  const total = preFee + serviceFee;
+
+  const discountNote = String(rental.owner_discount_note ?? "").trim();
 
   const deposit = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
 
@@ -255,11 +452,19 @@ export async function approveRentalAndEmail(rentalId: string) {
     city: listing.city ?? null,
     state: listing.state ?? null,
     start,
-    endExclusive,
+    end,
     status: "approved",
     pricePerDay,
     days,
-    subtotal,
+    rentalSubtotal,
+    deliveryCharge,
+    discount,
+    discountNote,
+    serviceName,
+    serviceUnit: invoiceServiceUnit,
+    serviceRate: invoiceServiceRate,
+    serviceQuantity: invoiceServiceQuantity,
+    serviceCharge,
     serviceFee,
     total,
     deposit,
@@ -273,7 +478,7 @@ export async function approveRentalAndEmail(rentalId: string) {
       `Hi ${renterName},\n\n` +
       `Attached is your RentRig invoice for ${listing.title ?? "your rental"}.\n\n` +
       `Start: ${formatDate(start)}\n` +
-      `End: ${formatDate(endExclusive)}\n` +
+      `End: ${formatDate(end)}\n` +
       `Total (pre-tax estimate): ${money(total)}\n\n` +
       `Thanks,\nRentRig`,
     pdfBytes,
@@ -294,7 +499,10 @@ export async function rejectRental(rentalId: string) {
   if (!user) return { ok: false, error: "Not authenticated" as const };
 
   // Update status -> rejected (RLS should enforce ownership)
-  const { error } = await supabase.from("rentals").update({ status: "rejected" }).eq("id", rentalId);
+  const { error } = await supabase
+    .from("rentals")
+    .update({ status: "rejected" })
+    .eq("id", rentalId);
   if (error) return { ok: false, error: error.message as const };
 
   revalidatePath("/dashboard/owner-rentals");
