@@ -217,38 +217,53 @@ export default async function OwnerRentalDetailsPage({
           <form action={updateRentalDeposit} className="rr-card p-4">
             <input type="hidden" name="rental_id" value={rental.id} />
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Security Deposit
-                </div>
-
-                <div className="mt-1 text-sm text-slate-600">
-                  Record deductions and calculate the renter refund.
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-6 text-sm">
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">
-                      Deposit Collected
-                    </div>
-                    <div className="text-xl font-bold text-slate-900">
-                      $
-                      {Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
+            <div className="border-b border-slate-200 pb-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Security Deposit
               </div>
 
-              <div className="rounded-sm border border-slate-300 bg-slate-50 px-4 py-2 text-right">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Current Status
+              <div className="mt-1 text-sm text-slate-600">
+                Record deductions and calculate the renter refund.
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Deposit Collected
+                  </div>
+
+                  <div className="mt-1 text-2xl font-bold text-slate-900">
+                    ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-500">
+                    Original listing security deposit
+                  </div>
                 </div>
-                <div className="mt-1 font-bold capitalize text-slate-900">
-                  {String(rental.deposit_status ?? "pending").replaceAll(
-                    "_",
-                    " ",
-                  )}
+
+                <div className="flex min-h-[126px] flex-col justify-center rounded-sm border border-slate-300 bg-slate-50 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Current Status
+                  </div>
+
+                  <div
+                    className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize ${
+                      rental.deposit_status === "fully_refunded"
+                        ? "bg-green-100 text-green-800"
+                        : rental.deposit_status === "partially_refunded"
+                          ? "bg-amber-100 text-amber-800"
+                          : rental.deposit_status === "retained"
+                            ? "bg-red-100 text-red-800"
+                            : rental.deposit_status === "collected"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {String(rental.deposit_status ?? "pending").replaceAll(
+                      "_",
+                      " ",
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
