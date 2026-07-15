@@ -673,3 +673,71 @@ export async function updateRentalDeposit(formData: FormData) {
 
   return { ok: true };
 }
+export async function updateOwnerDiscount(formData: FormData) {
+  const supabase = await createClient();
+
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth?.user;
+
+  if (!user) {
+    return { ok: false, error: "Not authenticated" as const };
+  }
+
+  const rentalId = String(formData.get("rental_id") ?? "").trim();
+
+  if (!rentalId) {
+    return { ok: false, error: "Missing rental ID" as const };
+  }
+
+  const { data: rental, error: rentalError } = await supabase
+    .from("rentals")
+    .select(
+      `
+      id,
+      listing:listings (
+        owner_id
+      )
+    `,
+    )
+    .eq("id", rentalId)
+    .single();
+
+  if (rentalError || !rental) {
+    return {
+      ok: false,
+      error: rentalError?.message || "Rental not found",
+    };
+  }
+
+  const listing: any = rental.listing;
+
+  if (!listing?.owner_id || listing.owner_id !== user.id) {
+    return { ok: false, error: "Forbidden" as const };
+  }
+
+  const discountAmount = Math.max(
+    0,
+    Number(formData.get("owner_discount_amount") ?? 0) || 0,
+  );
+
+  const discountNote = String(formData.get("owner_discount_note") ?? "").trim();
+
+  const { error: updateError } = await supabase
+    .from("rentals")
+    .update({
+      owner_discount_amount: discountAmount,
+      owner_discount_note: discountNote || null,
+    })
+    .eq("id", rentalId);
+
+  if (updateError) {
+    return { ok: false, error: updateError.message as const };
+  }
+
+  revalidatePath(`/dashboard/owner-rentals/${rentalId}`);
+  revalidatePath(`/dashboard/rentals/${rentalId}`);
+  revalidatePath("/dashboard/owner-rentals");
+  revalidatePath("/dashboard/rentals");
+
+  return { ok: true };
+}

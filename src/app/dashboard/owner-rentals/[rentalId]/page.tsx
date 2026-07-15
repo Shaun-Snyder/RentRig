@@ -5,7 +5,7 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { updateRentalDeposit } from "../actions";
+import { updateOwnerDiscount, updateRentalDeposit } from "../actions";
 
 export default async function OwnerRentalDetailsPage({
   params,
@@ -40,6 +40,9 @@ export default async function OwnerRentalDetailsPage({
 
     delivery_selected,
     delivery_fee,
+
+    owner_discount_amount,
+    owner_discount_note,
 
     deposit_status,
     deposit_collected_at,
@@ -213,6 +216,60 @@ export default async function OwnerRentalDetailsPage({
               </div>
             </div>
           )}
+
+          <form action={updateOwnerDiscount} className="rr-card p-4">
+            <input type="hidden" name="rental_id" value={rental.id} />
+
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Owner Discount
+            </div>
+
+            <div className="mt-1 text-sm text-slate-600">
+              Enter a flat discount amount and a short explanation.
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Discount amount
+                </span>
+                <input
+                  type="number"
+                  name="owner_discount_amount"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.owner_discount_amount ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">Reason</span>
+                <input
+                  type="text"
+                  name="owner_discount_note"
+                  defaultValue={rental.owner_discount_note ?? ""}
+                  placeholder="Example: Repeat customer"
+                  className="rr-input"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+              <div className="text-sm text-slate-600">
+                Current discount:{" "}
+                <span className="font-bold text-slate-900">
+                  ${Number(rental.owner_discount_amount ?? 0).toFixed(2)}
+                </span>
+              </div>
+
+              <button type="submit" className="rr-btn rr-btn-primary">
+                Save Discount
+              </button>
+            </div>
+          </form>
 
           <form action={updateRentalDeposit} className="rr-card p-4">
             <input type="hidden" name="rental_id" value={rental.id} />
