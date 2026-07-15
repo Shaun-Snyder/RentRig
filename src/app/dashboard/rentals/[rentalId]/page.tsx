@@ -29,16 +29,29 @@ export default async function RentalDetailsPage({
         status,
         renter_returned,
         buffer_days,
+
+        deposit_status,
+        deposit_damage_deduction,
+        deposit_cleaning_deduction,
+        deposit_fuel_deduction,
+        deposit_late_return_deduction,
+        deposit_other_deduction,
+        deposit_other_reason,
+        deposit_renter_explanation,
+        deposit_refund_amount,
+        deposit_refunded_at,
+
         message,
         created_at,
-        listing:listings (
+                listing:listings (
           id,
           title,
           city,
           state,
-          price_per_day
+          price_per_day,
+          security_deposit
         )
-      `
+      `,
     )
     .eq("id", params.rentalId)
     .eq("renter_id", user.id)
@@ -91,11 +104,11 @@ export default async function RentalDetailsPage({
         </div>
 
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Rental Details"
-    subtitle="View the full details for this rental."
-  />
-</div>
+          <PageHeader
+            title="Rental Details"
+            subtitle="View the full details for this rental."
+          />
+        </div>
 
         <div className="grid gap-4">
           <div className="rr-card p-4">
@@ -149,18 +162,9 @@ export default async function RentalDetailsPage({
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
-                  <a
-                    href={`/api/invoice?rental_id=${encodeURIComponent(rental.id)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rr-btn rr-btn-primary"
-                  >
-                    Download Invoice
-                  </a>
-
                   <Link
                     href={`/dashboard/rentals/${encodeURIComponent(
-                      rental.id
+                      rental.id,
                     )}/inspection`}
                     className="rr-btn rr-btn-secondary"
                   >
@@ -213,19 +217,122 @@ export default async function RentalDetailsPage({
 
             <div className="rr-card p-5">
               <div className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Pricing
+                Rental Charges
               </div>
 
-              <div className="mt-4 grid gap-3 text-sm">
-                <div>
-                  <div className="font-semibold text-slate-700">Day rate</div>
-                  <div className="text-slate-600">
+              <div className="mt-4 grid gap-4 text-sm">
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                  <div className="font-semibold text-slate-700">Daily rate</div>
+                  <div className="font-bold text-slate-900">
                     {typeof rental.listing?.price_per_day === "number"
-                      ? `$${rental.listing.price_per_day}`
+                      ? `$${Number(rental.listing.price_per_day).toFixed(2)}/day`
                       : "—"}
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                  <div className="font-semibold text-slate-700">
+                    Security deposit
+                  </div>
+                  <div className="font-bold text-slate-900">
+                    ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="font-semibold text-slate-700">
+                    Full invoice
+                  </div>
+                  <a
+                    href={`/api/invoice?rental_id=${encodeURIComponent(rental.id)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rr-btn rr-btn-secondary rr-btn-sm"
+                  >
+                    Download Invoice
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rr-card p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                  Security Deposit
+                </div>
+
+                <div className="mt-1 text-sm text-slate-600">
+                  View your deposit, deductions, and expected refund.
+                </div>
+              </div>
+
+              <div
+                className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize ${
+                  rental.deposit_status === "fully_refunded"
+                    ? "bg-green-100 text-green-800"
+                    : rental.deposit_status === "partially_refunded"
+                      ? "bg-amber-100 text-amber-800"
+                      : rental.deposit_status === "retained"
+                        ? "bg-red-100 text-red-800"
+                        : rental.deposit_status === "collected"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-slate-200 text-slate-700"
+                }`}
+              >
+                {String(rental.deposit_status ?? "pending").replaceAll(
+                  "_",
+                  " ",
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Original Deposit
+                </div>
+                <div className="mt-1 text-2xl font-bold text-slate-900">
+                  ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Total Deductions
+                </div>
+                <div className="mt-1 text-2xl font-bold text-slate-900">
+                  $
+                  {(
+                    Number(rental.deposit_damage_deduction ?? 0) +
+                    Number(rental.deposit_cleaning_deduction ?? 0) +
+                    Number(rental.deposit_fuel_deduction ?? 0) +
+                    Number(rental.deposit_late_return_deduction ?? 0) +
+                    Number(rental.deposit_other_deduction ?? 0)
+                  ).toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-slate-900 bg-slate-900 p-4 text-white">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                  Refund Amount
+                </div>
+                <div className="mt-1 text-2xl font-bold">
+                  ${Number(rental.deposit_refund_amount ?? 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="text-sm font-semibold text-slate-700">
+                Owner Explanation
+              </div>
+
+              <div className="mt-2 rounded-sm bg-slate-50 p-4 text-sm text-slate-700">
+                {rental.deposit_renter_explanation?.trim()
+                  ? rental.deposit_renter_explanation
+                  : "No explanation has been provided."}
               </div>
             </div>
           </div>
@@ -236,7 +343,9 @@ export default async function RentalDetailsPage({
             </div>
 
             <div className="mt-3 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-              {rental.message?.trim() ? rental.message : "No message was included."}
+              {rental.message?.trim()
+                ? rental.message
+                : "No message was included."}
             </div>
           </div>
         </div>
