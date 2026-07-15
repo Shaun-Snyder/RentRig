@@ -544,3 +544,132 @@ export async function markRentalCompleted(rentalId: string) {
 
   return { ok: true };
 }
+
+export async function updateRentalDeposit(formData: FormData) {
+  const supabase = await createClient();
+
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth?.user;
+
+  if (!user) {
+    return { ok: false, error: "Not authenticated" as const };
+  }
+
+  const rentalId = String(formData.get("rental_id") ?? "").trim();
+
+  if (!rentalId) {
+    return { ok: false, error: "Missing rental ID" as const };
+  }
+
+  const { data: rental, error: rentalError } = await supabase
+    .from("rentals")
+    .select(
+      `
+      id,
+      listing:listings (
+        owner_id,
+        security_deposit
+      )
+    `,
+    )
+    .eq("id", rentalId)
+    .single();
+
+  if (rentalError || !rental) {
+    return {
+      ok: false,
+      error: rentalError?.message || "Rental not found",
+    };
+  }
+
+  const listing: any = rental.listing;
+
+  if (!listing?.owner_id || listing.owner_id !== user.id) {
+    return { ok: false, error: "Forbidden" as const };
+  }
+
+  const depositAmount = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
+
+  const damageDeduction = Math.max(
+    0,
+    Number(formData.get("deposit_damage_deduction") ?? 0) || 0,
+  );
+  const cleaningDeduction = Math.max(
+    0,
+    Number(formData.get("deposit_cleaning_deduction") ?? 0) || 0,
+  );
+  const fuelDeduction = Math.max(
+    0,
+    Number(formData.get("deposit_fuel_deduction") ?? 0) || 0,
+  );
+  const lateReturnDeduction = Math.max(
+    0,
+    Number(formData.get("deposit_late_return_deduction") ?? 0) || 0,
+  );
+  const otherDeduction = Math.max(
+    0,
+    Number(formData.get("deposit_other_deduction") ?? 0) || 0,
+  );
+
+  const totalDeductions = Math.min(
+    depositAmount,
+    damageDeduction +
+      cleaningDeduction +
+      fuelDeduction +
+      lateReturnDeduction +
+      otherDeduction,
+  );
+
+  const refundAmount = Math.max(0, depositAmount - totalDeductions);
+
+  let depositStatus = "collected";
+
+  if (depositAmount <= 0) {
+    depositStatus = "fully_refunded";
+  } else if (refundAmount === depositAmount) {
+    depositStatus = "fully_refunded";
+  } else if (refundAmount > 0) {
+    depositStatus = "partially_refunded";
+  } else {
+    depositStatus = "retained";
+  }
+
+  const otherReason = String(formData.get("deposit_other_reason") ?? "").trim();
+  const ownerNotes = String(formData.get("deposit_owner_notes") ?? "").trim();
+  const renterExplanation = String(
+    formData.get("deposit_renter_explanation") ?? "",
+  ).trim();
+
+  const now = new Date().toISOString();
+
+  const { error: updateError } = await supabase
+    .from("rentals")
+    .update({
+      deposit_status: depositStatus,
+      deposit_collected_at: now,
+      deposit_damage_deduction: damageDeduction,
+      deposit_cleaning_deduction: cleaningDeduction,
+      deposit_fuel_deduction: fuelDeduction,
+      deposit_late_return_deduction: lateReturnDeduction,
+      deposit_other_deduction: otherDeduction,
+      deposit_other_reason: otherReason || null,
+      deposit_owner_notes: ownerNotes || null,
+      deposit_renter_explanation: renterExplanation || null,
+      deposit_refund_amount: refundAmount,
+      deposit_refunded_at:
+        depositStatus === "fully_refunded" ||
+        depositStatus === "partially_refunded"
+          ? now
+          : null,
+    })
+    .eq("id", rentalId);
+
+  if (updateError) {
+    return { ok: false, error: updateError.message as const };
+  }
+
+  revalidatePath(`/dashboard/owner-rentals/${rentalId}`);
+  revalidatePath(`/dashboard/rentals/${rentalId}`);
+
+  return { ok: true };
+}
