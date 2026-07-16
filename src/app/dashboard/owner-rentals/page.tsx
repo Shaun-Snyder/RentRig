@@ -27,6 +27,15 @@ export default async function OwnerRentalsPage() {
         "renter_returned",
         "message",
         "created_at",
+
+        "delivery_selected",
+        "delivery_fee",
+
+        "owner_discount_amount",
+        "owner_discount_note",
+
+        "deposit_status",
+        "deposit_refund_amount",
         "renter:profiles!rentals_renter_id_fkey(id, full_name, avatar_url, company_name)",
 
         // Step 3.3 fields (hourly estimate -> finalize)
@@ -71,7 +80,7 @@ export default async function OwnerRentalsPage() {
   // Load listing records
   const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id, title, owner_id")
+    .select("id, title, owner_id, security_deposit")
     .in(
       "id",
       listingIds.length
