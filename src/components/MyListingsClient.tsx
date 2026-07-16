@@ -816,12 +816,7 @@ export default function MyListingsClient({
             <div className="text-sm font-medium">Operator</div>
 
             <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name="operator_enabled"
-                value="true"
-                defaultChecked={Boolean(l.operator_enabled)}
-              />
+              <input type="checkbox" name="operator_enabled" value="true" />
               Offer operator
             </label>
 
@@ -831,7 +826,6 @@ export default function MyListingsClient({
                   type="checkbox"
                   name="operator_daily_enabled"
                   value="true"
-                  defaultChecked={Boolean(l.operator_daily_enabled)}
                 />
                 Daily rate
               </label>
@@ -841,7 +835,6 @@ export default function MyListingsClient({
                   type="checkbox"
                   name="operator_hourly_enabled"
                   value="true"
-                  defaultChecked={Boolean(l.operator_hourly_enabled)}
                 />
                 Hourly rate
               </label>
@@ -862,7 +855,7 @@ export default function MyListingsClient({
                     type="number"
                     min="0"
                     step="0.01"
-                    defaultValue={l.operator_hour_rate ?? 0}
+                    defaultValue={0}
                   />
                 </div>
               </div>
@@ -881,7 +874,7 @@ export default function MyListingsClient({
                     type="number"
                     min="0"
                     step="0.01"
-                    defaultValue={l.operator_hour_rate ?? 0}
+                    defaultValue={24}
                   />
                 </div>
               </div>
@@ -894,7 +887,7 @@ export default function MyListingsClient({
                   type="number"
                   min="0"
                   step="1"
-                  defaultValue={l.operator_max_hours ?? 24}
+                  defaultValue={24}
                 />
               </div>
             </div>
