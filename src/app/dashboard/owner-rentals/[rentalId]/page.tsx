@@ -7,6 +7,7 @@ import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { updateOwnerDiscount, updateRentalDeposit } from "../actions";
 import SaveButton from "@/components/SaveButton";
+import StatusBadge from "@/components/StatusBadge";
 
 export default async function OwnerRentalDetailsPage({
   params,
@@ -123,10 +124,10 @@ export default async function OwnerRentalDetailsPage({
                   {rental.start_date} → {rental.end_date}
                 </div>
 
-                <div>
-                  <span className="font-semibold">Status:</span>{" "}
-                  <span className="capitalize">{rental.status}</span>
-                </div>
+                <div className="flex items-center gap-2">
+  <span className="font-semibold">Status:</span>
+  <StatusBadge status={rental.status} />
+</div>
 
                 <div>
                   <span className="font-semibold">Return:</span>{" "}
