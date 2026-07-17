@@ -6,6 +6,7 @@ import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { updateOwnerDiscount, updateRentalDeposit } from "../actions";
+import SaveButton from "@/components/SaveButton";
 
 export default async function OwnerRentalDetailsPage({
   params,
@@ -265,9 +266,7 @@ export default async function OwnerRentalDetailsPage({
                 </span>
               </div>
 
-              <button type="submit" className="rr-btn rr-btn-primary">
-                Save Discount
-              </button>
+              <SaveButton idleText="Save Discount" pendingText="Saving..." />
             </div>
           </form>
 
@@ -477,12 +476,11 @@ export default async function OwnerRentalDetailsPage({
                   renter's final refund.
                 </div>
 
-                <button
-                  type="submit"
+                <SaveButton
+                  idleText="Save Deposit Changes"
+                  pendingText="Saving..."
                   className="rr-btn rr-btn-primary rr-btn-lg"
-                >
-                  Save Deposit Changes
-                </button>
+                />
               </div>
             </div>
           </form>
