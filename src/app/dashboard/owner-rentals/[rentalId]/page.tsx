@@ -125,9 +125,9 @@ export default async function OwnerRentalDetailsPage({
                 </div>
 
                 <div className="flex items-center gap-2">
-  <span className="font-semibold">Status:</span>
-  <StatusBadge status={rental.status} />
-</div>
+                  <span className="font-semibold">Status:</span>
+                  <StatusBadge status={rental.status} />
+                </div>
 
                 <div>
                   <span className="font-semibold">Return:</span>{" "}

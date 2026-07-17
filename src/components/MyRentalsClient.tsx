@@ -22,14 +22,19 @@ export default function MyRentalsClient({ rentals }: { rentals: RentalRow[] }) {
 
   return (
     <div className="mt-8 grid gap-3">
-      {msg && <div className="rounded-lg border bg-white p-3 text-sm">{msg}</div>}
+      {msg && (
+        <div className="rounded-lg border bg-white p-3 text-sm">{msg}</div>
+      )}
 
       {rentals.length === 0 ? (
         <p className="text-slate-600">No rentals yet.</p>
       ) : (
         <div className="grid gap-3">
           {rentals.map((r) => (
-            <div key={r.id} className="rounded-xl border bg-white p-5 shadow-sm grid gap-2">
+            <div
+              key={r.id}
+              className="rounded-xl border bg-white p-5 shadow-sm grid gap-2"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="font-semibold">
@@ -37,8 +42,11 @@ export default function MyRentalsClient({ rentals }: { rentals: RentalRow[] }) {
                   </div>
 
                   <div className="text-sm text-slate-600 mt-1">
-                    <span className="font-medium">Dates:</span> {r.start_date} → {r.end_date}
-                    {typeof r.buffer_days === "number" ? ` • Buffer: ${r.buffer_days}d` : ""}
+                    <span className="font-medium">Dates:</span> {r.start_date} →{" "}
+                    {r.end_date}
+                    {typeof r.buffer_days === "number"
+                      ? ` • Buffer: ${r.buffer_days}d`
+                      : ""}
                   </div>
 
                   <div className="text-sm text-slate-600">
@@ -47,8 +55,12 @@ export default function MyRentalsClient({ rentals }: { rentals: RentalRow[] }) {
 
                   {r.message && (
                     <div className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                      <div className="text-xs font-semibold text-slate-500">Your message</div>
-                      <div className="mt-1 whitespace-pre-wrap">{r.message}</div>
+                      <div className="text-xs font-semibold text-slate-500">
+                        Your message
+                      </div>
+                      <div className="mt-1 whitespace-pre-wrap">
+                        {r.message}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -71,7 +83,9 @@ export default function MyRentalsClient({ rentals }: { rentals: RentalRow[] }) {
                 )}
               </div>
 
-              <div className="text-xs text-slate-500 break-all">Rental ID: {r.id}</div>
+              <div className="text-xs text-slate-500 break-all">
+                Rental ID: {r.id}
+              </div>
             </div>
           ))}
         </div>

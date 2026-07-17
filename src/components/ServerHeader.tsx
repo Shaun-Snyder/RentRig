@@ -56,7 +56,7 @@ export default async function ServerHeader() {
           "id",
           listingIds.length
             ? listingIds
-            : ["00000000-0000-0000-0000-000000000000"]
+            : ["00000000-0000-0000-0000-000000000000"],
         );
 
       if (!listingsError && listingsRaw) {
@@ -67,14 +67,14 @@ export default async function ServerHeader() {
         const listingMap = new Map(ownedListings.map((l) => [l.id, l]));
 
         const ownerRequests: OwnerRequestRow[] = rentals.filter((r) =>
-          listingMap.has(r.listing_id)
+          listingMap.has(r.listing_id),
         );
 
         // Step 4: statuses that mean "needs owner action"
         const ATTENTION_STATUSES = ["pending", "requested", "owner_pending"];
 
         pendingCount = ownerRequests.filter(
-          (r) => r.status && ATTENTION_STATUSES.includes(r.status)
+          (r) => r.status && ATTENTION_STATUSES.includes(r.status),
         ).length;
       }
     }
@@ -163,10 +163,10 @@ export default async function ServerHeader() {
   // ---------------------------------------------------
 
   return (
-  <Header
-    role={role}
-    pendingCount={pendingCount}
-    unreadMessageCount={unreadMessageCount}
-  />
-);
+    <Header
+      role={role}
+      pendingCount={pendingCount}
+      unreadMessageCount={unreadMessageCount}
+    />
+  );
 }

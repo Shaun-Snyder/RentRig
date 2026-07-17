@@ -8,4 +8,3 @@ export default async function HomePage() {
   if (data.user) redirect("/dashboard");
   redirect("/login");
 }
-

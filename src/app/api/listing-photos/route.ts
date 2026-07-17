@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -77,7 +76,8 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (listingErr) return json(400, { error: listingErr.message });
-  if (!listing || listing.owner_id !== user.id) return json(403, { error: "Forbidden" });
+  if (!listing || listing.owner_id !== user.id)
+    return json(403, { error: "Forbidden" });
 
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${listingId}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;

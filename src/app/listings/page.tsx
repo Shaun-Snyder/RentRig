@@ -46,7 +46,6 @@ type ListingRow = {
   driver_labor_max_hours: number | null;
 };
 
-
 type PhotoRow = {
   id: string;
   listing_id: string;
@@ -57,7 +56,7 @@ type PhotoRow = {
 
 const CATEGORIES: Array<{ key: string; label: string }> = [
   { key: "trucks", label: "Trucks" },
-  { key: "trailers", label: "Trailers" },  
+  { key: "trailers", label: "Trailers" },
   { key: "vans_covered", label: "Vans / Covered" },
   { key: "lifts", label: "Lifts" },
   { key: "heavy_equipment", label: "Heavy Equipment" },
@@ -91,7 +90,7 @@ export default async function ListingsPage({
   let query = supabase
     .from("listings")
     .select(
-  `
+      `
     id,
     title,
     description,
@@ -129,8 +128,8 @@ export default async function ListingsPage({
     driver_labor_day_rate,
     driver_labor_hour_rate,
     driver_labor_max_hours
-  `
-)
+  `,
+    )
 
     .eq("is_published", true)
     .order("created_at", { ascending: false });
@@ -140,10 +139,10 @@ export default async function ListingsPage({
   }
 
   if (q) {
-  query = query.or(
-    `title.ilike.%${q}%,city.ilike.%${q}%,state.ilike.%${q}%,zip.ilike.%${q}%`
-  );
-}
+    query = query.or(
+      `title.ilike.%${q}%,city.ilike.%${q}%,state.ilike.%${q}%,zip.ilike.%${q}%`,
+    );
+  }
 
   const { data: listings, error } = await query;
 
@@ -177,7 +176,8 @@ export default async function ListingsPage({
 
   const firstPhotoByListing = new Map<string, PhotoRow>();
   for (const p of photos) {
-    if (!firstPhotoByListing.has(p.listing_id)) firstPhotoByListing.set(p.listing_id, p);
+    if (!firstPhotoByListing.has(p.listing_id))
+      firstPhotoByListing.set(p.listing_id, p);
   }
 
   // Add thumb_url for ListingsClient cards
@@ -192,54 +192,54 @@ export default async function ListingsPage({
       <ServerHeader />
 
       <main className="mx-auto max-w-6xl px-6 py-4">
-                <div className="rr-card p-4">
-  <PageHeader
-    title="Browse Listings"
-    subtitle={
-      selectedIsValid
-        ? `Showing: ${catLabel(selected)}`
-        : "Showing: All categories"
-    }
-  />
-</div>
+        <div className="rr-card p-4">
+          <PageHeader
+            title="Browse Listings"
+            subtitle={
+              selectedIsValid
+                ? `Showing: ${catLabel(selected)}`
+                : "Showing: All categories"
+            }
+          />
+        </div>
 
         <div className="mt-4 rr-card p-3">
-  <div className="flex flex-wrap gap-2">
-  {/* ALL button */}
-  <Link
-    href="/listings"
-    className={
-      !selectedIsValid
-        ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
-        : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
-    }
-  >
-    All
-  </Link>
+          <div className="flex flex-wrap gap-2">
+            {/* ALL button */}
+            <Link
+              href="/listings"
+              className={
+                !selectedIsValid
+                  ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
+                  : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
+              }
+            >
+              All
+            </Link>
 
-  {/* Category buttons */}
-  {CATEGORIES.map((c) => {
-    const active = selected === c.key;
-    return (
-      <Link
-        key={c.key}
-        href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-        className={
-          active
-            ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
-            : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
-        }
-      >
-        {c.label}
-      </Link>
-    );
-  })}
-</div>
+            {/* Category buttons */}
+            {CATEGORIES.map((c) => {
+              const active = selected === c.key;
+              return (
+                <Link
+                  key={c.key}
+                  href={`/listings?category=${c.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  className={
+                    active
+                      ? "px-4 py-2 rounded-md border border-black bg-[#ffb400] text-black font-semibold shadow hover:shadow-md transition"
+                      : "px-4 py-2 rounded-md border border-black bg-white text-black font-semibold hover:shadow-md transition"
+                  }
+                >
+                  {c.label}
+                </Link>
+              );
+            })}
+          </div>
 
-        <div className="mt-8">
-          <ListingsClient listings={listingListForClient as any} />
+          <div className="mt-8">
+            <ListingsClient listings={listingListForClient as any} />
+          </div>
         </div>
-       </div>
       </main>
     </>
   );

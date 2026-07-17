@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -73,7 +72,7 @@ export default async function RenterInspectionPage({
       renter_id,
       rental_agreement_url,
       listing:listings ( id, title )
-    `
+    `,
     )
     .eq("id", rentalId)
     .single();
@@ -119,7 +118,7 @@ export default async function RenterInspectionPage({
       notes,
       damages,
       created_at
-    `
+    `,
     )
     .eq("rental_id", rentalId)
     .order("created_at", { ascending: false }); // NEWEST FIRST
@@ -127,7 +126,7 @@ export default async function RenterInspectionPage({
   if (inspectionsError) {
     console.error(
       "RenterInspectionPage inspections load error:",
-      inspectionsError.message
+      inspectionsError.message,
     );
   }
 
@@ -147,7 +146,7 @@ export default async function RenterInspectionPage({
       if (photosError) {
         console.error(
           "RenterInspectionPage inspection photos load error:",
-          photosError.message
+          photosError.message,
         );
       }
 
@@ -163,7 +162,7 @@ export default async function RenterInspectionPage({
             });
             return acc;
           },
-          {} as Record<string, InspectionWithPhotos["photos"]>
+          {} as Record<string, InspectionWithPhotos["photos"]>,
         );
       }
     }
@@ -187,11 +186,11 @@ export default async function RenterInspectionPage({
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Rental Condition"
-    subtitle="Record check-in / check-out condition for this rental."
-  />
-</div>
+          <PageHeader
+            title="Rental Condition"
+            subtitle="Record check-in / check-out condition for this rental."
+          />
+        </div>
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <a href="/dashboard/rentals" className="rr-btn rr-btn-secondary">
@@ -199,42 +198,40 @@ export default async function RenterInspectionPage({
           </a>
         </div>
 
-  {/* Rental agreement – only if owner uploaded one */}
-{typedRental.rental_agreement_url && (
-  <section className="mb-6">
-    <div className="rr-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      
-      {/* LEFT TEXT */}
-      <div>
-        <h2 className="text-sm font-semibold">Rental agreement</h2>
-        <p className="mt-1 text-xs text-slate-600 max-w-md">
-          Your owner attached a rental agreement for this booking. Open it to
-          review or sign (for example via DocuSign).
-        </p>
-      </div>
+        {/* Rental agreement – only if owner uploaded one */}
+        {typedRental.rental_agreement_url && (
+          <section className="mb-6">
+            <div className="rr-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* LEFT TEXT */}
+              <div>
+                <h2 className="text-sm font-semibold">Rental agreement</h2>
+                <p className="mt-1 text-xs text-slate-600 max-w-md">
+                  Your owner attached a rental agreement for this booking. Open
+                  it to review or sign (for example via DocuSign).
+                </p>
+              </div>
 
-      {/* RIGHT BUTTON */}
-      <a
-        href={typedRental.rental_agreement_url}
-        target="_blank"
-        rel="noreferrer"
-        className="rr-btn rr-btn-secondary rr-btn-sm whitespace-nowrap"
-      >
-        View rental agreement
-      </a>
-    </div>
-  </section>
-)}
+              {/* RIGHT BUTTON */}
+              <a
+                href={typedRental.rental_agreement_url}
+                target="_blank"
+                rel="noreferrer"
+                className="rr-btn rr-btn-secondary rr-btn-sm whitespace-nowrap"
+              >
+                View rental agreement
+              </a>
+            </div>
+          </section>
+        )}
 
-
-  {/* Existing renter form (unchanged) */}
-  <RenterInspectionForm rental={typedRental} />
+        {/* Existing renter form (unchanged) */}
+        <RenterInspectionForm rental={typedRental} />
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
           <h2 className="mb-3 text-base font-semibold text-slate-800">
-  Inspection History
-</h2>
+            Inspection History
+          </h2>
 
           {inspections.length === 0 ? (
             <p className="text-sm text-slate-600">
@@ -246,8 +243,8 @@ export default async function RenterInspectionPage({
               {inspections.map((insp) => (
                 <div
                   key={insp.id}
-                     className="rr-card space-y-3 p-4 text-sm text-slate-700"   
-          >
+                  className="rr-card space-y-3 p-4 text-sm text-slate-700"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       {/* Role bubble */}
@@ -300,8 +297,7 @@ export default async function RenterInspectionPage({
 
                   {insp.notes && (
                     <div className="text-[11px]">
-                      <span className="font-medium">Notes:</span>{" "}
-                      {insp.notes}
+                      <span className="font-medium">Notes:</span> {insp.notes}
                     </div>
                   )}
 

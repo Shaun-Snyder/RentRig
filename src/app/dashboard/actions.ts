@@ -1,4 +1,3 @@
-
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -6,12 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function updateProfile(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
-const company_name = String(formData.get("company_name") ?? "").trim();
-const city = String(formData.get("city") ?? "").trim();
-const state = String(formData.get("state") ?? "").trim();
-const occupation = String(formData.get("occupation") ?? "").trim();
-const phone = String(formData.get("phone") ?? "").trim();
-const profile_summary = String(formData.get("profile_summary") ?? "").trim();
+  const company_name = String(formData.get("company_name") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const state = String(formData.get("state") ?? "").trim();
+  const occupation = String(formData.get("occupation") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const profile_summary = String(formData.get("profile_summary") ?? "").trim();
 
   const supabase = await createClient();
   const { data, error: userError } = await supabase.auth.getUser();
@@ -23,23 +22,23 @@ const profile_summary = String(formData.get("profile_summary") ?? "").trim();
 
   // Start with the existing profile fields
   const updates: {
-  full_name: string;
-  company_name: string;
-  city: string;
-  state: string;
-  occupation: string;
-  phone: string;
-  profile_summary: string;
-  avatar_url?: string;
-} = {
-  full_name,
-  company_name,
-  city,
-  state,
-  occupation,
-  phone,
-  profile_summary,
-};
+    full_name: string;
+    company_name: string;
+    city: string;
+    state: string;
+    occupation: string;
+    phone: string;
+    profile_summary: string;
+    avatar_url?: string;
+  } = {
+    full_name,
+    company_name,
+    city,
+    state,
+    occupation,
+    phone,
+    profile_summary,
+  };
 
   // Handle avatar file if provided
   const avatar = formData.get("avatar");
@@ -65,7 +64,10 @@ const profile_summary = String(formData.get("profile_summary") ?? "").trim();
 
       if (uploadError) {
         console.error("Avatar upload failed:", uploadError);
-        return { ok: false, message: `Profile saved, but avatar upload failed: ${uploadError.message}` };
+        return {
+          ok: false,
+          message: `Profile saved, but avatar upload failed: ${uploadError.message}`,
+        };
       }
 
       const {
@@ -75,7 +77,10 @@ const profile_summary = String(formData.get("profile_summary") ?? "").trim();
       updates.avatar_url = publicUrl;
     } catch (e: any) {
       console.error("Avatar upload exception:", e);
-      return { ok: false, message: "Profile saved, but avatar upload failed (exception)." };
+      return {
+        ok: false,
+        message: "Profile saved, but avatar upload failed (exception).",
+      };
     }
   }
 

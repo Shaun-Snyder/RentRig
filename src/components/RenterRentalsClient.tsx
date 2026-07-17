@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -31,21 +29,27 @@ type ListingPhoto = {
   created_at?: string;
 };
 
-export default function RenterRentalsClient({ rentals }: { rentals: Rental[] }) {
+export default function RenterRentalsClient({
+  rentals,
+}: {
+  rentals: Rental[];
+}) {
   const supabase = createClient();
 
   const [photosByListing, setPhotosByListing] = useState<
-  Record<string, ListingPhoto[]>
->({});
+    Record<string, ListingPhoto[]>
+  >({});
 
-const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
-const [ackedRejectedMap, setAckedRejectedMap] = useState<Record<string, boolean>>({});
-const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, string>>({});
+  const [returnedMap, setReturnedMap] = useState<Record<string, boolean>>({});
+  const [ackedRejectedMap, setAckedRejectedMap] = useState<
+    Record<string, boolean>
+  >({});
+  const [returnErrorByRental, setReturnErrorByRental] = useState<
+    Record<string, string>
+  >({});
 
   function storageUrl(path: string) {
-    const { data } = supabase.storage
-      .from("listing-photos")
-      .getPublicUrl(path);
+    const { data } = supabase.storage.from("listing-photos").getPublicUrl(path);
     return data.publicUrl;
   }
 
@@ -78,8 +82,8 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
           new Set(
             (rentals ?? [])
               .map((r) => r.listing?.id)
-              .filter((id): id is string => Boolean(id))
-          )
+              .filter((id): id is string => Boolean(id)),
+          ),
         );
         if (!ids.length) return;
 
@@ -88,13 +92,13 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
           ids.map(async (id) => {
             const res = await fetch(
               `/api/listing-photos?listing_id=${encodeURIComponent(id)}`,
-              { cache: "no-store" }
+              { cache: "no-store" },
             );
             const j = await res.json().catch(() => ({}));
             if (res.ok) {
               obj[id] = (j.photos ?? []) as ListingPhoto[];
             }
-          })
+          }),
         );
         setPhotosByListing((prev) => ({ ...prev, ...obj }));
       } catch {
@@ -141,9 +145,9 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
                   </div>
 
                   {/* BUBBLES: black outline + shadow */}
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
-  className={`
+                      className={`
     inline-flex items-center
     rounded-full border
     px-3 py-1
@@ -153,15 +157,15 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
       r.status === "approved"
         ? "border-emerald-700 bg-emerald-100 text-emerald-800"
         : r.status === "rejected"
-        ? "border-red-700 bg-red-100 text-red-800"
-        : r.status === "completed"
-        ? "border-blue-700 bg-blue-100 text-blue-800"
-        : "border-amber-700 bg-amber-100 text-amber-800"
+          ? "border-red-700 bg-red-100 text-red-800"
+          : r.status === "completed"
+            ? "border-blue-700 bg-blue-100 text-blue-800"
+            : "border-amber-700 bg-amber-100 text-amber-800"
     }
   `}
->
-  {r.status}
-</span>
+                    >
+                      {r.status}
+                    </span>
 
                     {typeof r.buffer_days === "number" && (
                       <span
@@ -219,100 +223,112 @@ const [returnErrorByRental, setReturnErrorByRental] = useState<Record<string, st
               </div>
 
               {/* BUTTON ROW (moved to bottom) */}
-<div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
-  <Link
-    href={`/dashboard/rentals/${encodeURIComponent(r.id)}`}
-    className="rr-btn rr-btn-secondary"
-  >
-    View Rental
-  </Link>
+              <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
+                <Link
+                  href={`/dashboard/rentals/${encodeURIComponent(r.id)}`}
+                  className="rr-btn rr-btn-secondary"
+                >
+                  View Rental
+                </Link>
 
-  <a
-    href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
-    target="_blank"
-    rel="noreferrer"
-    className="rr-btn rr-btn-primary"
-  >
-    Download invoice
-  </a>
+                <a
+                  href={`/api/invoice?rental_id=${encodeURIComponent(r.id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rr-btn rr-btn-primary"
+                >
+                  Download invoice
+                </a>
 
-  <a
-    href={`/dashboard/rentals/${encodeURIComponent(r.id)}/inspection`}
-    className="rr-btn rr-btn-secondary text-xs"
-  >
-    Record / view condition
-  </a>
+                <a
+                  href={`/dashboard/rentals/${encodeURIComponent(r.id)}/inspection`}
+                  className="rr-btn rr-btn-secondary text-xs"
+                >
+                  Record / view condition
+                </a>
 
-  {r.status === "rejected" && !ackedRejectedMap[r.id] && (
-    <button
-      onClick={async () => {
-        setReturnErrorByRental((prev) => ({ ...prev, [r.id]: "" }));
+                {r.status === "rejected" && !ackedRejectedMap[r.id] && (
+                  <button
+                    onClick={async () => {
+                      setReturnErrorByRental((prev) => ({
+                        ...prev,
+                        [r.id]: "",
+                      }));
 
-        const res = await fetch("/api/rentals/acknowledge-rejection", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rentalId: r.id }),
-        });
+                      const res = await fetch(
+                        "/api/rentals/acknowledge-rejection",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ rentalId: r.id }),
+                        },
+                      );
 
-        const data = await res.json().catch(() => ({}));
+                      const data = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
-          setReturnErrorByRental((prev) => ({
-            ...prev,
-            [r.id]: data?.error ?? "Failed to acknowledge rejection.",
-          }));
-          return;
-        }
+                      if (!res.ok) {
+                        setReturnErrorByRental((prev) => ({
+                          ...prev,
+                          [r.id]:
+                            data?.error ?? "Failed to acknowledge rejection.",
+                        }));
+                        return;
+                      }
 
-        setAckedRejectedMap((prev) => ({ ...prev, [r.id]: true }));
-        window.location.href = "/dashboard/rentals/history";
-      }}
-      className="rr-btn rr-btn-secondary"
-    >
-      Acknowledge rejection
-    </button>
-  )}
+                      setAckedRejectedMap((prev) => ({
+                        ...prev,
+                        [r.id]: true,
+                      }));
+                      window.location.href = "/dashboard/rentals/history";
+                    }}
+                    className="rr-btn rr-btn-secondary"
+                  >
+                    Acknowledge rejection
+                  </button>
+                )}
 
-  <button
-    onClick={async () => {
-      setReturnErrorByRental((prev) => ({ ...prev, [r.id]: "" }));
+                <button
+                  onClick={async () => {
+                    setReturnErrorByRental((prev) => ({ ...prev, [r.id]: "" }));
 
-      const res = await fetch("/api/rentals/mark-returned", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rentalId: r.id }),
-      });
+                    const res = await fetch("/api/rentals/mark-returned", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ rentalId: r.id }),
+                    });
 
-      const data = await res.json().catch(() => ({}));
+                    const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        setReturnErrorByRental((prev) => ({
-          ...prev,
-          [r.id]:
-            data?.error ??
-            "Failed to mark returned. Please add renter checkout photos first.",
-        }));
-        return;
-      }
+                    if (!res.ok) {
+                      setReturnErrorByRental((prev) => ({
+                        ...prev,
+                        [r.id]:
+                          data?.error ??
+                          "Failed to mark returned. Please add renter checkout photos first.",
+                      }));
+                      return;
+                    }
 
-      setReturnedMap((prev) => ({ ...prev, [r.id]: true }));
-    }}
-    disabled={
-      r.status !== "approved" ||
-      r.renter_returned ||
-      returnedMap[r.id] ||
-      r.status === "rejected"
-    }
-    className="rr-btn rr-btn-secondary"
-  >
-    {r.renter_returned || returnedMap[r.id] ? "Returned" : "Mark Returned"}
-  </button>
-</div>
-{returnErrorByRental[r.id] ? (
-  <div className="text-sm text-amber-700">
-    {returnErrorByRental[r.id]}
-  </div>
-) : null}
+                    setReturnedMap((prev) => ({ ...prev, [r.id]: true }));
+                  }}
+                  disabled={
+                    r.status !== "approved" ||
+                    r.renter_returned ||
+                    returnedMap[r.id] ||
+                    r.status === "rejected"
+                  }
+                  className="rr-btn rr-btn-secondary"
+                >
+                  {r.renter_returned || returnedMap[r.id]
+                    ? "Returned"
+                    : "Mark Returned"}
+                </button>
+              </div>
+              {returnErrorByRental[r.id] ? (
+                <div className="text-sm text-amber-700">
+                  {returnErrorByRental[r.id]}
+                </div>
+              ) : null}
             </div>
           </div>
         );

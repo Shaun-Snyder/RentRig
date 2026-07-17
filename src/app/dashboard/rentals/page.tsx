@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
@@ -15,7 +14,7 @@ export default async function MyRentalsPage() {
   const user = data.user;
 
   // Load rentals for this renter
-      const { data: rentals, error: rentalsError } = await supabase
+  const { data: rentals, error: rentalsError } = await supabase
     .from("rentals")
     .select(
       `
@@ -30,7 +29,7 @@ export default async function MyRentalsPage() {
       created_at,
       inspections:rental_inspections!left(id, role),
       listing:listings ( id, title )
-    `
+    `,
     )
     .eq("renter_id", user.id)
     .eq("renter_returned", false)
@@ -48,8 +47,8 @@ export default async function MyRentalsPage() {
     new Set(
       rentalsRaw
         .map((r: any) => r.listing?.id)
-        .filter((id: string | undefined): id is string => Boolean(id))
-    )
+        .filter((id: string | undefined): id is string => Boolean(id)),
+    ),
   );
 
   const thumbPathByListingId: Record<string, string> = {};
@@ -108,30 +107,32 @@ export default async function MyRentalsPage() {
   }
 
   // Enrich rentals with listing.thumb_url for the client component
-      const rentalsWithThumb = rentalsRaw
-    .filter((r: any) => !(r.status === "rejected" && r.renter_rejection_acknowledged))
+  const rentalsWithThumb = rentalsRaw
+    .filter(
+      (r: any) => !(r.status === "rejected" && r.renter_rejection_acknowledged),
+    )
     .map((r: any) => {
-    const listingId = r.listing?.id as string | undefined;
-    const thumb_url =
-      listingId && thumbPathByListingId[listingId]
-        ? thumbPathByListingId[listingId]
-        : null;
+      const listingId = r.listing?.id as string | undefined;
+      const thumb_url =
+        listingId && thumbPathByListingId[listingId]
+          ? thumbPathByListingId[listingId]
+          : null;
 
-    const renter_condition_recorded = Array.isArray(r.inspections)
-      ? r.inspections.some((ins: any) => ins.role === "renter")
-      : false;
+      const renter_condition_recorded = Array.isArray(r.inspections)
+        ? r.inspections.some((ins: any) => ins.role === "renter")
+        : false;
 
-    return {
-      ...r,
-      renter_condition_recorded,
-      listing: r.listing
-        ? {
-            ...r.listing,
-            thumb_url,
-          }
-        : null,
-    };
-  });
+      return {
+        ...r,
+        renter_condition_recorded,
+        listing: r.listing
+          ? {
+              ...r.listing,
+              thumb_url,
+            }
+          : null,
+      };
+    });
   // --------------------------------------------------
 
   return (
@@ -139,11 +140,11 @@ export default async function MyRentalsPage() {
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="My Rentals"
-    subtitle="Your rental requests and their status."
-  />
-</div>
+          <PageHeader
+            title="My Rentals"
+            subtitle="Your rental requests and their status."
+          />
+        </div>
 
         <div className="mt-2 mb-4 flex justify-end">
           <a

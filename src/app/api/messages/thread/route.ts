@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 export async function DELETE(req: NextRequest) {
   const supabase = await createClient();
   const supabaseAdmin = createSupabaseAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
 
   const {
     data: { user },
@@ -43,16 +43,16 @@ export async function DELETE(req: NextRequest) {
   }
 
   const { error: deleteMessagesError } = await supabaseAdmin
-  .from("rental_messages")
-  .delete()
-  .eq("rental_id", rentalId);
+    .from("rental_messages")
+    .delete()
+    .eq("rental_id", rentalId);
 
-if (deleteMessagesError) {
-  return NextResponse.json(
-    { error: deleteMessagesError.message },
-    { status: 500 }
-  );
-}
+  if (deleteMessagesError) {
+    return NextResponse.json(
+      { error: deleteMessagesError.message },
+      { status: 500 },
+    );
+  }
   const { error: deleteRentalError } = await supabaseAdmin
     .from("rentals")
     .delete()
@@ -61,7 +61,7 @@ if (deleteMessagesError) {
   if (deleteRentalError) {
     return NextResponse.json(
       { error: deleteRentalError.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 

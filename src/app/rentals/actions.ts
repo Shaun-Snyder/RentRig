@@ -132,8 +132,8 @@ export async function requestRental(formData: FormData) {
   if (!listing.is_published)
     return { ok: false, message: "This listing is not published." };
 
-if (listing.owner_id === user.id)
-  return { ok: false, message: "You cannot request your own listing." };
+  if (listing.owner_id === user.id)
+    return { ok: false, message: "You cannot request your own listing." };
 
   const isHeavy = HEAVY_CATEGORIES.has(listing.category);
 
@@ -146,26 +146,26 @@ if (listing.owner_id === user.id)
   }
 
   // HARD LICENSE BLOCK:
-// If a heavy-equipment or lift listing requires a license,
-// the renter must either confirm they have it or select
-// an owner-provided licensed service.
-const hasOwnerProvidedLicensedService =
-  service_choice === "operator" ||
-  service_choice === "driver" ||
-  service_choice === "driver_labor";
+  // If a heavy-equipment or lift listing requires a license,
+  // the renter must either confirm they have it or select
+  // an owner-provided licensed service.
+  const hasOwnerProvidedLicensedService =
+    service_choice === "operator" ||
+    service_choice === "driver" ||
+    service_choice === "driver_labor";
 
-if (
-  isHeavy &&
-  listing.license_required &&
-  !renter_has_license &&
-  !hasOwnerProvidedLicensedService
-) {
-  return {
-    ok: false,
-    message:
-      "This equipment requires the proper license or an owner-provided driver or operator.",
-  };
-}
+  if (
+    isHeavy &&
+    listing.license_required &&
+    !renter_has_license &&
+    !hasOwnerProvidedLicensedService
+  ) {
+    return {
+      ok: false,
+      message:
+        "This equipment requires the proper license or an owner-provided driver or operator.",
+    };
+  }
 
   // availability (approved + buffer)
   const buffer_days = Number(listing.turnaround_days ?? 0);

@@ -66,7 +66,8 @@ async function normalizeUploadFile(file: File): Promise<File> {
     const mod = (await import("heic2any")) as unknown as {
       default?: Heic2AnyFn;
     };
-    const heic2any = (mod.default ?? (mod as unknown as Heic2AnyFn)) as Heic2AnyFn;
+    const heic2any = (mod.default ??
+      (mod as unknown as Heic2AnyFn)) as Heic2AnyFn;
 
     const out = await heic2any({
       blob: file,
@@ -151,7 +152,7 @@ export default function OwnerInspectionForm({
     ? [...inspections].sort(
         (a, b) =>
           new Date(b.created_at || "").getTime() -
-          new Date(a.created_at || "").getTime()
+          new Date(a.created_at || "").getTime(),
       )
     : [];
 
@@ -198,8 +199,8 @@ export default function OwnerInspectionForm({
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-lg font-bold text-slate-900">
-  {rental.listing?.title ?? "Listing"}
-</div>
+              {rental.listing?.title ?? "Listing"}
+            </div>
 
             <div className="text-sm text-slate-600">
               {rental.start_date} → {rental.end_date}
@@ -208,7 +209,7 @@ export default function OwnerInspectionForm({
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
               {/* Status bubble */}
               <span
-  className={`
+                className={`
     inline-flex items-center
     rounded-full border
     px-3 py-1
@@ -218,15 +219,15 @@ export default function OwnerInspectionForm({
       rental.status === "approved"
         ? "border-emerald-700 bg-emerald-100 text-emerald-800"
         : rental.status === "rejected"
-        ? "border-red-700 bg-red-100 text-red-800"
-        : rental.status === "completed"
-        ? "border-blue-700 bg-blue-100 text-blue-800"
-        : "border-amber-700 bg-amber-100 text-amber-800"
+          ? "border-red-700 bg-red-100 text-red-800"
+          : rental.status === "completed"
+            ? "border-blue-700 bg-blue-100 text-blue-800"
+            : "border-amber-700 bg-amber-100 text-amber-800"
     }
   `}
->
-  {rental.status}
-</span>
+              >
+                {rental.status}
+              </span>
 
               {typeof rental.buffer_days === "number" && (
                 <span
@@ -260,8 +261,7 @@ export default function OwnerInspectionForm({
             >
               Invoice
             </a>
-
-                     </div>
+          </div>
         </div>
 
         {rental.message && (
@@ -273,9 +273,7 @@ export default function OwnerInspectionForm({
 
         {/* Owner check-in/check-out form */}
         <div className="mt-3 border-t pt-3">
-          <h3 className="text-base font-semibold">
-  Record Condition
-</h3>
+          <h3 className="text-base font-semibold">Record Condition</h3>
           <p className="mt-1 text-xs text-slate-600">
             Take photos and note condition at pickup and return. Use this for
             full inspection documentation and dispute protection.
@@ -403,8 +401,8 @@ export default function OwnerInspectionForm({
       {inspectionList.length > 0 && (
         <section className="mt-4">
           <h2 className="mb-3 text-base font-semibold text-slate-800">
-  Inspection History
-</h2>
+            Inspection History
+          </h2>
 
           <div className="space-y-3">
             {inspectionList.map((ins) => (

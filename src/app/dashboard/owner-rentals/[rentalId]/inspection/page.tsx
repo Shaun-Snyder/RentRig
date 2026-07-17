@@ -79,7 +79,7 @@ export default async function OwnerInspectionPage({
       created_at,
       rental_agreement_url,
       listing:listings ( id, title, owner_id )
-    `
+    `,
     )
     .eq("id", rentalId)
     .single();
@@ -125,7 +125,7 @@ export default async function OwnerInspectionPage({
       notes,
       damages,
       created_at
-    `
+    `,
     )
     .eq("rental_id", rentalId)
     .order("created_at", { ascending: false }); // NEWEST FIRST
@@ -133,7 +133,7 @@ export default async function OwnerInspectionPage({
   if (inspectionsError) {
     console.error(
       "OwnerInspectionPage inspections load error:",
-      inspectionsError.message
+      inspectionsError.message,
     );
   }
 
@@ -153,7 +153,7 @@ export default async function OwnerInspectionPage({
       if (photosError) {
         console.error(
           "OwnerInspectionPage inspection photos load error:",
-          photosError.message
+          photosError.message,
         );
       }
 
@@ -169,7 +169,7 @@ export default async function OwnerInspectionPage({
             });
             return acc;
           },
-          {} as Record<string, InspectionWithPhotos["photos"]>
+          {} as Record<string, InspectionWithPhotos["photos"]>,
         );
       }
     }
@@ -198,7 +198,7 @@ export default async function OwnerInspectionPage({
   if (agreementsError) {
     console.error(
       "OwnerInspectionPage agreements load error:",
-      agreementsError.message
+      agreementsError.message,
     );
   }
 
@@ -214,14 +214,17 @@ export default async function OwnerInspectionPage({
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Rental Condition"
-    subtitle="Record check-in / check-out condition and manage the rental agreement."
-  />
-</div>
+          <PageHeader
+            title="Rental Condition"
+            subtitle="Record check-in / check-out condition and manage the rental agreement."
+          />
+        </div>
 
         <div className="mb-4 flex items-center justify-between gap-3">
-          <a href="/dashboard/owner-rentals" className="rr-btn rr-btn-secondary">
+          <a
+            href="/dashboard/owner-rentals"
+            className="rr-btn rr-btn-secondary"
+          >
             ← Back to rental requests
           </a>
         </div>
@@ -229,9 +232,7 @@ export default async function OwnerInspectionPage({
         {/* Rental agreement upload / view (owner only) */}
         <section className="mb-6 space-y-2">
           <div className="rr-card p-4">
-            <h2 className="text-base font-semibold">
-  Rental Agreement
-</h2>
+            <h2 className="text-base font-semibold">Rental Agreement</h2>
             <p className="mt-1 text-sm text-slate-600">
               Upload your signed rental agreement (PDF, DocuSign export, etc.).
               This will be stored with this rental so you can reference it
@@ -300,8 +301,8 @@ export default async function OwnerInspectionPage({
             {/* Agreement history list */}
             <div className="mt-4 border-t pt-3">
               <h3 className="text-sm font-semibold text-slate-700">
-  Agreement History
-</h3>
+                Agreement History
+              </h3>
 
               {agreementList.length === 0 ? (
                 <p className="mt-1 text-[11px] text-slate-500">
@@ -453,8 +454,7 @@ export default async function OwnerInspectionPage({
 
                   {insp.notes && (
                     <div className="text-[11px]">
-                      <span className="font-medium">Notes:</span>{" "}
-                      {insp.notes}
+                      <span className="font-medium">Notes:</span> {insp.notes}
                     </div>
                   )}
 

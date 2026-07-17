@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState, useTransition } from "react";
@@ -62,7 +61,7 @@ export default function AuthPage() {
         }
 
         setMessage(
-          "Account created. Please check your email (if confirmation is required), then sign in."
+          "Account created. Please check your email (if confirmation is required), then sign in.",
         );
         setMode("signin");
         setConfirm("");
@@ -72,7 +71,8 @@ export default function AuthPage() {
     });
   }
 
-  const title = mode === "signin" ? "Sign in to RentRig" : "Create your RentRig account";
+  const title =
+    mode === "signin" ? "Sign in to RentRig" : "Create your RentRig account";
   const cta = mode === "signin" ? "Sign in" : "Sign up";
 
   return (
@@ -84,143 +84,141 @@ export default function AuthPage() {
       />
       {/* Dark overlay so the form is readable */}
       <div className="absolute inset-0 bg-black/50" />
-
       {/* Content layer */}
       <div className="relative z-10 flex flex-col items-center w-full">
-
-            {/* Brand header */}
-      <div className="mb-8 text-center">
-        <div
-          className="
+        {/* Brand header */}
+        <div className="mb-8 text-center">
+          <div
+            className="
             inline-block px-6 py-3
             border-4 border-black/90
             bg-gradient-to-b from-slate-100 to-slate-300
             shadow-[0_10px_0_#000]
           "
-        >
-          <div
-  className="
+          >
+            <div
+              className="
     text-6xl md:text-7xl font-extrabold tracking-tight uppercase text-black
     [text-shadow:_4px_4px_0_#9ca3af,_-4px_4px_0_#9ca3af,_4px_-4px_0_#9ca3af,_-4px_-4px_0_#9ca3af]
   "
->
-  RentRig
-</div>
+            >
+              RentRig
+            </div>
 
-          <div className="mt-1 text-[10px] md:text-xs font-bold tracking-[0.32em] text-slate-800 uppercase">
-  HEAVY EQUIPMENT RENTALS
-</div>
-        </div>
-
-        <p className="mt-4 text-xs md:text-sm text-slate-100">
-          Heavy equipment &amp; rig rentals made simple.
-        </p>
-      </div>
-
-
-      {/* Auth card */}
-      <div className="w-full max-w-md rounded-2xl border border-black bg-gradient-to-b from-white to-slate-100 shadow-[0_8px_0_#000] p-6 rr-card">
-        {/* Tabs */}
-        <div className="mb-4 flex rounded-full bg-slate-200 p-1 text-xs font-semibold uppercase tracking-wide">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("signin");
-              setMessage(null);
-            }}
-            className={`flex-1 rounded-full px-3 py-2 ${
-              mode === "signin"
-                ? "bg-black text-white shadow-[0_2px_0_#000]"
-                : "text-slate-700"
-            }`}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("signup");
-              setMessage(null);
-            }}
-            className={`flex-1 rounded-full px-3 py-2 ${
-              mode === "signup"
-                ? "bg-black text-white shadow-[0_2px_0_#000]"
-                : "text-slate-700"
-            }`}
-          >
-            Sign up
-          </button>
-        </div>
-
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        <p className="mt-1 text-xs text-slate-600">
-          Use the same email for both owner and renter activity.
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-4 grid gap-4">
-          <div className="grid gap-1 text-sm">
-            <label className="font-medium">Email</label>
-            <input
-              type="email"
-              autoComplete="email"
-              className="rr-input w-full"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
+            <div className="mt-1 text-[10px] md:text-xs font-bold tracking-[0.32em] text-slate-800 uppercase">
+              HEAVY EQUIPMENT RENTALS
+            </div>
           </div>
 
-          <div className="grid gap-1 text-sm">
-            <label className="font-medium">Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              className="rr-input w-full"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              required
-            />
+          <p className="mt-4 text-xs md:text-sm text-slate-100">
+            Heavy equipment &amp; rig rentals made simple.
+          </p>
+        </div>
+        {/* Auth card */}
+        <div className="w-full max-w-md rounded-2xl border border-black bg-gradient-to-b from-white to-slate-100 shadow-[0_8px_0_#000] p-6 rr-card">
+          {/* Tabs */}
+          <div className="mb-4 flex rounded-full bg-slate-200 p-1 text-xs font-semibold uppercase tracking-wide">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signin");
+                setMessage(null);
+              }}
+              className={`flex-1 rounded-full px-3 py-2 ${
+                mode === "signin"
+                  ? "bg-black text-white shadow-[0_2px_0_#000]"
+                  : "text-slate-700"
+              }`}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup");
+                setMessage(null);
+              }}
+              className={`flex-1 rounded-full px-3 py-2 ${
+                mode === "signup"
+                  ? "bg-black text-white shadow-[0_2px_0_#000]"
+                  : "text-slate-700"
+              }`}
+            >
+              Sign up
+            </button>
           </div>
 
-          {mode === "signup" && (
+          <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
+          <p className="mt-1 text-xs text-slate-600">
+            Use the same email for both owner and renter activity.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-4 grid gap-4">
             <div className="grid gap-1 text-sm">
-              <label className="font-medium">Confirm password</label>
+              <label className="font-medium">Email</label>
+              <input
+                type="email"
+                autoComplete="email"
+                className="rr-input w-full"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+
+            <div className="grid gap-1 text-sm">
+              <label className="font-medium">Password</label>
               <input
                 type="password"
-                autoComplete="new-password"
+                autoComplete="current-password"
                 className="rr-input w-full"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="********"
                 required
               />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rr-btn rr-btn-primary mt-2 w-full"
-          >
-            {isPending ? "Working..." : cta}
-          </button>
+            {mode === "signup" && (
+              <div className="grid gap-1 text-sm">
+                <label className="font-medium">Confirm password</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  className="rr-input w-full"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="********"
+                  required
+                />
+              </div>
+            )}
 
-          {message && (
-            <p className="mt-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {message}
-            </p>
-          )}
-        </form>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rr-btn rr-btn-primary mt-2 w-full"
+            >
+              {isPending ? "Working..." : cta}
+            </button>
 
-                <p className="mt-4 text-[11px] text-slate-500">
-          By continuing, you agree that all rentals are subject to your own rental
-          agreement and local regulations. RentRig is a marketplace-style tool;
-          you control your listings and contracts.
-        </p>
-      </div> {/* Auth card */}
-      </div> {/* end content layer */}
+            {message && (
+              <p className="mt-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {message}
+              </p>
+            )}
+          </form>
+
+          <p className="mt-4 text-[11px] text-slate-500">
+            By continuing, you agree that all rentals are subject to your own
+            rental agreement and local regulations. RentRig is a
+            marketplace-style tool; you control your listings and contracts.
+          </p>
+        </div>{" "}
+        {/* Auth card */}
+      </div>{" "}
+      {/* end content layer */}
     </div>
   );
 }

@@ -36,16 +36,22 @@ function fmtDate(s?: string | null) {
   return s.slice(0, 10);
 }
 
-export default function MessagesClient({ rentals }: { rentals: ThreadRental[] }) {
+export default function MessagesClient({
+  rentals,
+}: {
+  rentals: ThreadRental[];
+}) {
   const supabase = createClient();
   const [isPending, startTransition] = useTransition();
 
   const [me, setMe] = useState<string | null>(null);
   const [activeRentalId, setActiveRentalId] = useState<string | null>(
-    rentals?.[0]?.id ?? null
+    rentals?.[0]?.id ?? null,
   );
 
-  const [messagesByRental, setMessagesByRental] = useState<Record<string, MsgRow[]>>({});
+  const [messagesByRental, setMessagesByRental] = useState<
+    Record<string, MsgRow[]>
+  >({});
   const [loadingRental, setLoadingRental] = useState<string | null>(null);
   const [sendText, setSendText] = useState("");
 
@@ -60,7 +66,7 @@ export default function MessagesClient({ rentals }: { rentals: ThreadRental[] })
 
   const activeRental = useMemo(
     () => rentals.find((r) => r.id === activeRentalId) ?? null,
-    [rentals, activeRentalId]
+    [rentals, activeRentalId],
   );
 
   async function loadMessages(rentalId: string) {
@@ -74,7 +80,10 @@ export default function MessagesClient({ rentals }: { rentals: ThreadRental[] })
 
       if (error) throw error;
 
-      setMessagesByRental((p) => ({ ...p, [rentalId]: (data ?? []) as MsgRow[] }));
+      setMessagesByRental((p) => ({
+        ...p,
+        [rentalId]: (data ?? []) as MsgRow[],
+      }));
     } catch (e: any) {
       alert(e?.message ?? "Failed to load messages.");
     } finally {
@@ -126,7 +135,9 @@ export default function MessagesClient({ rentals }: { rentals: ThreadRental[] })
     );
   }
 
-  const activeMsgs = activeRentalId ? messagesByRental[activeRentalId] ?? [] : [];
+  const activeMsgs = activeRentalId
+    ? (messagesByRental[activeRentalId] ?? [])
+    : [];
 
   return (
     <div className="rr-card p-4 md:p-6">
@@ -143,23 +154,22 @@ export default function MessagesClient({ rentals }: { rentals: ThreadRental[] })
               const active = r.id === activeRentalId;
               return (
                 <Link
-  key={r.id}
-  href={`/dashboard/messages/${encodeURIComponent(r.id)}`}
-  onClick={() => setActiveRentalId(r.id)} // keeps your current behavior too
-  className={[
-    "w-full text-left px-4 py-3 border-b block",
-    active ? "bg-slate-50" : "bg-white hover:bg-slate-50",
-  ].join(" ")}
->
-  <div className="text-sm font-semibold text-slate-900">
-    {r.listing?.title ?? "Listing"}
-  </div>
-  <div className="mt-0.5 text-xs text-slate-600">
-    {fmtDate(r.start_date)} → {fmtDate(r.end_date)}
-    {r.status ? ` • ${r.status}` : ""}
-  </div>
-</Link>
-
+                  key={r.id}
+                  href={`/dashboard/messages/${encodeURIComponent(r.id)}`}
+                  onClick={() => setActiveRentalId(r.id)} // keeps your current behavior too
+                  className={[
+                    "w-full text-left px-4 py-3 border-b block",
+                    active ? "bg-slate-50" : "bg-white hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  <div className="text-sm font-semibold text-slate-900">
+                    {r.listing?.title ?? "Listing"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-600">
+                    {fmtDate(r.start_date)} → {fmtDate(r.end_date)}
+                    {r.status ? ` • ${r.status}` : ""}
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -201,11 +211,18 @@ export default function MessagesClient({ rentals }: { rentals: ThreadRental[] })
                       key={m.id}
                       className={[
                         "max-w-[85%] rounded-lg border px-3 py-2 text-sm",
-                        mine ? "ml-auto bg-slate-900 text-white border-slate-900" : "bg-slate-50",
+                        mine
+                          ? "ml-auto bg-slate-900 text-white border-slate-900"
+                          : "bg-slate-50",
                       ].join(" ")}
                     >
-                      <div className={mine ? "text-white" : "text-slate-900"}>{m.body}</div>
-                      <div className={mine ? "text-white/70" : "text-slate-500"} style={{ fontSize: 11 }}>
+                      <div className={mine ? "text-white" : "text-slate-900"}>
+                        {m.body}
+                      </div>
+                      <div
+                        className={mine ? "text-white/70" : "text-slate-500"}
+                        style={{ fontSize: 11 }}
+                      >
                         {m.created_at?.replace("T", " ").slice(0, 16)}
                       </div>
                     </div>

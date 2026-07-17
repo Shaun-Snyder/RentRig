@@ -1,5 +1,3 @@
-
-
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
@@ -16,9 +14,9 @@ export default async function ListingPage({
 }) {
   const supabase = await createClient();
   const id = params.id;
-const {
-  data: { user },
-} = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   /* =========================
      Listing (current DB schema)
   ========================== */
@@ -68,26 +66,26 @@ const {
       license_type,
 
       created_at
-    `
+    `,
     )
     .eq("id", id)
     .maybeSingle();
 
   if (listingErr || !listing) notFound();
 
-console.log("DRIVER DEBUG:", {
-  driver_enabled: listing.driver_enabled,
-  driver_daily_enabled: listing.driver_daily_enabled,
-  driver_hourly_enabled: listing.driver_hourly_enabled,
-  driver_day_rate: listing.driver_day_rate,
-  driver_hour_rate: listing.driver_hour_rate,
+  console.log("DRIVER DEBUG:", {
+    driver_enabled: listing.driver_enabled,
+    driver_daily_enabled: listing.driver_daily_enabled,
+    driver_hourly_enabled: listing.driver_hourly_enabled,
+    driver_day_rate: listing.driver_day_rate,
+    driver_hour_rate: listing.driver_hour_rate,
 
-  driver_labor_enabled: listing.driver_labor_enabled,
-  driver_labor_daily_enabled: listing.driver_labor_daily_enabled,
-  driver_labor_hourly_enabled: listing.driver_labor_hourly_enabled,
-  driver_labor_day_rate: listing.driver_labor_day_rate,
-  driver_labor_hour_rate: listing.driver_labor_hour_rate,
-});
+    driver_labor_enabled: listing.driver_labor_enabled,
+    driver_labor_daily_enabled: listing.driver_labor_daily_enabled,
+    driver_labor_hourly_enabled: listing.driver_labor_hourly_enabled,
+    driver_labor_day_rate: listing.driver_labor_day_rate,
+    driver_labor_hour_rate: listing.driver_labor_hour_rate,
+  });
 
   /* =========================
      Photos
@@ -119,13 +117,17 @@ console.log("DRIVER DEBUG:", {
   const rentalHourRate = Number((listing as any).rental_hour_rate ?? 0);
   const securityDeposit = Number(listing.security_deposit ?? 0);
   const minRentalDays =
-    listing.min_rental_days == null ? undefined : Number(listing.min_rental_days);
+    listing.min_rental_days == null
+      ? undefined
+      : Number(listing.min_rental_days);
   const maxRentalDays =
-    listing.max_rental_days == null ? undefined : Number(listing.max_rental_days);
+    listing.max_rental_days == null
+      ? undefined
+      : Number(listing.max_rental_days);
 
-    const deliveryMode =
-    (listing.delivery_mode as "pickup_only" | "pickup_or_delivery" | "delivery_only") ??
-    "pickup_only";
+  const deliveryMode =
+    (listing.delivery_mode as
+      "pickup_only" | "pickup_or_delivery" | "delivery_only") ?? "pickup_only";
   const deliveryMiles = Number((listing as any).delivery_miles ?? 0);
   const deliveryFee = Number(listing.delivery_fee ?? 0);
 
@@ -151,40 +153,52 @@ console.log("DRIVER DEBUG:", {
         />
 
         {/* Listing details */}
-                <div className="rr-card p-5 mb-6">
+        <div className="rr-card p-5 mb-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <div className="font-extrabold rr-outline-section">Daily rate</div>
-              <div className="mt-1 font-semibold">${pricePerDay.toFixed(2)} / day</div>
+              <div className="font-extrabold rr-outline-section">
+                Daily rate
+              </div>
+              <div className="mt-1 font-semibold">
+                ${pricePerDay.toFixed(2)} / day
+              </div>
             </div>
 
             {rentalHourlyEnabled && rentalHourRate > 0 && (
               <div>
-                <div className="font-extrabold rr-outline-section">Hourly rate</div>
-                <div className="mt-1 font-semibold">${rentalHourRate.toFixed(2)} / hour</div>
+                <div className="font-extrabold rr-outline-section">
+                  Hourly rate
+                </div>
+                <div className="mt-1 font-semibold">
+                  ${rentalHourRate.toFixed(2)} / hour
+                </div>
               </div>
             )}
 
             <div>
               <div className="font-extrabold rr-outline-section">Deposit</div>
-              <div className="mt-1 font-semibold">${securityDeposit.toFixed(2)}</div>
+              <div className="mt-1 font-semibold">
+                ${securityDeposit.toFixed(2)}
+              </div>
             </div>
 
             <div>
-              <div className="font-extrabold rr-outline-section">Min / Max days</div>
+              <div className="font-extrabold rr-outline-section">
+                Min / Max days
+              </div>
               <div className="mt-1 font-semibold">
                 {minRentalDays ?? "—"} / {maxRentalDays ?? "—"}
               </div>
             </div>
 
-                        <div>
+            <div>
               <div className="font-extrabold rr-outline-section">Delivery</div>
               <div className="mt-1 font-semibold">
                 {deliveryMode === "pickup_only"
                   ? "Local pickup only"
                   : deliveryMode === "delivery_only"
-                  ? "Delivery only"
-                  : "Pickup or delivery"}
+                    ? "Delivery only"
+                    : "Pickup or delivery"}
                 {deliveryMode !== "pickup_only"
                   ? ` • ${deliveryMiles.toFixed(0)} miles • $${deliveryFee.toFixed(2)}`
                   : ""}
@@ -192,7 +206,9 @@ console.log("DRIVER DEBUG:", {
             </div>
 
             <div>
-              <div className="font-extrabold rr-outline-section">Required license</div>
+              <div className="font-extrabold rr-outline-section">
+                Required license
+              </div>
               <div className="mt-1 font-semibold">
                 {licenseRequired ? "Yes" : "No"}
                 {licenseRequired && licenseType ? ` — ${licenseType}` : ""}
@@ -221,20 +237,22 @@ console.log("DRIVER DEBUG:", {
         {listing.description ? (
           <div className="rr-card p-5 mb-6">
             <div className="rr-outline-section text-lg mb-2">Description</div>
-            <p className="rr-subtext whitespace-pre-wrap">{listing.description}</p>
+            <p className="rr-subtext whitespace-pre-wrap">
+              {listing.description}
+            </p>
           </div>
         ) : null}
 
-{user && listing.owner_id !== user.id && (
-  <div className="mb-4">
-    <a
-      href={`/api/inquiry/start?listing_id=${listing.id}`}
-      className="rr-btn rr-btn-secondary w-full text-center block"
-    >
-      Message Owner
-    </a>
-  </div>
-)}
+        {user && listing.owner_id !== user.id && (
+          <div className="mb-4">
+            <a
+              href={`/api/inquiry/start?listing_id=${listing.id}`}
+              className="rr-btn rr-btn-secondary w-full text-center block"
+            >
+              Message Owner
+            </a>
+          </div>
+        )}
 
         {/* Rental form */}
         <div className="rr-card p-5">
@@ -250,8 +268,12 @@ console.log("DRIVER DEBUG:", {
             deliveryMode={deliveryMode}
             deliveryFee={deliveryFee}
             deliveryMiles={Number(listing.delivery_miles ?? 0)}
-            deliveryDiscountEnabled={Boolean(listing.delivery_service_discount_enabled)}
-            deliveryDiscountAmount={Number(listing.delivery_service_discount_amount ?? 0)}
+            deliveryDiscountEnabled={Boolean(
+              listing.delivery_service_discount_enabled,
+            )}
+            deliveryDiscountAmount={Number(
+              listing.delivery_service_discount_amount ?? 0,
+            )}
             /* category/license */
             category={(listing.category as string) ?? ""}
             licenseRequired={licenseRequired}
@@ -259,7 +281,9 @@ console.log("DRIVER DEBUG:", {
             /* operator */
             operatorEnabled={Boolean(listing.operator_enabled)}
             operatorRate={Number(listing.operator_rate ?? 0)}
-            operatorRateUnit={(listing.operator_rate_unit as "day" | "hour") ?? "day"}
+            operatorRateUnit={
+              (listing.operator_rate_unit as "day" | "hour") ?? "day"
+            }
             operatorMaxHours={Number(listing.operator_max_hours ?? 0)}
             /* driver */
             driverEnabled={Boolean(listing.driver_enabled)}
@@ -270,8 +294,12 @@ console.log("DRIVER DEBUG:", {
             driverMaxHours={Number(listing.driver_max_hours ?? 0)}
             /* driver labor */
             driverLaborEnabled={Boolean(listing.driver_labor_enabled)}
-            driverLaborDailyEnabled={Boolean(listing.driver_labor_daily_enabled)}
-            driverLaborHourlyEnabled={Boolean(listing.driver_labor_hourly_enabled)}
+            driverLaborDailyEnabled={Boolean(
+              listing.driver_labor_daily_enabled,
+            )}
+            driverLaborHourlyEnabled={Boolean(
+              listing.driver_labor_hourly_enabled,
+            )}
             driverLaborDayRate={Number(listing.driver_labor_day_rate ?? 0)}
             driverLaborHourRate={Number(listing.driver_labor_hour_rate ?? 0)}
             driverLaborMaxHours={Number(listing.driver_labor_max_hours ?? 0)}

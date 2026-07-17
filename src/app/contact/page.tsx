@@ -10,8 +10,8 @@ export default function ContactPage() {
 
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader title="Contact Us" />
-</div>
+          <PageHeader title="Contact Us" />
+        </div>
 
         <div className="rr-card mt-4 p-4 rounded-none border shadow-sm">
           <p className="text-sm text-slate-700">

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useTransition } from "react";
@@ -66,7 +65,8 @@ async function normalizeUploadFile(file: File): Promise<File> {
       default?: Heic2AnyFn;
     };
 
-    const heic2any = (mod.default ?? (mod as unknown as Heic2AnyFn)) as Heic2AnyFn;
+    const heic2any = (mod.default ??
+      (mod as unknown as Heic2AnyFn)) as Heic2AnyFn;
 
     const out = await heic2any({
       blob: file,
@@ -126,7 +126,7 @@ async function normalizeUploadFile(file: File): Promise<File> {
     } else {
       newName = newName.replace(
         /\.[a-z0-9]+$/i,
-        outType === "image/png" ? ".png" : ".jpg"
+        outType === "image/png" ? ".png" : ".jpg",
       );
     }
 
@@ -155,7 +155,7 @@ export default function RenterInspectionForm({
     ? [...inspections].sort(
         (a, b) =>
           new Date(b.created_at || "").getTime() -
-          new Date(a.created_at || "").getTime()
+          new Date(a.created_at || "").getTime(),
       )
     : [];
 
@@ -180,17 +180,17 @@ export default function RenterInspectionForm({
     }
 
     startTransition(async () => {
-  const res = await createRentalInspection(fd);
+      const res = await createRentalInspection(fd);
 
-  if (!res.ok) {
-    const m = res.message || "Could not save inspection.";
-    setMsg(m);
-    return;
-  }
+      if (!res.ok) {
+        const m = res.message || "Could not save inspection.";
+        setMsg(m);
+        return;
+      }
 
-  // ✅ SUCCESS — redirect instead of alert
-  window.location.href = "/dashboard/rentals";
-});
+      // ✅ SUCCESS — redirect instead of alert
+      window.location.href = "/dashboard/rentals";
+    });
   }
 
   return (
@@ -210,8 +210,8 @@ export default function RenterInspectionForm({
 
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
               {/* Status bubble */}
-<span
-  className={`
+              <span
+                className={`
     inline-flex items-center
     rounded-full border
     px-3 py-1
@@ -221,15 +221,15 @@ export default function RenterInspectionForm({
       rental.status === "approved"
         ? "border-emerald-700 bg-emerald-100 text-emerald-800"
         : rental.status === "rejected"
-        ? "border-red-700 bg-red-100 text-red-800"
-        : rental.status === "completed"
-        ? "border-blue-700 bg-blue-100 text-blue-800"
-        : "border-amber-700 bg-amber-100 text-amber-800"
+          ? "border-red-700 bg-red-100 text-red-800"
+          : rental.status === "completed"
+            ? "border-blue-700 bg-blue-100 text-blue-800"
+            : "border-amber-700 bg-amber-100 text-amber-800"
     }
   `}
->
-  {rental.status}
-</span>
+              >
+                {rental.status}
+              </span>
             </div>
 
             {/* Renter view of agreement: only if owner uploaded one */}
@@ -264,8 +264,7 @@ export default function RenterInspectionForm({
 
         {rental.message && (
           <div className="text-sm text-slate-700">
-            <span className="font-medium">Your message:</span>{" "}
-            {rental.message}
+            <span className="font-medium">Your message:</span> {rental.message}
           </div>
         )}
 
@@ -290,10 +289,10 @@ export default function RenterInspectionForm({
             <div className="grid gap-1">
               <label className="text-xs font-medium">Phase</label>
               <select
-  name="phase"
-  className="rr-input w-full text-sm"
-  defaultValue="checkout"
->
+                name="phase"
+                className="rr-input w-full text-sm"
+                defaultValue="checkout"
+              >
                 <option value="checkin">Check-in (before rental)</option>
                 <option value="checkout">Check-out (after rental)</option>
               </select>

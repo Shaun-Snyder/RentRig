@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (rental.status !== "rejected") {
     return NextResponse.json(
       { error: "Only rejected rentals can be acknowledged." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

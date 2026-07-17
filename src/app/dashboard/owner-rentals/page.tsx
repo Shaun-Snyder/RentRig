@@ -62,7 +62,7 @@ export default async function OwnerRentalsPage() {
 
         // Inspections + photos nested under each rental
         "inspections:rental_inspections(id, role, phase, odometer, hours_used, fuel_percent, notes, created_at, photos:rental_inspection_photos(id, url))",
-      ].join(", ")
+      ].join(", "),
     )
     .order("created_at", { ascending: false });
 
@@ -74,7 +74,7 @@ export default async function OwnerRentalsPage() {
 
   // Distinct listing IDs from these rentals
   const listingIds = Array.from(
-    new Set(rentalsRaw.map((r: any) => r.listing_id).filter(Boolean))
+    new Set(rentalsRaw.map((r: any) => r.listing_id).filter(Boolean)),
   );
 
   // Load listing records
@@ -83,9 +83,7 @@ export default async function OwnerRentalsPage() {
     .select("id, title, owner_id, security_deposit")
     .in(
       "id",
-      listingIds.length
-        ? listingIds
-        : ["00000000-0000-0000-0000-000000000000"]
+      listingIds.length ? listingIds : ["00000000-0000-0000-0000-000000000000"],
     );
 
   if (listingsError) {
@@ -107,7 +105,7 @@ export default async function OwnerRentalsPage() {
         "listing_id",
         ownedListingIds.length
           ? ownedListingIds
-          : ["00000000-0000-0000-0000-000000000000"]
+          : ["00000000-0000-0000-0000-000000000000"],
       );
 
     if (photosError) {
@@ -163,18 +161,19 @@ export default async function OwnerRentalsPage() {
     return { ...l, thumb_url };
   });
 
-  const listingMap = new Map(
-    ownedListingsWithThumb.map((l: any) => [l.id, l])
-  );
+  const listingMap = new Map(ownedListingsWithThumb.map((l: any) => [l.id, l]));
   const renterIds = Array.from(
     new Set(
       rentalsRaw
         .map((r: any) => r.renter_id)
-        .filter((id: string | undefined): id is string => Boolean(id))
-    )
+        .filter((id: string | undefined): id is string => Boolean(id)),
+    ),
   );
 
-  const renterRatingMap = new Map<string, { avg: string | null; count: number }>();
+  const renterRatingMap = new Map<
+    string,
+    { avg: string | null; count: number }
+  >();
 
   if (renterIds.length > 0) {
     const { data: renterRatings } = await supabase
@@ -206,24 +205,27 @@ export default async function OwnerRentalsPage() {
   }
 
   // Final enriched rentals: only those whose listing is owned by this user
-      const enriched = rentalsRaw
+  const enriched = rentalsRaw
     .filter((r: any) => listingMap.has(r.listing_id))
     .filter((r: any) => r.status !== "rejected" && r.status !== "completed")
     .map((r: any) => ({
       ...r,
       listing: listingMap.get(r.listing_id) ?? null,
-      renter_rating: renterRatingMap.get(r.renter_id) ?? { avg: null, count: 0 },
+      renter_rating: renterRatingMap.get(r.renter_id) ?? {
+        avg: null,
+        count: 0,
+      },
     }));
   return (
     <>
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Rental Requests"
-    subtitle="Review and manage rental requests for your listings."
-  />
-</div>
+          <PageHeader
+            title="Rental Requests"
+            subtitle="Review and manage rental requests for your listings."
+          />
+        </div>
 
         <div className="mt-2 mb-4 flex justify-end">
           <a

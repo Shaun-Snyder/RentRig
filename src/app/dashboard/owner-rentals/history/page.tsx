@@ -43,7 +43,7 @@ export default async function OwnerRentalsHistoryPage() {
         "operator_total",
 
         "inspections:rental_inspections(id, role, phase, odometer, hours_used, fuel_percent, notes, created_at, photos:rental_inspection_photos(id, url))",
-      ].join(", ")
+      ].join(", "),
     )
     .lt("end_date", today)
     .order("end_date", { ascending: false });
@@ -53,16 +53,16 @@ export default async function OwnerRentalsHistoryPage() {
   }
 
   // Same enrichment as main owner page: attach listings the user owns
-  const listingIds = Array.from(new Set((rentals ?? []).map((r) => r.listing_id)));
+  const listingIds = Array.from(
+    new Set((rentals ?? []).map((r) => r.listing_id)),
+  );
 
   const { data: listings } = await supabase
     .from("listings")
     .select("id, title, owner_id")
     .in(
       "id",
-      listingIds.length
-        ? listingIds
-        : ["00000000-0000-0000-0000-000000000000"]
+      listingIds.length ? listingIds : ["00000000-0000-0000-0000-000000000000"],
     );
 
   const ownedListings = (listings ?? []).filter((l) => l.owner_id === user.id);
@@ -80,11 +80,11 @@ export default async function OwnerRentalsHistoryPage() {
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Rental Request History"
-    subtitle="Past rentals for your listings, including inspections and invoices."
-  />
-</div>
+          <PageHeader
+            title="Rental Request History"
+            subtitle="Past rentals for your listings, including inspections and invoices."
+          />
+        </div>
 
         <div className="mt-2 mb-4">
           <a

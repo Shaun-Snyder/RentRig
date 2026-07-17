@@ -36,8 +36,6 @@ export default function ThreadsListClient({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function deleteThread(rentalId: string) {
-   
-
     setDeletingId(rentalId);
 
     const res = await fetch("/api/messages/thread", {
@@ -51,10 +49,10 @@ export default function ThreadsListClient({
     setDeletingId(null);
 
     if (!res.ok) {
-  const data = await res.json().catch(() => null);
-  alert(data?.error ?? "Failed to delete thread.");
-  return;
-}
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "Failed to delete thread.");
+      return;
+    }
 
     router.refresh();
   }
@@ -89,7 +87,11 @@ export default function ThreadsListClient({
                 <div className="flex gap-3">
                   <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-slate-50">
                     {thumb ? (
-                      <img src={thumb} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={thumb}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
                         Photo

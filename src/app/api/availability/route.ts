@@ -1,9 +1,10 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 function isUuid(v: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    v,
+  );
 }
 
 // Returns blocked date ranges for a listing based on APPROVED rentals.
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
   if (!isUuid(listing_id)) {
     return NextResponse.json(
       { error: `invalid input syntax for type uuid: "${listing_id}"` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -30,12 +31,17 @@ export async function GET(req: Request) {
 
   console.log("[availability] listing_id:", listing_id);
   console.log("[availability] url:", url);
-  console.log("[availability] hasServiceKey:", !!serviceKey, "len:", serviceKey?.length);
+  console.log(
+    "[availability] hasServiceKey:",
+    !!serviceKey,
+    "len:",
+    serviceKey?.length,
+  );
 
   if (!url || !serviceKey) {
     return NextResponse.json(
       { error: "missing env", hasUrl: !!url, hasServiceKey: !!serviceKey },
-      { status: 500 }
+      { status: 500 },
     );
   }
 

@@ -58,20 +58,24 @@ export default async function DashboardMessagesPage() {
 
   // Rentals where user is renter
   const { data: renterRentals } = await supabase
-  .from("rentals")
-  .select("id, listing_id, renter_id, start_date, end_date, status, created_at, message")
+    .from("rentals")
+    .select(
+      "id, listing_id, renter_id, start_date, end_date, status, created_at, message",
+    )
     .eq("renter_id", user.id)
 
-.order("created_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   // Rentals where user is owner
   const { data: ownerRentals } = ownedListingIds.length
-  ? await supabase
-      .from("rentals")
-      .select("id, listing_id, renter_id, start_date, end_date, status, created_at, message")
+    ? await supabase
+        .from("rentals")
+        .select(
+          "id, listing_id, renter_id, start_date, end_date, status, created_at, message",
+        )
         .in("listing_id", ownedListingIds)
 
-.order("created_at", { ascending: false })
+        .order("created_at", { ascending: false })
     : { data: [] as RentalRow[] };
 
   // Merge + de-dupe
@@ -89,7 +93,8 @@ export default async function DashboardMessagesPage() {
         <div style={{ padding: 24 }}>
           <PageHeader title="Messages" subtitle="No conversations yet." />
           <div className="rr-card mt-6 p-6 text-slate-600">
-            No message threads yet. Messages appear after a rental request exists.
+            No message threads yet. Messages appear after a rental request
+            exists.
           </div>
         </div>
       </div>
@@ -102,39 +107,39 @@ export default async function DashboardMessagesPage() {
 
   const rentalIds = rentals.map((r) => r.id);
 
-const latestMessageByRental = new Map<
-  string,
-  { body: string; created_at: string; sender_id: string }
->();
+  const latestMessageByRental = new Map<
+    string,
+    { body: string; created_at: string; sender_id: string }
+  >();
 
-const lastReadByRental = new Map<string, string>();
+  const lastReadByRental = new Map<string, string>();
 
   const { data: msgRows } = await supabase
-  .from("rental_messages")
-  .select("rental_id, body, created_at, sender_id")
+    .from("rental_messages")
+    .select("rental_id, body, created_at, sender_id")
     .in("rental_id", rentalIds)
     .order("created_at", { ascending: false });
 
   for (const m of msgRows ?? []) {
     if (!latestMessageByRental.has(m.rental_id)) {
       latestMessageByRental.set(m.rental_id, {
-  body: m.body ?? "",
-  created_at: m.created_at ?? "",
-  sender_id: m.sender_id ?? "",
-});
+        body: m.body ?? "",
+        created_at: m.created_at ?? "",
+        sender_id: m.sender_id ?? "",
+      });
     }
   }
-const { data: readRows } = await supabase
-  .from("rental_message_reads")
-  .select("rental_id, last_read_at")
-  .in("rental_id", rentalIds)
-  .eq("user_id", user.id);
+  const { data: readRows } = await supabase
+    .from("rental_message_reads")
+    .select("rental_id, last_read_at")
+    .in("rental_id", rentalIds)
+    .eq("user_id", user.id);
 
-for (const r of readRows ?? []) {
-  if (r?.rental_id) {
-    lastReadByRental.set(r.rental_id, r.last_read_at ?? "");
+  for (const r of readRows ?? []) {
+    if (r?.rental_id) {
+      lastReadByRental.set(r.rental_id, r.last_read_at ?? "");
+    }
   }
-}
 
   /* -------------------------------------------------------
      3) Load listings + thumbnails
@@ -179,53 +184,56 @@ for (const r of readRows ?? []) {
      ------------------------------------------------------- */
 
   const threads = rentals
-  .map((r) => {
-    const listing = listingMap.get(r.listing_id);
-    const latest = latestMessageByRental.get(r.id);
-    const lastReadAt = lastReadByRental.get(r.id) ?? "";
+    .map((r) => {
+      const listing = listingMap.get(r.listing_id);
+      const latest = latestMessageByRental.get(r.id);
+      const lastReadAt = lastReadByRental.get(r.id) ?? "";
 
-    const isUnread =
-      !!latest?.created_at &&
-      latest.sender_id !== user.id &&
-      (!lastReadAt || new Date(latest.created_at) > new Date(lastReadAt));
+      const isUnread =
+        !!latest?.created_at &&
+        latest.sender_id !== user.id &&
+        (!lastReadAt || new Date(latest.created_at) > new Date(lastReadAt));
 
-    return {
-      ...r,
-      is_unread: isUnread,
-      listing: listing
-        ? {
-            id: listing.id,
-            title: listing.title,
-            owner_id: listing.owner_id,
-            thumb_url: thumbMap.get(listing.id) ?? "",
-          }
-        : null,
-      latest_message_body: latest?.body ?? (r as any)?.message ?? "",
-      latest_message_at: latest?.created_at ?? r.created_at ?? "",
-    };
-  })
-  .sort((a, b) => {
-    const aTime = new Date(a.latest_message_at || a.created_at || 0).getTime();
-    const bTime = new Date(b.latest_message_at || b.created_at || 0).getTime();
-    return bTime - aTime;
-  });
-return (
-  <div>
+      return {
+        ...r,
+        is_unread: isUnread,
+        listing: listing
+          ? {
+              id: listing.id,
+              title: listing.title,
+              owner_id: listing.owner_id,
+              thumb_url: thumbMap.get(listing.id) ?? "",
+            }
+          : null,
+        latest_message_body: latest?.body ?? (r as any)?.message ?? "",
+        latest_message_at: latest?.created_at ?? r.created_at ?? "",
+      };
+    })
+    .sort((a, b) => {
+      const aTime = new Date(
+        a.latest_message_at || a.created_at || 0,
+      ).getTime();
+      const bTime = new Date(
+        b.latest_message_at || b.created_at || 0,
+      ).getTime();
+      return bTime - aTime;
+    });
+  return (
+    <div>
+      <ServerHeader />
 
-    <ServerHeader />
+      <main className="mx-auto max-w-6xl px-6 py-4">
+        <div className="rr-card p-4 mb-4">
+          <PageHeader
+            title="Messages"
+            subtitle="Select a rental to open the conversation."
+          />
+        </div>
 
-    <main className="mx-auto max-w-6xl px-6 py-4">
-      <div className="rr-card p-4 mb-4">
-        <PageHeader
-          title="Messages"
-          subtitle="Select a rental to open the conversation."
-        />
-      </div>
-
-      <div className="mt-6">
-        <ThreadsListClient rentals={threads as any} />
-      </div>
-    </main>
-  </div>
-);
+        <div className="mt-6">
+          <ThreadsListClient rentals={threads as any} />
+        </div>
+      </main>
+    </div>
+  );
 }

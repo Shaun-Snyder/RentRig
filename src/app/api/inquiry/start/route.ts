@@ -35,68 +35,68 @@ export async function GET(req: NextRequest) {
   }
 
   // Reuse an existing thread first
-const { data: existingThread, error: existingThreadError } = await supabase
-  .from("rentals")
-  .select("id")
-  .eq("listing_id", listingId)
-  .eq("renter_id", user.id)
-  .order("created_at", { ascending: false })
-  .limit(1)
-  .maybeSingle();
+  const { data: existingThread, error: existingThreadError } = await supabase
+    .from("rentals")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("renter_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-if (existingThreadError) {
-  return NextResponse.json(
-    {
-      error: existingThreadError.message,
-      details: existingThreadError,
-    },
-    { status: 500 }
-  );
-}
+  if (existingThreadError) {
+    return NextResponse.json(
+      {
+        error: existingThreadError.message,
+        details: existingThreadError,
+      },
+      { status: 500 },
+    );
+  }
 
-if (existingThread?.id) {
-  return NextResponse.redirect(
-    new URL(`/dashboard/messages/${existingThread.id}`, req.url),
-  );
-}
+  if (existingThread?.id) {
+    return NextResponse.redirect(
+      new URL(`/dashboard/messages/${existingThread.id}`, req.url),
+    );
+  }
 
   // Create a lightweight inquiry thread
-     const start = new Date();
+  const start = new Date();
   const end = new Date();
   end.setDate(end.getDate() + 1);
 
   const startDate = start.toISOString().slice(0, 10);
   const endDate = end.toISOString().slice(0, 10);
 
-      const { data: created, error: createError } = await supabase
+  const { data: created, error: createError } = await supabase
     .from("rentals")
     .insert({
-  listing_id: listingId,
-  renter_id: user.id,
-  status: "pending",
-  is_inquiry: true,
-  message: "Inquiry started.",
-  start_date: startDate,
-  end_date: endDate,
-  buffer_days: 0,
-  delivery_selected: false,
-  delivery_fee: 0,
-  operator_selected: false,
-  operator_total: 0,
-  hourly_is_estimate: false,
-})
+      listing_id: listingId,
+      renter_id: user.id,
+      status: "pending",
+      is_inquiry: true,
+      message: "Inquiry started.",
+      start_date: startDate,
+      end_date: endDate,
+      buffer_days: 0,
+      delivery_selected: false,
+      delivery_fee: 0,
+      operator_selected: false,
+      operator_total: 0,
+      hourly_is_estimate: false,
+    })
     .select("id")
     .single();
 
-    if (createError || !created?.id) {
-  return NextResponse.json(
-    {
-      error: createError?.message ?? "Failed to create inquiry thread",
-      details: createError,
-    },
-    { status: 500 }
-  );
-}
+  if (createError || !created?.id) {
+    return NextResponse.json(
+      {
+        error: createError?.message ?? "Failed to create inquiry thread",
+        details: createError,
+      },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.redirect(
     new URL(`/dashboard/messages/${created.id}`, req.url),

@@ -24,24 +24,24 @@ export default async function DashboardNewListingPage() {
     .eq("is_published", false)
     .order("created_at", { ascending: false });
 
-if (error) {
-  return (
-    <div>
-      <ServerHeader />
-      <div style={{ padding: 24 }}>
-        <PageHeader title="Create Listing" />
-        <p style={{ marginTop: 12, color: "crimson" }}>
-          Load failed: {error.message}
-        </p>
-        <div style={{ marginTop: 16 }}>
-          <a href="/dashboard" style={{ textDecoration: "underline" }}>
-            ← Dashboard
-          </a>
+  if (error) {
+    return (
+      <div>
+        <ServerHeader />
+        <div style={{ padding: 24 }}>
+          <PageHeader title="Create Listing" />
+          <p style={{ marginTop: 12, color: "crimson" }}>
+            Load failed: {error.message}
+          </p>
+          <div style={{ marginTop: 16 }}>
+            <a href="/dashboard" style={{ textDecoration: "underline" }}>
+              ← Dashboard
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div>
@@ -49,12 +49,15 @@ if (error) {
 
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
-  <PageHeader
-    title="Create Listing"
-    subtitle="Create and manage your draft listings before publishing."
-  />
-</div>
-        <MyListingsClient listings={(listings ?? []) as any} showCreate={true} />
+          <PageHeader
+            title="Create Listing"
+            subtitle="Create and manage your draft listings before publishing."
+          />
+        </div>
+        <MyListingsClient
+          listings={(listings ?? []) as any}
+          showCreate={true}
+        />
       </main>
     </div>
   );

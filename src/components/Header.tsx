@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -17,7 +16,9 @@ function NavLink({
   const pathname = usePathname();
   const active = pathname === href;
 
-  const baseClasses = active ? "rr-btn rr-btn-primary" : "rr-btn rr-btn-secondary";
+  const baseClasses = active
+    ? "rr-btn rr-btn-primary"
+    : "rr-btn rr-btn-secondary";
 
   return (
     <Link
@@ -44,7 +45,6 @@ export default function Header({
   pendingCount?: number;
   unreadMessageCount?: number;
 }) {
-
   const title = role === "admin" ? "Admin" : "Dashboard";
   const subtitle =
     role === "admin"
@@ -63,14 +63,14 @@ export default function Header({
       {/* Light header bar on top of dark strip */}
       <div className="mx-auto max-w-5xl px-6 py-1">
         <div
-  className="
+          className="
     rounded-b-xl
     bg-gradient-to-b from-slate-50 via-white to-slate-100
     shadow-[0_18px_40px_rgba(15,23,42,0.45)]
     px-6 py-2.5
     flex flex-col gap-2
   "
->
+        >
           {/* TOP ROW: NAV | BRAND | LOGOUT */}
           <div className="grid items-center gap-2 md:grid-cols-[1fr_auto_1fr]">
             {/* Left: Nav */}
@@ -104,62 +104,62 @@ export default function Header({
 
             {/* Right: Logout */}
             <div className="hidden md:flex justify-end">
-  <LogoutButton />
-</div>
+              <LogoutButton />
+            </div>
           </div>
 
           {/* PAGE TITLE + SUBTITLE (small, clean, modern) */}
           <div className="hidden sm:flex flex-col gap-0.5 text-sm md:flex-row md:items-baseline md:justify-between mt-1">
-            <div className="text-base font-semibold text-slate-900">{title}</div>
+            <div className="text-base font-semibold text-slate-900">
+              {title}
+            </div>
             <div className="text-xs font-medium text-slate-600">{subtitle}</div>
           </div>
           {/* GLOBAL NAV ROW: visible on every page that uses ServerHeader */}
           <div className="mt-2 hidden flex-wrap gap-2 text-xs md:flex md:text-sm">
-  
-  <NavLink href="/dashboard/listings" label="My Listings" />
-  <NavLink href="/dashboard/listings/new" label="Create Listing" />
-  <NavLink href="/dashboard/rentals" label="My Rentals" />
-  <NavLink
-  href="/dashboard/messages"
-  label="Messages"
-  badge={unreadMessageCount}
-/>
-  <NavLink
-    href="/dashboard/owner-rentals"
-    label="Rental Requests"
-    badge={pendingCount}
-  />
-  <NavLink href="/listings" label="Browse Listings" />
-</div>
+            <NavLink href="/dashboard/listings" label="My Listings" />
+            <NavLink href="/dashboard/listings/new" label="Create Listing" />
+            <NavLink href="/dashboard/rentals" label="My Rentals" />
+            <NavLink
+              href="/dashboard/messages"
+              label="Messages"
+              badge={unreadMessageCount}
+            />
+            <NavLink
+              href="/dashboard/owner-rentals"
+              label="Rental Requests"
+              badge={pendingCount}
+            />
+            <NavLink href="/listings" label="Browse Listings" />
+          </div>
 
-<details className="mt-2 md:hidden">
-  <summary className="rr-btn rr-btn-secondary cursor-pointer list-none text-center">
-    Menu
-  </summary>
+          <details className="mt-2 md:hidden">
+            <summary className="rr-btn rr-btn-secondary cursor-pointer list-none text-center">
+              Menu
+            </summary>
 
-  <div className="mt-2 grid gap-2">
-<NavLink href="/dashboard" label="Dashboard" />
-{role === "admin" && <NavLink href="/admin" label="Admin" />}
-    <NavLink href="/dashboard/listings" label="My Listings" />
-    <NavLink href="/dashboard/listings/new" label="Create Listing" />
-    <NavLink href="/dashboard/rentals" label="My Rentals" />
-    <NavLink
-      href="/dashboard/messages"
-      label="Messages"
-      badge={unreadMessageCount}
-    />
-    <NavLink
-      href="/dashboard/owner-rentals"
-      label="Rental Requests"
-      badge={pendingCount}
-    />
-    <NavLink href="/listings" label="Browse Listings" />
-  </div>
-<div className="mt-2">
-  <LogoutButton />
-</div>
-</details>
-
+            <div className="mt-2 grid gap-2">
+              <NavLink href="/dashboard" label="Dashboard" />
+              {role === "admin" && <NavLink href="/admin" label="Admin" />}
+              <NavLink href="/dashboard/listings" label="My Listings" />
+              <NavLink href="/dashboard/listings/new" label="Create Listing" />
+              <NavLink href="/dashboard/rentals" label="My Rentals" />
+              <NavLink
+                href="/dashboard/messages"
+                label="Messages"
+                badge={unreadMessageCount}
+              />
+              <NavLink
+                href="/dashboard/owner-rentals"
+                label="Rental Requests"
+                badge={pendingCount}
+              />
+              <NavLink href="/listings" label="Browse Listings" />
+            </div>
+            <div className="mt-2">
+              <LogoutButton />
+            </div>
+          </details>
         </div>
       </div>
     </header>

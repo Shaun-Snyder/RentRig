@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (rental.status !== "approved") {
     return NextResponse.json(
       { error: "Only approved rentals can be marked returned." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -44,7 +44,10 @@ export async function POST(req: NextRequest) {
     .eq("phase", "checkout");
 
   if (inspectionError) {
-    return NextResponse.json({ error: inspectionError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: inspectionError.message },
+      { status: 500 },
+    );
   }
 
   const hasCheckoutPhotos = (inspections ?? []).some((row: any) => {
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
         error:
           "Please upload renter checkout photos in Record / view condition before marking this rental returned.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

@@ -16,7 +16,10 @@ export async function POST(req: Request) {
   const full_name = (body?.full_name ?? "").toString().trim();
 
   if (!full_name) {
-    return NextResponse.json({ error: "Full name is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Full name is required" },
+      { status: 400 },
+    );
   }
 
   const { error } = await supabase

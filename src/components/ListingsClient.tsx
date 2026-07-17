@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -49,7 +48,6 @@ type Listing = {
   delivery_fee?: number | null;
   delivery_miles?: number | null;
 };
-
 
 type SortMode = "newest" | "price_asc" | "price_desc";
 
@@ -123,7 +121,6 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
   const [sort, setSort] = useState<SortMode>("newest");
   const supabase = createClient();
 
-
   // ---------- Price sliders ----------
   const priceBounds = useMemo(() => {
     if (listings.length === 0) return { min: 0, max: 0 };
@@ -131,7 +128,10 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       .map((l) => Number(l.price_per_day))
       .filter((n) => Number.isFinite(n));
     if (prices.length === 0) return { min: 0, max: 0 };
-    return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+    return {
+      min: Math.floor(Math.min(...prices)),
+      max: Math.ceil(Math.max(...prices)),
+    };
   }, [listings]);
 
   const [minPrice, setMinPrice] = useState<number>(0);
@@ -150,12 +150,17 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
 
   const [checking, setChecking] = useState(false);
   const [checked, setChecked] = useState(false);
-  const [checkedRange, setCheckedRange] = useState<{ from: string; to: string } | null>(null);
+  const [checkedRange, setCheckedRange] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
 
-  const [blockedByListing, setBlockedByListing] = useState<Record<string, BlockedRange[]>>({});
-  const [availabilityStatus, setAvailabilityStatus] = useState<Record<string, "available" | "booked">>(
-    {}
-  );
+  const [blockedByListing, setBlockedByListing] = useState<
+    Record<string, BlockedRange[]>
+  >({});
+  const [availabilityStatus, setAvailabilityStatus] = useState<
+    Record<string, "available" | "booked">
+  >({});
 
   const lastAutoKey = useRef<string | null>(null);
 
@@ -193,15 +198,11 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     }
 
     if (cityQ) {
-      out = out.filter((l) =>
-        (l.city ?? "").toLowerCase().includes(cityQ),
-      );
+      out = out.filter((l) => (l.city ?? "").toLowerCase().includes(cityQ));
     }
 
     if (stateQ) {
-      out = out.filter((l) =>
-        (l.state ?? "").toLowerCase().includes(stateQ),
-      );
+      out = out.filter((l) => (l.state ?? "").toLowerCase().includes(stateQ));
     }
 
     out = out.filter((l) => {
@@ -214,33 +215,33 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     }
 
     const sorted = [...out].sort((a, b) => {
-  if (sort === "price_asc") {
-    return Number(a.price_per_day) - Number(b.price_per_day);
-  }
+      if (sort === "price_asc") {
+        return Number(a.price_per_day) - Number(b.price_per_day);
+      }
 
-  if (sort === "price_desc") {
-    return Number(b.price_per_day) - Number(a.price_per_day);
-  }
+      if (sort === "price_desc") {
+        return Number(b.price_per_day) - Number(a.price_per_day);
+      }
 
-  if (sort === "distance") {
-    // extract ZIP from search input
-    const zipMatch = q.match(/\b\d{5}\b/);
-    const userZip = zipMatch ? zipMatch[0] : null;
+      if (sort === "distance") {
+        // extract ZIP from search input
+        const zipMatch = q.match(/\b\d{5}\b/);
+        const userZip = zipMatch ? zipMatch[0] : null;
 
-    if (userZip) {
-      const da = zipDistance(userZip, a.zip);
-      const db = zipDistance(userZip, b.zip);
-      return da - db;
-    }
+        if (userZip) {
+          const da = zipDistance(userZip, a.zip);
+          const db = zipDistance(userZip, b.zip);
+          return da - db;
+        }
 
-    // fallback if no ZIP entered
-    return 0;
-  }
+        // fallback if no ZIP entered
+        return 0;
+      }
 
-  const ta = new Date(a.created_at).getTime();
-  const tb = new Date(b.created_at).getTime();
-  return tb - ta;
-});
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      return tb - ta;
+    });
 
     return sorted;
   }, [
@@ -256,13 +257,20 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     availableIds,
   ]);
 
-
   async function checkAvailabilityWithRange(fromLocal: Date, toLocal: Date) {
     setAvailError(null);
 
     // Normalize to UTC dates (strip time)
-    const from = new Date(Date.UTC(fromLocal.getFullYear(), fromLocal.getMonth(), fromLocal.getDate()));
-    const to = new Date(Date.UTC(toLocal.getFullYear(), toLocal.getMonth(), toLocal.getDate()));
+    const from = new Date(
+      Date.UTC(
+        fromLocal.getFullYear(),
+        fromLocal.getMonth(),
+        fromLocal.getDate(),
+      ),
+    );
+    const to = new Date(
+      Date.UTC(toLocal.getFullYear(), toLocal.getMonth(), toLocal.getDate()),
+    );
 
     if (to < from) {
       setAvailError("End date must be on or after start date.");
@@ -286,13 +294,17 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
       if (idsToFetch.length > 0) {
         const results = await Promise.all(
           idsToFetch.map(async (id) => {
-            const res = await fetch(`/api/availability?listing_id=${encodeURIComponent(id)}`, {
-              cache: "no-store",
-            });
+            const res = await fetch(
+              `/api/availability?listing_id=${encodeURIComponent(id)}`,
+              {
+                cache: "no-store",
+              },
+            );
             const json = await res.json();
-            if (!res.ok) throw new Error(json?.error || "Failed to load availability");
+            if (!res.ok)
+              throw new Error(json?.error || "Failed to load availability");
             return [id, (json.blocked ?? []) as BlockedRange[]] as const;
-          })
+          }),
         );
 
         setBlockedByListing((prev) => {
@@ -340,7 +352,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
     const to = range.to;
 
     const key = `${toISODateUTC(new Date(Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())))}_${toISODateUTC(
-      new Date(Date.UTC(to.getFullYear(), to.getMonth(), to.getDate()))
+      new Date(Date.UTC(to.getFullYear(), to.getMonth(), to.getDate())),
     )}`;
 
     if (lastAutoKey.current === key) return;
@@ -352,44 +364,43 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
   return (
     <div className="mt-8 grid gap-4">
       <div className="rr-card p-6 grid gap-4">
-                              {/* Search + location */}
-      <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <label className="grid gap-2">
-          <span className="text-sm text-slate-600">Search by keyword or ZIP</span>
-          
-      <input
-  className="border rounded-lg p-2"
-  placeholder='Try "ford", "Orlando", "32817"...'
-  value={q}
-  onChange={(e) => setQ(e.target.value)}
-/>
+        {/* Search + location */}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <label className="grid gap-2">
+            <span className="text-sm text-slate-600">
+              Search by keyword or ZIP
+            </span>
 
+            <input
+              className="border rounded-lg p-2"
+              placeholder='Try "ford", "Orlando", "32817"...'
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </label>
 
-        </label>
+          <label className="grid gap-2">
+            <span className="text-sm text-slate-600">City (optional)</span>
+            <input
+              className="border rounded-lg p-2"
+              placeholder="Orlando"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </label>
 
-        <label className="grid gap-2">
-          <span className="text-sm text-slate-600">City (optional)</span>
-          <input
-            className="border rounded-lg p-2"
-            placeholder="Orlando"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-        </label>
+          <label className="grid gap-2">
+            <span className="text-sm text-slate-600">State (optional)</span>
+            <input
+              className="border rounded-lg p-2"
+              placeholder="FL"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+            />
+          </label>
+        </div>
 
-        <label className="grid gap-2">
-          <span className="text-sm text-slate-600">State (optional)</span>
-          <input
-            className="border rounded-lg p-2"
-            placeholder="FL"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-          />
-        </label>
-      </div>
-
-
-                {/* Price slider + Sort + Clear */}
+        {/* Price slider + Sort + Clear */}
         <div className="grid gap-3 md:grid-cols-3">
           <label className="grid gap-2">
             <span className="text-sm text-slate-600">
@@ -449,8 +460,7 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           </div>
         </div>
 
-
-                {/* Availability */}
+        {/* Availability */}
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
@@ -469,71 +479,76 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           </label>
 
           {availEnabled && (
-  <>
-    <div className="hidden md:block rounded-lg border border-black/20 bg-white/60 p-3">
-      <DayPicker
-        mode="range"
-        selected={range}
-        onSelect={(r) => {
-          setRange(r);
-          setChecked(false);
-          setCheckedRange(null);
-          setAvailError(null);
-          lastAutoKey.current = null;
-        }}
-        numberOfMonths={2}
-        showOutsideDays
-      />
-    </div>
+            <>
+              <div className="hidden md:block rounded-lg border border-black/20 bg-white/60 p-3">
+                <DayPicker
+                  mode="range"
+                  selected={range}
+                  onSelect={(r) => {
+                    setRange(r);
+                    setChecked(false);
+                    setCheckedRange(null);
+                    setAvailError(null);
+                    lastAutoKey.current = null;
+                  }}
+                  numberOfMonths={2}
+                  showOutsideDays
+                />
+              </div>
 
-    <div className="grid gap-3 rounded-lg border border-black/20 bg-white/60 p-3 md:hidden">
-      <label className="grid gap-1">
-        <span className="text-sm text-slate-600">Start date</span>
-        <input
-          type="date"
-          className="border rounded-lg p-2"
-          onChange={(e) => {
-            const nextFrom = e.target.value ? new Date(e.target.value) : undefined;
-            setRange((prev) => ({
-              from: nextFrom,
-              to: prev?.to,
-            }));
-            setChecked(false);
-            setCheckedRange(null);
-            setAvailError(null);
-            lastAutoKey.current = null;
-          }}
-        />
-      </label>
+              <div className="grid gap-3 rounded-lg border border-black/20 bg-white/60 p-3 md:hidden">
+                <label className="grid gap-1">
+                  <span className="text-sm text-slate-600">Start date</span>
+                  <input
+                    type="date"
+                    className="border rounded-lg p-2"
+                    onChange={(e) => {
+                      const nextFrom = e.target.value
+                        ? new Date(e.target.value)
+                        : undefined;
+                      setRange((prev) => ({
+                        from: nextFrom,
+                        to: prev?.to,
+                      }));
+                      setChecked(false);
+                      setCheckedRange(null);
+                      setAvailError(null);
+                      lastAutoKey.current = null;
+                    }}
+                  />
+                </label>
 
-      <label className="grid gap-1">
-        <span className="text-sm text-slate-600">End date</span>
-        <input
-          type="date"
-          className="border rounded-lg p-2"
-          onChange={(e) => {
-            const nextTo = e.target.value ? new Date(e.target.value) : undefined;
-            setRange((prev) => ({
-              from: prev?.from,
-              to: nextTo,
-            }));
-            setChecked(false);
-            setCheckedRange(null);
-            setAvailError(null);
-            lastAutoKey.current = null;
-          }}
-        />
-      </label>
-    </div>
-  </>
-)}
+                <label className="grid gap-1">
+                  <span className="text-sm text-slate-600">End date</span>
+                  <input
+                    type="date"
+                    className="border rounded-lg p-2"
+                    onChange={(e) => {
+                      const nextTo = e.target.value
+                        ? new Date(e.target.value)
+                        : undefined;
+                      setRange((prev) => ({
+                        from: prev?.from,
+                        to: nextTo,
+                      }));
+                      setChecked(false);
+                      setCheckedRange(null);
+                      setAvailError(null);
+                      lastAutoKey.current = null;
+                    }}
+                  />
+                </label>
+              </div>
+            </>
+          )}
           <div className="flex items-center gap-3">
             <button
               type="button"
               className="rr-btn rr-btn-secondary rr-btn-sm"
               disabled={!availEnabled || checking || !range?.from || !range?.to}
               onClick={() => {
-                if (range?.from && range?.to) checkAvailabilityWithRange(range.from, range.to);
+                if (range?.from && range?.to)
+                  checkAvailabilityWithRange(range.from, range.to);
               }}
             >
               {checking ? "Checking..." : "Re-check"}
@@ -557,206 +572,212 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
           {availError && <p className="text-sm text-red-600">{availError}</p>}
         </div>
 
-
         <div className="text-sm text-slate-500">
-  Showing <span className="font-medium">{filteredSorted.length}</span> of{" "}
-  <span className="font-medium">{listings.length}</span>
-  {q.trim() ? (
-    <>
-      {" "}
-      for <span className="font-medium">"{q.trim()}"</span>
-    </>
-  ) : null}
-</div>
+          Showing <span className="font-medium">{filteredSorted.length}</span>{" "}
+          of <span className="font-medium">{listings.length}</span>
+          {q.trim() ? (
+            <>
+              {" "}
+              for <span className="font-medium">"{q.trim()}"</span>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {filteredSorted.length === 0 ? (
         <p className="text-slate-600">No matching listings.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredSorted.map((l) => {
-      const st = checked ? availabilityStatus[l.id] : null;
-      const thumb = (l as any).thumb_url || "";
+          {filteredSorted.map((l) => {
+            const st = checked ? availabilityStatus[l.id] : null;
+            const thumb = (l as any).thumb_url || "";
 
-      // Driver summaries (same idea as My Listings)
-      const driverSummary = l.driver_enabled
-        ? [
-            l.driver_daily_enabled
-              ? `Daily ${money(l.driver_day_rate)}`
-              : null,
-            l.driver_hourly_enabled
-              ? `Hourly ${money(l.driver_hour_rate)} (cap ${
-                  l.driver_max_hours ?? 24
-                })`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" • ")
-        : "Not offered";
+            // Driver summaries (same idea as My Listings)
+            const driverSummary = l.driver_enabled
+              ? [
+                  l.driver_daily_enabled
+                    ? `Daily ${money(l.driver_day_rate)}`
+                    : null,
+                  l.driver_hourly_enabled
+                    ? `Hourly ${money(l.driver_hour_rate)} (cap ${
+                        l.driver_max_hours ?? 24
+                      })`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")
+              : "Not offered";
 
-      const driverLaborSummary = l.driver_labor_enabled
-        ? [
-            l.driver_labor_daily_enabled
-              ? `Daily ${money(l.driver_labor_day_rate)}`
-              : null,
-            l.driver_labor_hourly_enabled
-              ? `Hourly ${money(l.driver_labor_hour_rate)} (cap ${
-                  l.driver_labor_max_hours ?? 24
-                })`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" • ")
-        : "Not offered";
+            const driverLaborSummary = l.driver_labor_enabled
+              ? [
+                  l.driver_labor_daily_enabled
+                    ? `Daily ${money(l.driver_labor_day_rate)}`
+                    : null,
+                  l.driver_labor_hourly_enabled
+                    ? `Hourly ${money(l.driver_labor_hour_rate)} (cap ${
+                        l.driver_labor_max_hours ?? 24
+                      })`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" • ")
+              : "Not offered";
 
-      return (
-        <div
-          key={l.id}
-          className="rr-card overflow-hidden flex flex-col p-0"
-        >
-          {/* BIG thumbnail across top */}
-          <a
-            href={`/listings/${l.id}`}
-            className="block w-full aspect-[4/3] bg-slate-50 border-b border-slate-200 overflow-hidden"
-          >
-            {thumb ? (
-              <img
-                src={thumb}
-                alt="Listing thumbnail"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-                No photo
+            return (
+              <div
+                key={l.id}
+                className="rr-card overflow-hidden flex flex-col p-0"
+              >
+                {/* BIG thumbnail across top */}
+                <a
+                  href={`/listings/${l.id}`}
+                  className="block w-full aspect-[4/3] bg-slate-50 border-b border-slate-200 overflow-hidden"
+                >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt="Listing thumbnail"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+                      No photo
+                    </div>
+                  )}
+                </a>
+
+                {/* Details below, styled like My Listings */}
+                <div className="p-4 grid gap-1">
+                  <a
+                    href={`/listings/${l.id}`}
+                    className="text-lg font-extrabold text-slate-900 hover:underline"
+                  >
+                    {l.title}
+                  </a>
+
+                  {l.description && (
+                    <div className="text-sm text-slate-700">
+                      {l.description}
+                    </div>
+                  )}
+
+                  {l.category && (
+                    <div className="text-sm text-slate-600">
+                      <span className="font-semibold">Category:</span>{" "}
+                      {catLabel(l.category)}
+                    </div>
+                  )}
+
+                  {(l.city || l.state) && (
+                    <div className="text-sm text-slate-600">
+                      <span className="font-semibold">Location:</span>{" "}
+                      {[l.city, l.state].filter(Boolean).join(", ")}
+                    </div>
+                  )}
+
+                  {l.zip && (
+                    <div className="text-xs text-slate-500">ZIP: {l.zip}</div>
+                  )}
+
+                  {q.match(/\b\d{5}\b/) && l.zip && (
+                    <div className="text-xs text-slate-500">
+                      ~ Nearby (ZIP match)
+                    </div>
+                  )}
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">
+                      {money(l.price_per_day)} /day
+                    </span>
+
+                    {Number(l.price_per_week ?? 0) > 0 && (
+                      <span className="text-slate-600">
+                        {" "}
+                        • {money(l.price_per_week)} /week
+                      </span>
+                    )}
+
+                    {Number(l.price_per_month ?? 0) > 0 && (
+                      <span className="text-slate-600">
+                        {" "}
+                        • {money(l.price_per_month)} /month
+                      </span>
+                    )}
+
+                    {Boolean(l.rental_hourly_enabled) &&
+                      Number(l.rental_hour_rate ?? 0) > 0 && (
+                        <span className="text-slate-600">
+                          {" "}
+                          • {money(l.rental_hour_rate)} /hour
+                        </span>
+                      )}
+
+                    <span className="text-slate-500">
+                      {" "}
+                      • Deposit: {money(l.security_deposit)}
+                    </span>
+
+                    {st === "available" && (
+                      <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
+                        Available
+                      </span>
+                    )}
+                    {st === "booked" && (
+                      <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
+                        Booked
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">Operator:</span>{" "}
+                    {l.operator_enabled
+                      ? `Available (${money(l.operator_rate)}${rateLabel(
+                          l.operator_rate_unit ?? "day",
+                        )})`
+                      : "Not included"}
+                    {l.operator_enabled &&
+                    (l.operator_rate_unit ?? "day") === "hour" ? (
+                      <span>
+                        {" "}
+                        • Hour cap:{" "}
+                        <span className="font-semibold">
+                          {l.operator_max_hours ?? 24}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">Driver:</span>{" "}
+                    {driverSummary || "Not offered"}
+                  </div>
+
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">Driver + Labor:</span>{" "}
+                    {driverLaborSummary || "Not offered"}
+                  </div>
+
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold">Delivery:</span>{" "}
+                    {l.delivery_mode === "pickup_only"
+                      ? "Pickup only"
+                      : l.delivery_mode === "delivery_only"
+                        ? `${money(l.delivery_fee)} within ${l.delivery_miles ?? 0} miles`
+                        : `Optional • ${money(l.delivery_fee)} within ${
+                            l.delivery_miles ?? 0
+                          } miles`}
+                  </div>
+
+                  {l.license_required && (
+                    <div className="mt-1 text-xs text-amber-700">
+                      License required
+                      {l.license_type ? `: ${l.license_type}` : ""}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </a>
-
-          {/* Details below, styled like My Listings */}
-          <div className="p-4 grid gap-1">
-            <a
-              href={`/listings/${l.id}`}
-              className="text-lg font-extrabold text-slate-900 hover:underline"
-            >
-              {l.title}
-            </a>
-
-            {l.description && (
-              <div className="text-sm text-slate-700">
-                {l.description}
-              </div>
-            )}
-
-            {l.category && (
-              <div className="text-sm text-slate-600">
-                <span className="font-semibold">Category:</span>{" "}
-                {catLabel(l.category)}
-              </div>
-            )}
-
-            {(l.city || l.state) && (
-              <div className="text-sm text-slate-600">
-                <span className="font-semibold">Location:</span>{" "}
-                {[l.city, l.state].filter(Boolean).join(", ")}
-              </div>
-            )}
-
-{l.zip && (
-  <div className="text-xs text-slate-500">
-    ZIP: {l.zip}
-  </div>
-)}
-
-{q.match(/\b\d{5}\b/) && l.zip && (
-  <div className="text-xs text-slate-500">
-    ~ Nearby (ZIP match)
-  </div>
-)}
-                             <div className="text-sm text-slate-700">
-              <span className="font-semibold">
-                {money(l.price_per_day)} /day
-              </span>
-
-              {Number(l.price_per_week ?? 0) > 0 && (
-                <span className="text-slate-600"> • {money(l.price_per_week)} /week</span>
-              )}
-
-              {Number(l.price_per_month ?? 0) > 0 && (
-                <span className="text-slate-600"> • {money(l.price_per_month)} /month</span>
-              )}
-
-              {Boolean(l.rental_hourly_enabled) && Number(l.rental_hour_rate ?? 0) > 0 && (
-                <span className="text-slate-600"> • {money(l.rental_hour_rate)} /hour</span>
-              )}
-
-              <span className="text-slate-500">
-                {" "}• Deposit: {money(l.security_deposit)}
-              </span>
-
-              {st === "available" && (
-                <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-emerald-700">
-                  Available
-                </span>
-              )}
-              {st === "booked" && (
-                <span className="ml-2 rounded-full border px-2 py-0.5 text-xs text-rose-700">
-                  Booked
-                </span>
-              )}
-            </div>
-
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Operator:</span>{" "}
-              {l.operator_enabled
-                ? `Available (${money(l.operator_rate)}${rateLabel(
-                    l.operator_rate_unit ?? "day",
-                  )})`
-                : "Not included"}
-              {l.operator_enabled &&
-              (l.operator_rate_unit ?? "day") === "hour" ? (
-                <span>
-                  {" "}
-                  • Hour cap:{" "}
-                  <span className="font-semibold">
-                    {l.operator_max_hours ?? 24}
-                  </span>
-                </span>
-              ) : null}
-            </div>
-
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Driver:</span>{" "}
-              {driverSummary || "Not offered"}
-            </div>
-
-            <div className="text-sm text-slate-700">
-              <span className="font-semibold">Driver + Labor:</span>{" "}
-              {driverLaborSummary || "Not offered"}
-            </div>
-
-<div className="text-sm text-slate-700">
-  <span className="font-semibold">Delivery:</span>{" "}
-  {l.delivery_mode === "pickup_only"
-    ? "Pickup only"
-    : l.delivery_mode === "delivery_only"
-    ? `${money(l.delivery_fee)} within ${l.delivery_miles ?? 0} miles`
-    : `Optional • ${money(l.delivery_fee)} within ${
-        l.delivery_miles ?? 0
-      } miles`}
-</div>
-
-            {l.license_required && (
-              <div className="mt-1 text-xs text-amber-700">
-                License required
-                {l.license_type ? `: ${l.license_type}` : ""}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    })}
-
-
+            );
+          })}
         </div>
       )}
     </div>

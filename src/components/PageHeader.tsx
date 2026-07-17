@@ -11,11 +11,7 @@ export default function PageHeader({
         {title}
       </h1>
 
-      {subtitle && (
-        <p className="mt-0.5 text-sm text-slate-500">
-          {subtitle}
-        </p>
-      )}
+      {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
     </div>
   );
 }

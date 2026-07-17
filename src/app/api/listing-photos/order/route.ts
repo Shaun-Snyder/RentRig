@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,9 +14,15 @@ function getListingId(body: any) {
   return s || null;
 }
 
-function getOrderArray(body: any): Array<{ id: string; sort_order: number }> | null {
+function getOrderArray(
+  body: any,
+): Array<{ id: string; sort_order: number }> | null {
   // Accept either "photos" (what your UI sends) or "order" (what older route might expect)
-  const arr = Array.isArray(body?.photos) ? body.photos : Array.isArray(body?.order) ? body.order : null;
+  const arr = Array.isArray(body?.photos)
+    ? body.photos
+    : Array.isArray(body?.order)
+      ? body.order
+      : null;
   if (!arr) return null;
 
   const cleaned: Array<{ id: string; sort_order: number }> = [];
@@ -56,7 +61,10 @@ export async function POST(req: NextRequest) {
   if (!listingId) return json(400, { error: "Missing listing_id" });
 
   const order = getOrderArray(body);
-  if (!order) return json(400, { error: "Missing order array (expected `photos` or `order`)" });
+  if (!order)
+    return json(400, {
+      error: "Missing order array (expected `photos` or `order`)",
+    });
 
   // Verify listing ownership
   const { data: listing, error: listingErr } = await supabase
@@ -66,7 +74,8 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (listingErr) return json(400, { error: listingErr.message });
-  if (!listing || listing.owner_id !== user.id) return json(403, { error: "Forbidden" });
+  if (!listing || listing.owner_id !== user.id)
+    return json(403, { error: "Forbidden" });
 
   // Update each photo's sort_order (scoped to this listing)
   // NOTE: We scope by listing_id so you can't reorder someone else's photos.
@@ -76,8 +85,8 @@ export async function POST(req: NextRequest) {
         .from("listing_photos")
         .update({ sort_order: p.sort_order })
         .eq("id", p.id)
-        .eq("listing_id", listingId)
-    )
+        .eq("listing_id", listingId),
+    ),
   );
 
   const firstErr = updates.find((u) => u.error)?.error;
