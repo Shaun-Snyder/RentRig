@@ -479,7 +479,7 @@ export default async function OwnerRentalDetailsPage({
                 <SaveButton
                   idleText="Save Deposit Changes"
                   pendingText="Saving..."
-                  className="rr-btn rr-btn-primary rr-btn-lg"
+                  size="lg"
                 />
               </div>
             </div>
