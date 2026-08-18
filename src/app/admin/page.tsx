@@ -243,19 +243,18 @@ export default async function AdminPage() {
                             View Profile
                           </a>
 
-                          <button
-                            type="button"
-                            className="text-left text-slate-600 hover:text-black"
+                          <a
+                            href={`/admin/users/${u.id}/listings`}
+                            className="text-slate-600 hover:text-black hover:underline"
                           >
                             View Listings
-                          </button>
-
-                          <button
-                            type="button"
-                            className="text-left text-slate-600 hover:text-black"
+                          </a>
+                          <a
+                            href={`/admin/users/${u.id}/rentals`}
+                            className="text-slate-600 hover:text-black hover:underline"
                           >
                             View Rentals
-                          </button>
+                          </a>
                         </div>
                       </td>
 
