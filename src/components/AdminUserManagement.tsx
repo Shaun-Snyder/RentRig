@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 type AdminUser = {
   id: string;
   role?: string | null;
+  marketplace_activity?: "owner" | "renter" | "both" | "none";
   full_name?: string | null;
   company_name?: string | null;
   city?: string | null;
@@ -22,15 +23,19 @@ export default function AdminUserManagement({
   users,
 }: AdminUserManagementProps) {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState("all");
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return users;
-    }
-
     return users.filter((user) => {
+      const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
+      const matchesActivity =
+        activityFilter === "all" ||
+        user.marketplace_activity === activityFilter;
+
       const searchable = [
         user.full_name,
         user.company_name,
@@ -44,14 +49,16 @@ export default function AdminUserManagement({
         .join(" ")
         .toLowerCase();
 
-      return searchable.includes(query);
+      const matchesSearch = !query || searchable.includes(query);
+
+      return matchesRole && matchesActivity && matchesSearch;
     });
-  }, [search, users]);
+  }, [search, roleFilter, activityFilter, users]);
 
   return (
     <div>
-      <div className="mb-4">
-        <label className="grid max-w-md gap-1">
+      <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+        <label className="grid gap-1">
           <span className="text-sm font-semibold text-slate-700">
             Search users
           </span>
@@ -63,6 +70,40 @@ export default function AdminUserManagement({
             placeholder="Name, company, city, role..."
             className="rr-input"
           />
+        </label>
+
+        <label className="grid gap-1">
+          <span className="text-sm font-semibold text-slate-700">
+            Account role
+          </span>
+
+          <select
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            className="rr-input"
+          >
+            <option value="all">All accounts</option>
+            <option value="user">Users</option>
+            <option value="admin">Admins</option>
+          </select>
+        </label>
+
+        <label className="grid gap-1">
+          <span className="text-sm font-semibold text-slate-700">
+            Marketplace activity
+          </span>
+
+          <select
+            value={activityFilter}
+            onChange={(event) => setActivityFilter(event.target.value)}
+            className="rr-input"
+          >
+            <option value="all">All activity</option>
+            <option value="owner">Owners</option>
+            <option value="renter">Renters</option>
+            <option value="both">Owner + Renter</option>
+            <option value="none">No activity</option>
+          </select>
         </label>
       </div>
 
@@ -81,8 +122,9 @@ export default function AdminUserManagement({
               <tr className="border-b text-xs uppercase text-slate-500">
                 <th className="py-2 pr-4">User</th>
                 <th className="py-2 pr-4">Details</th>
+                <th className="py-2 pr-4">Activity</th>
                 <th className="py-2 pr-4">Actions</th>
-                <th className="py-2 pr-4">Role</th>
+                <th className="py-2 pr-4">Account</th>
               </tr>
             </thead>
 
@@ -121,6 +163,18 @@ export default function AdminUserManagement({
                         </div>
                       </div>
                     </div>
+                  </td>
+
+                  <td className="py-3 pr-4 align-top">
+                    <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-[11px] font-semibold">
+                      {u.marketplace_activity === "both"
+                        ? "Owner + Renter"
+                        : u.marketplace_activity === "owner"
+                          ? "Owner"
+                          : u.marketplace_activity === "renter"
+                            ? "Renter"
+                            : "No activity"}
+                    </span>
                   </td>
 
                   <td className="py-3 pr-4 align-top text-xs text-slate-600">

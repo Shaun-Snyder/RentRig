@@ -38,7 +38,7 @@ async function updateUserRoleAction(formData: FormData): Promise<void> {
     return;
   }
 
-  if (!["admin", "owner", "renter"].includes(role)) {
+  if (!["admin", "user"].includes(role)) {
     return;
   }
 
@@ -100,6 +100,57 @@ export default async function AdminPage() {
     .select("*", { count: "exact", head: true });
 
   const adminCount = userList.filter((p: any) => p.role === "admin").length;
+  const { data: activityListings, error: activityListingsError } =
+    await supabase.from("listings").select("owner_id");
+
+  const { data: activityRentals, error: activityRentalsError } = await supabase
+    .from("rentals")
+    .select("renter_id");
+
+  if (activityListingsError) {
+    console.warn(
+      "Admin activity listings load failed:",
+      activityListingsError.message,
+    );
+  }
+
+  if (activityRentalsError) {
+    console.warn(
+      "Admin activity rentals load failed:",
+      activityRentalsError.message,
+    );
+  }
+
+  const ownerIds = new Set(
+    (activityListings ?? [])
+      .map((listing: any) => listing.owner_id)
+      .filter(Boolean),
+  );
+
+  const renterIds = new Set(
+    (activityRentals ?? [])
+      .map((rental: any) => rental.renter_id)
+      .filter(Boolean),
+  );
+
+  const usersWithActivity = userList.map((profile: any) => {
+    const isOwner = ownerIds.has(profile.id);
+    const isRenter = renterIds.has(profile.id);
+
+    const marketplaceActivity =
+      isOwner && isRenter
+        ? "both"
+        : isOwner
+          ? "owner"
+          : isRenter
+            ? "renter"
+            : "none";
+
+    return {
+      ...profile,
+      marketplace_activity: marketplaceActivity,
+    };
+  });
 
   return (
     <>
@@ -151,7 +202,7 @@ export default async function AdminPage() {
                 powers the rest of the app.
               </p>
               <div className="mt-4">
-                <AdminUserManagement users={userList} />
+                <AdminUserManagement users={usersWithActivity} />
               </div>
             </div>
           </div>
