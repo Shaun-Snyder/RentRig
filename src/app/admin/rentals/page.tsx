@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
+import AdminRentalsManagement from "@/components/AdminRentalsManagement";
 
 export default async function AdminRentalsPage() {
   const supabase = await createClient();
@@ -84,6 +85,29 @@ export default async function AdminRentalsPage() {
 
   const loadError = rentalsError || listingsError || ownersError;
 
+  const rentalsForManagement = rentalList.map((rental: any) => {
+    const listing = listingMap.get(rental.listing_id);
+    const owner = listing ? ownerMap.get(listing.owner_id) : null;
+
+    return {
+      id: rental.id,
+      listing_id: rental.listing_id,
+      renter_id: rental.renter_id,
+      start_date: rental.start_date,
+      end_date: rental.end_date,
+      status: rental.status,
+      created_at: rental.created_at,
+      deposit_status: rental.deposit_status,
+      deposit_refund_amount: rental.deposit_refund_amount,
+      listingTitle: listing?.title ?? "Unknown listing",
+      ownerName: owner?.full_name || owner?.company_name || "Unknown owner",
+      renterName:
+        rental.renter?.full_name ||
+        rental.renter?.company_name ||
+        "Unknown renter",
+    };
+  });
+
   return (
     <>
       <ServerHeader />
@@ -105,79 +129,10 @@ export default async function AdminRentalsPage() {
           <div className="mt-2 text-sm text-slate-500">
             {rentalList.length} {rentalList.length === 1 ? "rental" : "rentals"}
           </div>
+          <div className="mt-4">
+            <AdminRentalsManagement rentals={rentalsForManagement} />
+          </div>
         </div>
-
-        {loadError ? (
-          <div className="rr-card mt-4 p-5 text-red-600">
-            Failed to load rental information.
-          </div>
-        ) : rentalList.length === 0 ? (
-          <div className="rr-card mt-4 p-5 text-slate-600">
-            No rentals found.
-          </div>
-        ) : (
-          <div className="mt-4 grid gap-4">
-            {rentalList.map((rental: any) => {
-              const listing = listingMap.get(rental.listing_id);
-              const owner = listing ? ownerMap.get(listing.owner_id) : null;
-
-              return (
-                <div key={rental.id} className="rr-card p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="text-xl font-bold text-slate-900">
-                        {listing?.title || "Unknown listing"}
-                      </div>
-
-                      <div className="mt-1 text-sm text-slate-600">
-                        {rental.start_date} → {rental.end_date}
-                      </div>
-                    </div>
-
-                    <span className="inline-flex rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold capitalize">
-                      {String(rental.status ?? "unknown").replaceAll("_", " ")}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid gap-4 text-sm md:grid-cols-3">
-                    <div>
-                      <div className="text-slate-500">Owner</div>
-                      <div className="font-semibold">
-                        {owner?.full_name ||
-                          owner?.company_name ||
-                          "Unknown owner"}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-slate-500">Renter</div>
-                      <div className="font-semibold">
-                        {rental.renter?.full_name ||
-                          rental.renter?.company_name ||
-                          "Unknown renter"}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-slate-500">Created</div>
-                      <div className="font-semibold">
-                        {rental.created_at
-                          ? new Date(rental.created_at).toLocaleDateString()
-                          : "Unknown"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 border-t border-slate-200 pt-4">
-                    <div className="break-all font-mono text-[10px] text-slate-400">
-                      Rental ID: {rental.id}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </main>
     </>
   );
