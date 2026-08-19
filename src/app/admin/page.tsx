@@ -165,34 +165,65 @@ export default async function AdminPage() {
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <a
+              href="/admin#users"
+              className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-slate-400 hover:shadow-md"
+            >
               <div className="text-xs uppercase text-slate-500">
                 Total Users
               </div>
-              <div className="mt-2 text-3xl font-bold">{totalUsers}</div>
-            </div>
 
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
+              <div className="mt-2 text-3xl font-bold">{totalUsers}</div>
+
+              <div className="mt-2 text-xs font-semibold text-slate-600">
+                View users →
+              </div>
+            </a>
+
+            <a
+              href="/admin/listings"
+              className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-slate-400 hover:shadow-md"
+            >
               <div className="text-xs uppercase text-slate-500">Listings</div>
               <div className="mt-2 text-3xl font-bold">
                 {listingsCount ?? 0}
               </div>
-            </div>
+              <div className="mt-2 text-xs font-semibold text-slate-600">
+                View listings →
+              </div>
+            </a>
 
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <a
+              href="/admin/rentals"
+              className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-slate-400 hover:shadow-md"
+            >
               <div className="text-xs uppercase text-slate-500">Rentals</div>
               <div className="mt-2 text-3xl font-bold">{rentalsCount ?? 0}</div>
-            </div>
+              <div className="mt-2 text-xs font-semibold text-slate-600">
+                View rentals →
+              </div>
+            </a>
 
-            <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <a
+              href="/admin?role=admin#users"
+              className="rounded-xl border bg-white p-5 shadow-sm transition hover:border-slate-400 hover:shadow-md"
+            >
               <div className="text-xs uppercase text-slate-500">Admins</div>
+
               <div className="mt-2 text-3xl font-bold">{adminCount}</div>
-            </div>
+
+              <div className="mt-2 text-xs font-semibold text-slate-600">
+                View admins →
+              </div>
+            </a>
           </div>
         </section>
 
         {/* User management section */}
-        <section className="rounded-xl border bg-white p-5 shadow-sm">
+        <section
+          id="users"
+          className="rounded-xl border bg-white p-5 shadow-sm"
+        >
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-semibold">User management</h2>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type AdminUser = {
   id: string;
@@ -22,8 +23,13 @@ type AdminUserManagementProps = {
 export default function AdminUserManagement({
   users,
 }: AdminUserManagementProps) {
+  const searchParams = useSearchParams();
+
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+
+  const [roleFilter, setRoleFilter] = useState(() => {
+    return searchParams.get("role") === "admin" ? "admin" : "all";
+  });
   const [activityFilter, setActivityFilter] = useState("all");
 
   const filteredUsers = useMemo(() => {
