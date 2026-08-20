@@ -410,6 +410,19 @@ export async function requestRental(formData: FormData) {
     Number(listing.security_deposit ?? 0) || 0,
   );
 
+  const customer_total = Math.max(
+    0,
+    rental_subtotal + delivery_fee_final + service_total,
+  );
+
+  const rentrig_fee_rate = 0.1;
+
+  const rentrig_fee_amount =
+    Math.round(customer_total * rentrig_fee_rate * 100) / 100;
+
+  const owner_payout_amount =
+    Math.round((customer_total - rentrig_fee_amount) * 100) / 100;
+
   const rentalInsert = {
     listing_id,
     renter_id: user.id,
@@ -425,6 +438,9 @@ export async function requestRental(formData: FormData) {
     rental_quantity,
     rental_subtotal,
     security_deposit_amount,
+    rentrig_fee_rate,
+    rentrig_fee_amount,
+    owner_payout_amount,
 
     delivery_selected,
     delivery_fee: delivery_fee_final,
@@ -468,6 +484,9 @@ export async function requestRental(formData: FormData) {
     "rental_quantity",
     "rental_subtotal",
     "security_deposit_amount",
+    "rentrig_fee_rate",
+    "rentrig_fee_amount",
+    "owner_payout_amount",
 
     "delivery_selected",
     "delivery_fee",

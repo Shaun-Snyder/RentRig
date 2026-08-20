@@ -460,16 +460,57 @@ export default function RentalRequestForm({
       />
 
       <div className="hidden md:block max-w-full overflow-hidden">
+        <div className="mb-3 flex flex-wrap gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-4 border border-red-300 bg-red-100" />
+            <span>Booked / unavailable</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="h-4 w-4 border border-green-300 bg-green-100" />
+            <span>Partial day availability</span>
+          </div>
+        </div>
+
         <DayPicker
           mode="range"
           selected={range}
           onSelect={(r) => {
-            if (!r?.from || !r?.to) return;
             setRange(r);
+
+            if (!r?.from) {
+              setStartDate("");
+              setEndDate("");
+              return;
+            }
+
             setStartDate(r.from.toISOString().slice(0, 10));
-            setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
+
+            if (r.to) {
+              setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
+            } else {
+              setEndDate("");
+            }
           }}
           numberOfMonths={1}
+          modifiers={{
+            booked: (d) => {
+              for (const b of blocked) {
+                const start = parseISO(b.start);
+                const endEx = parseISO(b.end_exclusive);
+
+                if (start && endEx && d >= start && d < endEx) {
+                  return true;
+                }
+              }
+
+              return false;
+            },
+          }}
+          modifiersClassNames={{
+            booked:
+              "bg-red-100 text-red-700 line-through font-semibold border border-red-300",
+          }}
           disabled={(d) => {
             const now = new Date();
             // disallow past dates

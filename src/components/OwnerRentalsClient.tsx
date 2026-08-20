@@ -28,6 +28,16 @@ type RentalRow = {
   owner_discount_amount?: number | null;
   owner_discount_note?: string | null;
 
+  rental_rate_unit?: string | null;
+  rental_rate?: number | null;
+  rental_quantity?: number | null;
+  rental_subtotal?: number | null;
+  security_deposit_amount?: number | null;
+
+  rentrig_fee_rate?: number | null;
+  rentrig_fee_amount?: number | null;
+  owner_payout_amount?: number | null;
+
   deposit_status?: string | null;
   deposit_refund_amount?: number | null;
 
@@ -278,6 +288,61 @@ export default function OwnerRentalsClient({
                         <span className="inline-flex items-center border border-blue-700 bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
                           {serviceLabel(r.service_choice)} requested
                         </span>
+                      ) : null}
+
+                      {Number(r.owner_payout_amount ?? 0) > 0 ? (
+                        <div className="mt-3 border-t pt-3 text-sm text-slate-700">
+                          <div className="font-semibold text-slate-900">
+                            Estimated payout
+                          </div>
+
+                          <div className="mt-2 grid gap-1">
+                            <div className="flex justify-between gap-4">
+                              <span>Rental subtotal</span>
+                              <span>{money(r.rental_subtotal)}</span>
+                            </div>
+
+                            {r.delivery_selected &&
+                            Number(r.delivery_fee ?? 0) > 0 ? (
+                              <div className="flex justify-between gap-4">
+                                <span>Delivery</span>
+                                <span>{money(r.delivery_fee)}</span>
+                              </div>
+                            ) : null}
+
+                            {Number(r.service_total ?? 0) > 0 ? (
+                              <div className="flex justify-between gap-4">
+                                <span>Service</span>
+                                <span>{money(r.service_total)}</span>
+                              </div>
+                            ) : null}
+
+                            {Number(r.owner_discount_amount ?? 0) > 0 ? (
+                              <div className="flex justify-between gap-4">
+                                <span>Owner discount</span>
+                                <span>-{money(r.owner_discount_amount)}</span>
+                              </div>
+                            ) : null}
+
+                            <div className="flex justify-between gap-4">
+                              <span>RentRig fee</span>
+                              <span>-{money(r.rentrig_fee_amount)}</span>
+                            </div>
+
+                            <div className="mt-1 flex justify-between gap-4 border-t pt-2 font-semibold">
+                              <span>Estimated owner payout</span>
+                              <span>{money(r.owner_payout_amount)}</span>
+                            </div>
+
+                            {Number(r.security_deposit_amount ?? 0) > 0 ? (
+                              <div className="mt-2 text-xs text-slate-500">
+                                Security deposit{" "}
+                                {money(r.security_deposit_amount)} is separate
+                                and refundable.
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
                       ) : null}
 
                       {r.delivery_selected ? (

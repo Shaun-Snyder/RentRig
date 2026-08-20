@@ -105,9 +105,15 @@ export default async function ListingPage({
   ========================== */
   const { data: approvedRentals } = await supabase
     .from("rentals")
-    .select("start_date, end_date, status")
+    .select("start_date, end_date, status, buffer_days")
     .eq("listing_id", id)
     .in("status", ["approved", "active"]);
+
+  const blockedRanges = (approvedRentals ?? []).map((rental) => ({
+    start: rental.start_date,
+    end_exclusive: rental.end_date,
+    buffer_days: rental.buffer_days ?? 0,
+  }));
 
   /* =========================
      Normalize numbers for UI + form
@@ -258,7 +264,7 @@ export default async function ListingPage({
         <div className="rr-card p-5">
           <RentalRequestForm
             listingId={id}
-            blocked={approvedRentals ?? []}
+            blocked={blockedRanges}
             /* pricing + rules (fixes NaN + missing totals) */
             pricePerDay={pricePerDay}
             securityDeposit={securityDeposit}

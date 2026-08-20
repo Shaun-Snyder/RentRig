@@ -34,6 +34,16 @@ export default async function OwnerRentalsPage() {
         "owner_discount_amount",
         "owner_discount_note",
 
+        "rental_rate_unit",
+        "rental_rate",
+        "rental_quantity",
+        "rental_subtotal",
+        "security_deposit_amount",
+
+        "rentrig_fee_rate",
+        "rentrig_fee_amount",
+        "owner_payout_amount",
+
         "deposit_status",
         "deposit_refund_amount",
         "renter:profiles!rentals_renter_id_fkey(id, full_name, avatar_url, company_name)",
