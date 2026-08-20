@@ -344,11 +344,11 @@ export default function RentalRequestForm({
     return Math.max(0, deliveryFee - deliveryDiscount);
   }, [deliverySelected, deliveryFee, deliveryDiscount]);
 
-  // Service fee (10%) based on subtotal + delivery + service
-  const serviceFee =
-    Math.round((baseSubtotal + deliveryCost + serviceTotal) * 0.1 * 100) / 100;
+  // Customer pays the agreed rental charges.
+  // RentRig's marketplace fee will be deducted from the transaction,
+  // not added on top of the renter's price.
+  const total = baseSubtotal + deliveryCost + serviceTotal;
 
-  const total = baseSubtotal + deliveryCost + serviceTotal + serviceFee;
   const deposit = Number(securityDeposit ?? 0);
   const totalPlusDeposit = total + deposit;
 
@@ -753,11 +753,6 @@ export default function RentalRequestForm({
               )}
             </>
           )}
-
-          <div className="flex justify-between">
-            <span>Service fee (10%)</span>
-            <span>{formatMoney(serviceFee)}</span>
-          </div>
 
           <div className="border-t my-2" />
 

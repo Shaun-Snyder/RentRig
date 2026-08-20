@@ -52,7 +52,6 @@ async function generateInvoicePdfBytes(opts: {
   serviceRate: number;
   serviceQuantity: number;
   serviceCharge: number;
-  serviceFee: number;
   total: number;
   deposit: number;
 }) {
@@ -194,7 +193,6 @@ async function generateInvoicePdfBytes(opts: {
   }
 
   y -= 4;
-  drawChargeRow("RentRig service fee (10%)", opts.serviceFee);
 
   y -= 4;
   drawChargeRow("Total before security deposit", opts.total, {
@@ -248,6 +246,12 @@ export async function approveRentalAndEmail(rentalId: string) {
 
       delivery_selected,
       delivery_fee,
+
+rental_rate_unit,
+rental_rate,
+rental_quantity,
+rental_subtotal,
+security_deposit_amount,
 
       owner_discount_amount,
       owner_discount_note,
@@ -347,7 +351,6 @@ export async function approveRentalAndEmail(rentalId: string) {
     ownerProfile?.full_name?.trim() || `User ${ownerId.slice(0, 8)}`;
 
   // Pricing math (same as invoice)
-  const pricePerDay = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
 
   const start = rental.start_date as string;
   const end = rental.end_date as string;
@@ -358,8 +361,22 @@ export async function approveRentalAndEmail(rentalId: string) {
         86400000,
     ) || 0;
 
-  const days = Math.max(1, dateDifference + 1);
-  const rentalSubtotal = days * pricePerDay;
+  const fallbackDays = Math.max(1, dateDifference);
+
+  const pricePerDay = Math.max(
+    0,
+    Number(rental.rental_rate ?? listing.price_per_day ?? 0) || 0,
+  );
+
+  const days = Math.max(
+    1,
+    Number(rental.rental_quantity ?? fallbackDays) || fallbackDays,
+  );
+
+  const rentalSubtotal = Math.max(
+    0,
+    Number(rental.rental_subtotal ?? days * pricePerDay) || 0,
+  );
 
   const deliverySelected = Boolean(rental.delivery_selected);
   const deliveryFee = Math.max(0, Number(rental.delivery_fee ?? 0) || 0);
@@ -435,12 +452,15 @@ export async function approveRentalAndEmail(rentalId: string) {
   const discount = Math.min(rawDiscount, preDiscount);
 
   const preFee = preDiscount - discount;
-  const serviceFee = Math.round(preFee * 0.1 * 100) / 100;
-  const total = preFee + serviceFee;
+  const total = preFee;
 
   const discountNote = String(rental.owner_discount_note ?? "").trim();
 
-  const deposit = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
+  const deposit = Math.max(
+    0,
+    Number(rental.security_deposit_amount ?? listing.security_deposit ?? 0) ||
+      0,
+  );
 
   // Build PDF
   const pdfBytes = await generateInvoicePdfBytes({
@@ -465,7 +485,6 @@ export async function approveRentalAndEmail(rentalId: string) {
     serviceRate: invoiceServiceRate,
     serviceQuantity: invoiceServiceQuantity,
     serviceCharge,
-    serviceFee,
     total,
     deposit,
   });
@@ -565,12 +584,13 @@ export async function updateRentalDeposit(formData: FormData) {
     .from("rentals")
     .select(
       `
-      id,
-      listing:listings (
-        owner_id,
-        security_deposit
-      )
-    `,
+  id,
+  security_deposit_amount,
+  listing:listings (
+    owner_id,
+    security_deposit
+  )
+`,
     )
     .eq("id", rentalId)
     .single();
@@ -588,7 +608,11 @@ export async function updateRentalDeposit(formData: FormData) {
     return { ok: false, error: "Forbidden" as const };
   }
 
-  const depositAmount = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
+  const depositAmount = Math.max(
+    0,
+    Number(rental.security_deposit_amount ?? listing.security_deposit ?? 0) ||
+      0,
+  );
 
   const damageDeduction = Math.max(
     0,

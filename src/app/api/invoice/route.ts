@@ -64,6 +64,12 @@ export async function GET(req: Request) {
         status,
         created_at,
 
+rental_rate_unit,
+rental_rate,
+rental_quantity,
+rental_subtotal,
+security_deposit_amount,
+
         delivery_selected,
         delivery_fee,
 
@@ -146,21 +152,31 @@ export async function GET(req: Request) {
 
     /* -------- Pricing -------- */
 
-    const pricePerDay = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
-
     const start = rental.start_date;
     const end = rental.end_date;
 
-    // Rental dates are inclusive.
-    // Example: July 10 through July 10 = 1 rental day.
     const dateDifference =
       Math.round(
         (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) /
           86400000,
       ) || 0;
 
-    const days = Math.max(1, dateDifference + 1);
-    const rentalSubtotal = days * pricePerDay;
+    const fallbackDays = Math.max(1, dateDifference);
+
+    const pricePerDay = Math.max(
+      0,
+      Number(rental.rental_rate ?? listing.price_per_day ?? 0) || 0,
+    );
+
+    const days = Math.max(
+      1,
+      Number(rental.rental_quantity ?? fallbackDays) || fallbackDays,
+    );
+
+    const rentalSubtotal = Math.max(
+      0,
+      Number(rental.rental_subtotal ?? days * pricePerDay) || 0,
+    );
 
     // Delivery snapshot
     const deliverySelected = Boolean(rental.delivery_selected);
@@ -208,13 +224,15 @@ export async function GET(req: Request) {
 
     const preFee = preDiscount - discount;
 
-    // Temporary 10% RentRig service fee.
-    // We will revise this when payment-processor fees are finalized.
-    const serviceFee = Math.round(preFee * 0.1 * 100) / 100;
+    // Customer total does not include RentRig's marketplace fee.
+    // RentRig's fee will be deducted from the transaction/payout later.
+    const total = preFee;
 
-    const total = preFee + serviceFee;
-
-    const deposit = Math.max(0, Number(listing.security_deposit ?? 0) || 0);
+    const deposit = Math.max(
+      0,
+      Number(rental.security_deposit_amount ?? listing.security_deposit ?? 0) ||
+        0,
+    );
 
     /* -------- PDF -------- */
 
@@ -380,7 +398,9 @@ export async function GET(req: Request) {
     }
 
     y -= 4;
-    drawChargeRow("RentRig service fee (10%)", serviceFee);
+    drawChargeRow("Total before security deposit", total, {
+      bold: true,
+    });
 
     y -= 4;
     drawChargeRow("Total before security deposit", total, {

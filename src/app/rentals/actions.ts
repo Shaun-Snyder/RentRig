@@ -56,6 +56,14 @@ export async function requestRental(formData: FormData) {
     return { ok: false, message: "Dates must be YYYY-MM-DD." };
   }
 
+  const rental_days = Math.max(
+    1,
+    Math.round(
+      (parseISODate(end_date).getTime() - parseISODate(start_date).getTime()) /
+        86400000,
+    ),
+  );
+
   // delivery snapshot (DO NOT TRUST FEE FROM CLIENT)
   const delivery_selected =
     String(formData.get("delivery_selected") ?? "").toLowerCase() === "true";
@@ -103,6 +111,9 @@ export async function requestRental(formData: FormData) {
       delivery_fee,
       delivery_service_discount_enabled,
       delivery_service_discount_amount,
+
+      price_per_day,
+      security_deposit,
 
       operator_enabled,
       operator_rate_unit,
@@ -386,6 +397,19 @@ export async function requestRental(formData: FormData) {
         ? operatorUnit
         : service_unit;
 
+  const rental_rate_unit = "day";
+
+  const rental_rate = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
+
+  const rental_quantity = rental_days;
+
+  const rental_subtotal = rental_rate * rental_quantity;
+
+  const security_deposit_amount = Math.max(
+    0,
+    Number(listing.security_deposit ?? 0) || 0,
+  );
+
   const rentalInsert = {
     listing_id,
     renter_id: user.id,
@@ -395,6 +419,12 @@ export async function requestRental(formData: FormData) {
     message,
     status: "pending",
     is_inquiry: false,
+
+    rental_rate_unit,
+    rental_rate,
+    rental_quantity,
+    rental_subtotal,
+    security_deposit_amount,
 
     delivery_selected,
     delivery_fee: delivery_fee_final,
@@ -432,6 +462,12 @@ export async function requestRental(formData: FormData) {
     "message",
     "status",
     "is_inquiry",
+
+    "rental_rate_unit",
+    "rental_rate",
+    "rental_quantity",
+    "rental_subtotal",
+    "security_deposit_amount",
 
     "delivery_selected",
     "delivery_fee",
