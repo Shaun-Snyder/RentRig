@@ -5,9 +5,10 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { updateOwnerDiscount, updateRentalDeposit } from "../actions";
+import { updateRentalDeposit } from "../actions";
 import SaveButton from "@/components/SaveButton";
 import StatusBadge from "@/components/StatusBadge";
+import OwnerDiscountForm from "@/components/OwnerDiscountForm";
 
 export default async function OwnerRentalDetailsPage({
   params,
@@ -32,6 +33,16 @@ export default async function OwnerRentalDetailsPage({
     end_date,
     status,
     renter_returned,
+
+    rental_rate_unit,
+    rental_rate,
+    rental_quantity,
+    rental_subtotal,
+    security_deposit_amount,
+
+    rentrig_fee_rate,
+    rentrig_fee_amount,
+    owner_payout_amount,
 
     service_choice,
     service_unit,
@@ -162,6 +173,11 @@ export default async function OwnerRentalDetailsPage({
 
             <div className="mt-3 grid gap-2 text-sm text-slate-700">
               <div>
+                <span className="font-semibold">Rental subtotal:</span> $
+                {Number(rental.rental_subtotal ?? 0).toFixed(2)}
+              </div>
+
+              <div>
                 <span className="font-semibold">Service:</span>{" "}
                 {rental.service_choice && rental.service_choice !== "none"
                   ? rental.service_choice === "driver_labor"
@@ -204,6 +220,46 @@ export default async function OwnerRentalDetailsPage({
                   ? `$${Number(rental.delivery_fee ?? 0).toFixed(2)}`
                   : "Not selected"}
               </div>
+              {Number(rental.owner_discount_amount ?? 0) > 0 ? (
+                <div className="text-emerald-700">
+                  <span className="font-semibold">Owner discount:</span> -$
+                  {Number(rental.owner_discount_amount ?? 0).toFixed(2)}
+                  {rental.owner_discount_note?.trim()
+                    ? ` — ${rental.owner_discount_note}`
+                    : ""}
+                </div>
+              ) : null}
+
+              <div className="mt-2 border-t border-slate-200 pt-2">
+                <span className="font-semibold">Customer total:</span> $
+                {Math.max(
+                  0,
+                  Number(rental.rental_subtotal ?? 0) +
+                    (rental.delivery_selected
+                      ? Number(rental.delivery_fee ?? 0)
+                      : 0) +
+                    Number(rental.service_total ?? 0) -
+                    Number(rental.owner_discount_amount ?? 0),
+                ).toFixed(2)}
+              </div>
+
+              <div>
+                <span className="font-semibold">RentRig fee:</span> -$
+                {Number(rental.rentrig_fee_amount ?? 0).toFixed(2)}
+              </div>
+
+              <div className="font-semibold text-slate-900">
+                Estimated owner payout: $
+                {Number(rental.owner_payout_amount ?? 0).toFixed(2)}
+              </div>
+
+              {Number(rental.security_deposit_amount ?? 0) > 0 ? (
+                <div className="text-xs text-slate-500">
+                  Security deposit: $
+                  {Number(rental.security_deposit_amount ?? 0).toFixed(2)} —
+                  separate and refundable
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -219,57 +275,11 @@ export default async function OwnerRentalDetailsPage({
             </div>
           )}
 
-          <form action={updateOwnerDiscount} className="rr-card p-4">
-            <input type="hidden" name="rental_id" value={rental.id} />
-
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Owner Discount
-            </div>
-
-            <div className="mt-1 text-sm text-slate-600">
-              Enter a flat discount amount and a short explanation.
-            </div>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="font-semibold text-slate-700">
-                  Discount amount
-                </span>
-                <input
-                  type="number"
-                  name="owner_discount_amount"
-                  min="0"
-                  step="0.01"
-                  defaultValue={Number(
-                    rental.owner_discount_amount ?? 0,
-                  ).toFixed(2)}
-                  className="rr-input"
-                />
-              </label>
-
-              <label className="grid gap-1 text-sm">
-                <span className="font-semibold text-slate-700">Reason</span>
-                <input
-                  type="text"
-                  name="owner_discount_note"
-                  defaultValue={rental.owner_discount_note ?? ""}
-                  placeholder="Example: Repeat customer"
-                  className="rr-input"
-                />
-              </label>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
-              <div className="text-sm text-slate-600">
-                Current discount:{" "}
-                <span className="font-bold text-slate-900">
-                  ${Number(rental.owner_discount_amount ?? 0).toFixed(2)}
-                </span>
-              </div>
-
-              <SaveButton idleText="Save Discount" pendingText="Saving..." />
-            </div>
-          </form>
+          <OwnerDiscountForm
+            rentalId={rental.id}
+            discountAmount={Number(rental.owner_discount_amount ?? 0)}
+            discountNote={rental.owner_discount_note ?? ""}
+          />
 
           <form action={updateRentalDeposit} className="rr-card p-4">
             <input type="hidden" name="rental_id" value={rental.id} />

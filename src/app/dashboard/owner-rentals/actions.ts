@@ -717,11 +717,16 @@ export async function updateOwnerDiscount(formData: FormData) {
     .from("rentals")
     .select(
       `
-      id,
-      listing:listings (
-        owner_id
-      )
-    `,
+  id,
+  rental_subtotal,
+  delivery_selected,
+  delivery_fee,
+  service_total,
+  rentrig_fee_rate,
+  listing:listings (
+    owner_id
+  )
+`,
     )
     .eq("id", rentalId)
     .single();
@@ -746,11 +751,39 @@ export async function updateOwnerDiscount(formData: FormData) {
 
   const discountNote = String(formData.get("owner_discount_note") ?? "").trim();
 
+  const rentalSubtotal = Math.max(0, Number(rental.rental_subtotal ?? 0) || 0);
+
+  const deliveryCharge = rental.delivery_selected
+    ? Math.max(0, Number(rental.delivery_fee ?? 0) || 0)
+    : 0;
+
+  const serviceCharge = Math.max(0, Number(rental.service_total ?? 0) || 0);
+
+  const preDiscountTotal = rentalSubtotal + deliveryCharge + serviceCharge;
+
+  const appliedDiscount = Math.min(discountAmount, preDiscountTotal);
+
+  const customerTotal = Math.max(0, preDiscountTotal - appliedDiscount);
+
+  const rentrigFeeRate = Math.max(
+    0,
+    Number(rental.rentrig_fee_rate ?? 0.1) || 0.1,
+  );
+
+  const rentrigFeeAmount =
+    Math.round(customerTotal * rentrigFeeRate * 100) / 100;
+
+  const ownerPayoutAmount =
+    Math.round((customerTotal - rentrigFeeAmount) * 100) / 100;
+
   const { error: updateError } = await supabase
     .from("rentals")
     .update({
-      owner_discount_amount: discountAmount,
+      owner_discount_amount: appliedDiscount,
       owner_discount_note: discountNote || null,
+      rentrig_fee_rate: rentrigFeeRate,
+      rentrig_fee_amount: rentrigFeeAmount,
+      owner_payout_amount: ownerPayoutAmount,
     })
     .eq("id", rentalId);
 
