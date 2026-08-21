@@ -539,7 +539,7 @@ export async function markRentalCompleted(rentalId: string) {
   // Verify ownership (same pattern as approve)
   const { data: rental } = await supabase
     .from("rentals")
-    .select("id, listing:listings(owner_id)")
+    .select("id, status, renter_returned, listing:listings(owner_id)")
     .eq("id", rentalId)
     .single();
 
@@ -547,6 +547,40 @@ export async function markRentalCompleted(rentalId: string) {
 
   if (!rental || ownerId !== user.id) {
     return { ok: false, error: "Forbidden" as const };
+  }
+  if (rental.status !== "approved") {
+    return {
+      ok: false,
+      error: "Only approved rentals can be completed." as const,
+    };
+  }
+
+  if (!rental.renter_returned) {
+    return {
+      ok: false,
+      error: "The renter must mark the equipment as returned first." as const,
+    };
+  }
+
+  const { data: checkoutInspection, error: checkoutError } = await supabase
+    .from("rental_inspections")
+    .select("id")
+    .eq("rental_id", rentalId)
+    .eq("role", "owner")
+    .eq("phase", "checkout")
+    .limit(1)
+    .maybeSingle();
+
+  if (checkoutError) {
+    return { ok: false, error: checkoutError.message as const };
+  }
+
+  if (!checkoutInspection) {
+    return {
+      ok: false,
+      error:
+        "Complete the owner check-out inspection before completing the rental." as const,
+    };
   }
 
   // Only allow from approved → completed

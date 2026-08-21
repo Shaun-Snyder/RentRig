@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import OwnerInspectionForm from "@/components/OwnerInspectionForm";
 import { updateRentalDeposit } from "@/app/dashboard/owner-rentals/actions";
 import SaveButton from "@/components/SaveButton";
+import CompleteRentalButton from "@/components/CompleteRentalButton";
 
 type RentalRow = {
   id: string;
@@ -650,6 +651,31 @@ deposit_refund_transaction_id,
             </div>
           </div>
         </form>
+
+        {rental.status === "approved" ? (
+          <div className="rr-card mt-6 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Complete Rental
+            </div>
+
+            <p className="mt-1 text-sm text-slate-600">
+              Complete the rental after the equipment has been returned, the
+              check-out inspection has been saved, and the security deposit has
+              been reviewed.
+            </p>
+
+            <div className="mt-4 flex justify-end">
+              <CompleteRentalButton rentalId={rental.id} />
+            </div>
+          </div>
+        ) : rental.status === "completed" ? (
+          <div className="rr-card mt-6 p-4">
+            <div className="font-semibold text-slate-900">Rental completed</div>
+            <div className="mt-1 text-sm text-slate-600">
+              The return process for this rental is complete.
+            </div>
+          </div>
+        ) : null}
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
