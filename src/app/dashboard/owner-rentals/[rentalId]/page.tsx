@@ -5,7 +5,6 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { updateRentalDeposit } from "../actions";
 import SaveButton from "@/components/SaveButton";
 import StatusBadge from "@/components/StatusBadge";
 import OwnerDiscountForm from "@/components/OwnerDiscountForm";
@@ -275,226 +274,37 @@ export default async function OwnerRentalDetailsPage({
             </div>
           )}
 
-          <OwnerDiscountForm
-            rentalId={rental.id}
-            discountAmount={Number(rental.owner_discount_amount ?? 0)}
-            discountNote={rental.owner_discount_note ?? ""}
-          />
-
-          <form action={updateRentalDeposit} className="rr-card p-4">
-            <input type="hidden" name="rental_id" value={rental.id} />
-
-            <div className="border-b border-slate-200 pb-4">
+          {rental.status === "pending" ? (
+            <OwnerDiscountForm
+              rentalId={rental.id}
+              discountAmount={Number(rental.owner_discount_amount ?? 0)}
+              discountNote={rental.owner_discount_note ?? ""}
+            />
+          ) : Number(rental.owner_discount_amount ?? 0) > 0 ? (
+            <div className="rr-card p-4">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Security Deposit
+                Owner Discount
               </div>
 
-              <div className="mt-1 text-sm text-slate-600">
-                Record deductions and calculate the renter refund.
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Deposit Collected
-                  </div>
-
-                  <div className="mt-1 text-2xl font-bold text-slate-900">
-                    ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
-                  </div>
-
-                  <div className="mt-1 text-xs text-slate-500">
-                    Original listing security deposit
-                  </div>
+              <div className="mt-3 text-sm text-slate-700">
+                <div>
+                  <span className="font-semibold">Discount:</span> -$
+                  {Number(rental.owner_discount_amount ?? 0).toFixed(2)}
                 </div>
 
-                <div className="flex min-h-[126px] flex-col justify-center rounded-sm border border-slate-300 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Current Status
+                {rental.owner_discount_note?.trim() ? (
+                  <div className="mt-1">
+                    <span className="font-semibold">Reason:</span>{" "}
+                    {rental.owner_discount_note}
                   </div>
+                ) : null}
 
-                  <div
-                    className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize ${
-                      rental.deposit_status === "fully_refunded"
-                        ? "bg-green-100 text-green-800"
-                        : rental.deposit_status === "partially_refunded"
-                          ? "bg-amber-100 text-amber-800"
-                          : rental.deposit_status === "retained"
-                            ? "bg-red-100 text-red-800"
-                            : rental.deposit_status === "collected"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {String(rental.deposit_status ?? "pending").replaceAll(
-                      "_",
-                      " ",
-                    )}
-                  </div>
+                <div className="mt-2 text-xs text-slate-500">
+                  Discount is locked after approval.
                 </div>
               </div>
             </div>
-
-            <div className="mt-4 grid gap-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Damage deduction
-                  </span>
-                  <input
-                    type="number"
-                    name="deposit_damage_deduction"
-                    min="0"
-                    step="0.01"
-                    defaultValue={Number(
-                      rental.deposit_damage_deduction ?? 0,
-                    ).toFixed(2)}
-                    className="rr-input"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Cleaning deduction
-                  </span>
-                  <input
-                    type="number"
-                    name="deposit_cleaning_deduction"
-                    min="0"
-                    step="0.01"
-                    defaultValue={Number(
-                      rental.deposit_cleaning_deduction ?? 0,
-                    ).toFixed(2)}
-                    className="rr-input"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Fuel deduction
-                  </span>
-                  <input
-                    type="number"
-                    name="deposit_fuel_deduction"
-                    min="0"
-                    step="0.01"
-                    defaultValue={Number(
-                      rental.deposit_fuel_deduction ?? 0,
-                    ).toFixed(2)}
-                    className="rr-input"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Late return deduction
-                  </span>
-                  <input
-                    type="number"
-                    name="deposit_late_return_deduction"
-                    min="0"
-                    step="0.01"
-                    defaultValue={Number(
-                      rental.deposit_late_return_deduction ?? 0,
-                    ).toFixed(2)}
-                    className="rr-input"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Other deduction
-                  </span>
-                  <input
-                    type="number"
-                    name="deposit_other_deduction"
-                    min="0"
-                    step="0.01"
-                    defaultValue={Number(
-                      rental.deposit_other_deduction ?? 0,
-                    ).toFixed(2)}
-                    className="rr-input"
-                  />
-                </label>
-
-                <label className="grid gap-1 text-sm">
-                  <span className="font-semibold text-slate-700">
-                    Other reason
-                  </span>
-                  <input
-                    type="text"
-                    name="deposit_other_reason"
-                    defaultValue={rental.deposit_other_reason ?? ""}
-                    className="rr-input"
-                  />
-                </label>
-              </div>
-
-              <label className="grid gap-1 text-sm">
-                <span className="font-semibold text-slate-700">
-                  Owner notes
-                </span>
-                <textarea
-                  name="deposit_owner_notes"
-                  defaultValue={rental.deposit_owner_notes ?? ""}
-                  rows={3}
-                  className="rr-input"
-                />
-              </label>
-
-              <label className="grid gap-1 text-sm">
-                <span className="font-semibold text-slate-700">
-                  Renter-visible explanation
-                </span>
-                <textarea
-                  name="deposit_renter_explanation"
-                  defaultValue={rental.deposit_renter_explanation ?? ""}
-                  rows={3}
-                  className="rr-input"
-                />
-              </label>
-
-              <div className="grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
-                <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total Deductions
-                  </div>
-                  <div className="mt-1 text-2xl font-bold text-slate-900">
-                    $
-                    {(
-                      Number(rental.deposit_damage_deduction ?? 0) +
-                      Number(rental.deposit_cleaning_deduction ?? 0) +
-                      Number(rental.deposit_fuel_deduction ?? 0) +
-                      Number(rental.deposit_late_return_deduction ?? 0) +
-                      Number(rental.deposit_other_deduction ?? 0)
-                    ).toFixed(2)}
-                  </div>
-                </div>
-
-                <div className="rounded-sm border border-slate-900 bg-slate-900 p-4 text-white">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                    Refund Amount
-                  </div>
-                  <div className="mt-1 text-2xl font-bold">
-                    ${Number(rental.deposit_refund_amount ?? 0).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-                <div className="text-sm text-slate-500">
-                  Changes are saved immediately and used when calculating the
-                  renter's final refund.
-                </div>
-
-                <SaveButton
-                  idleText="Save Deposit Changes"
-                  pendingText="Saving..."
-                  size="lg"
-                />
-              </div>
-            </div>
-          </form>
+          ) : null}
 
           <div className="rr-card p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">

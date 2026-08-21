@@ -5,6 +5,8 @@ import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import OwnerInspectionForm from "@/components/OwnerInspectionForm";
+import { updateRentalDeposit } from "@/app/dashboard/owner-rentals/actions";
+import SaveButton from "@/components/SaveButton";
 
 type RentalRow = {
   id: string;
@@ -15,6 +17,21 @@ type RentalRow = {
   message: string | null;
   created_at: string;
   rental_agreement_url: string | null;
+  security_deposit_amount?: number | null;
+
+  deposit_status?: string | null;
+  deposit_collected_at?: string | null;
+  deposit_damage_deduction?: number | null;
+  deposit_cleaning_deduction?: number | null;
+  deposit_fuel_deduction?: number | null;
+  deposit_late_return_deduction?: number | null;
+  deposit_other_deduction?: number | null;
+  deposit_other_reason?: string | null;
+  deposit_owner_notes?: string | null;
+  deposit_renter_explanation?: string | null;
+  deposit_refund_amount?: number | null;
+  deposit_refunded_at?: string | null;
+  deposit_refund_transaction_id?: string | null;
   listing: {
     id: string;
     title: string;
@@ -78,6 +95,23 @@ export default async function OwnerInspectionPage({
       message,
       created_at,
       rental_agreement_url,
+
+security_deposit_amount,
+
+deposit_status,
+deposit_collected_at,
+deposit_damage_deduction,
+deposit_cleaning_deduction,
+deposit_fuel_deduction,
+deposit_late_return_deduction,
+deposit_other_deduction,
+deposit_other_reason,
+deposit_owner_notes,
+deposit_renter_explanation,
+deposit_refund_amount,
+deposit_refunded_at,
+deposit_refund_transaction_id,
+
       listing:listings ( id, title, owner_id )
     `,
     )
@@ -103,6 +137,21 @@ export default async function OwnerInspectionPage({
     message: rental.message,
     created_at: rental.created_at,
     rental_agreement_url: rental.rental_agreement_url ?? null,
+    security_deposit_amount: rental.security_deposit_amount ?? null,
+
+    deposit_status: rental.deposit_status ?? null,
+    deposit_collected_at: rental.deposit_collected_at ?? null,
+    deposit_damage_deduction: rental.deposit_damage_deduction ?? null,
+    deposit_cleaning_deduction: rental.deposit_cleaning_deduction ?? null,
+    deposit_fuel_deduction: rental.deposit_fuel_deduction ?? null,
+    deposit_late_return_deduction: rental.deposit_late_return_deduction ?? null,
+    deposit_other_deduction: rental.deposit_other_deduction ?? null,
+    deposit_other_reason: rental.deposit_other_reason ?? null,
+    deposit_owner_notes: rental.deposit_owner_notes ?? null,
+    deposit_renter_explanation: rental.deposit_renter_explanation ?? null,
+    deposit_refund_amount: rental.deposit_refund_amount ?? null,
+    deposit_refunded_at: rental.deposit_refunded_at ?? null,
+    deposit_refund_transaction_id: rental.deposit_refund_transaction_id ?? null,
     listing: rental.listing
       ? {
           id: rental.listing.id,
@@ -385,6 +434,222 @@ export default async function OwnerInspectionPage({
 
         {/* Owner form */}
         <OwnerInspectionForm rental={typedRental as any} />
+
+        {/* Return deposit handling */}
+        <form action={updateRentalDeposit} className="rr-card mt-6 p-4">
+          <input type="hidden" name="rental_id" value={rental.id} />
+
+          <div className="border-b border-slate-200 pb-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Return Deposit
+            </div>
+
+            <div className="mt-1 text-sm text-slate-600">
+              Review the returned equipment, record any deductions, and
+              calculate the renter&apos;s refund.
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Deposit Collected
+                </div>
+
+                <div className="mt-1 text-2xl font-bold text-slate-900">
+                  ${Number(rental.security_deposit_amount ?? 0).toFixed(2)}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  Agreed security deposit for this rental
+                </div>
+              </div>
+
+              <div className="flex min-h-[126px] flex-col justify-center rounded-sm border border-slate-300 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Current Status
+                </div>
+
+                <div
+                  className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold capitalize ${
+                    rental.deposit_status === "fully_refunded"
+                      ? "bg-green-100 text-green-800"
+                      : rental.deposit_status === "partially_refunded"
+                        ? "bg-amber-100 text-amber-800"
+                        : rental.deposit_status === "retained"
+                          ? "bg-red-100 text-red-800"
+                          : rental.deposit_status === "collected"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {String(rental.deposit_status ?? "pending").replaceAll(
+                    "_",
+                    " ",
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Damage deduction
+                </span>
+                <input
+                  type="number"
+                  name="deposit_damage_deduction"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.deposit_damage_deduction ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Cleaning deduction
+                </span>
+                <input
+                  type="number"
+                  name="deposit_cleaning_deduction"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.deposit_cleaning_deduction ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Fuel deduction
+                </span>
+                <input
+                  type="number"
+                  name="deposit_fuel_deduction"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.deposit_fuel_deduction ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Late return deduction
+                </span>
+                <input
+                  type="number"
+                  name="deposit_late_return_deduction"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.deposit_late_return_deduction ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Other deduction
+                </span>
+                <input
+                  type="number"
+                  name="deposit_other_deduction"
+                  min="0"
+                  step="0.01"
+                  defaultValue={Number(
+                    rental.deposit_other_deduction ?? 0,
+                  ).toFixed(2)}
+                  className="rr-input"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="font-semibold text-slate-700">
+                  Other reason
+                </span>
+                <input
+                  type="text"
+                  name="deposit_other_reason"
+                  defaultValue={rental.deposit_other_reason ?? ""}
+                  className="rr-input"
+                />
+              </label>
+            </div>
+
+            <label className="grid gap-1 text-sm">
+              <span className="font-semibold text-slate-700">Owner notes</span>
+              <textarea
+                name="deposit_owner_notes"
+                defaultValue={rental.deposit_owner_notes ?? ""}
+                rows={3}
+                className="rr-input"
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
+              <span className="font-semibold text-slate-700">
+                Renter-visible explanation
+              </span>
+              <textarea
+                name="deposit_renter_explanation"
+                defaultValue={rental.deposit_renter_explanation ?? ""}
+                rows={3}
+                className="rr-input"
+              />
+            </label>
+
+            <div className="grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+              <div className="rounded-sm border border-slate-300 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Total Deductions
+                </div>
+
+                <div className="mt-1 text-2xl font-bold text-slate-900">
+                  $
+                  {(
+                    Number(rental.deposit_damage_deduction ?? 0) +
+                    Number(rental.deposit_cleaning_deduction ?? 0) +
+                    Number(rental.deposit_fuel_deduction ?? 0) +
+                    Number(rental.deposit_late_return_deduction ?? 0) +
+                    Number(rental.deposit_other_deduction ?? 0)
+                  ).toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-sm border border-slate-900 bg-slate-900 p-4 text-white">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                  Refund Amount
+                </div>
+
+                <div className="mt-1 text-2xl font-bold">
+                  ${Number(rental.deposit_refund_amount ?? 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+              <div className="text-sm text-slate-500">
+                Save the final deductions after reviewing the return condition.
+              </div>
+
+              <SaveButton
+                idleText="Save Deposit Changes"
+                pendingText="Saving..."
+                size="lg"
+              />
+            </div>
+          </div>
+        </form>
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">

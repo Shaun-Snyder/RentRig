@@ -718,6 +718,7 @@ export async function updateOwnerDiscount(formData: FormData) {
     .select(
       `
   id,
+  status,
   rental_subtotal,
   delivery_selected,
   delivery_fee,
@@ -735,6 +736,13 @@ export async function updateOwnerDiscount(formData: FormData) {
     return {
       ok: false,
       error: rentalError?.message || "Rental not found",
+    };
+  }
+
+  if (rental.status !== "pending") {
+    return {
+      ok: false,
+      error: "Discounts can only be changed before approval." as const,
     };
   }
 
