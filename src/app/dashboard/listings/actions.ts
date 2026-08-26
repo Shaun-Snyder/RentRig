@@ -73,6 +73,8 @@ export async function createListing(arg1: any, arg2?: any) {
   const delivery_service_discount_amount =
     toNum(fd.get("delivery_service_discount_amount")) ?? 0;
 
+  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
+  const rental_hour_rate = toNum(fd.get("rental_hour_rate")) ?? 0;
   const operator_day_rate = toNum(fd.get("operator_day_rate")) ?? 0;
   const operator_hour_rate = toNum(fd.get("operator_hour_rate")) ?? 0;
 
@@ -238,6 +240,9 @@ export async function updateListing(arg1: any, arg2?: any) {
   const delivery_service_discount_amount =
     toNum(fd.get("delivery_service_discount_amount")) ?? 0;
 
+  const rental_hourly_enabled = toBool(fd.get("rental_hourly_enabled"));
+  const rental_hour_rate = toNum(fd.get("rental_hour_rate")) ?? 0;
+
   const operator_day_rate = toNum(fd.get("operator_day_rate")) ?? 0;
   const operator_hour_rate = toNum(fd.get("operator_hour_rate")) ?? 0;
 
@@ -311,6 +316,9 @@ export async function updateListing(arg1: any, arg2?: any) {
 
       price_per_day,
       security_deposit,
+
+      rental_hourly_enabled,
+      rental_hour_rate,
 
       city,
       state,

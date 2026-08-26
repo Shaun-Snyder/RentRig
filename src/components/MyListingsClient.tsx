@@ -1690,6 +1690,19 @@ export default function MyListingsClient({
                         />
                       </div>
                     </div>
+                    <div className="mt-2 border-t border-slate-200 pt-3">
+                      <div className="mb-2 text-xs text-slate-600">
+                        Set which days and hours this listing is available for
+                        hourly rentals.
+                      </div>
+
+                      <a
+                        href={`/dashboard/listings/${l.id}/hourly-availability`}
+                        className="rr-btn rr-btn-secondary"
+                      >
+                        Manage Hourly Availability
+                      </a>
+                    </div>
                   </div>
                   <div className="grid gap-1">
                     <label className="text-sm">Security deposit</label>

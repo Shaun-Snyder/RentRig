@@ -12,6 +12,13 @@ type BlockedRange = {
   buffer_days?: number | null;
 };
 
+type HourlyAvailability = {
+  id: string;
+  weekday: number;
+  start_time: string;
+  end_time: string;
+};
+
 function formatMoney(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -56,7 +63,10 @@ type ServiceUnit = "day" | "hour";
 type Props = {
   listingId: string;
   pricePerDay: number;
+  rentalHourlyEnabled?: boolean;
+  rentalHourRate?: number;
   blocked?: BlockedRange[];
+  hourlyAvailability?: HourlyAvailability[];
   minRentalDays?: number;
   maxRentalDays?: number;
   securityDeposit?: number;
@@ -106,10 +116,29 @@ type Props = {
   driverLaborMaxHours?: number;
 };
 
+function toLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function fromLocalDateString(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
+}
+
 export default function RentalRequestForm({
   listingId,
   pricePerDay,
+  rentalHourlyEnabled = false,
+  rentalHourRate = 0,
   blocked = [],
+  hourlyAvailability = [],
   minRentalDays,
   maxRentalDays,
   securityDeposit,
@@ -151,6 +180,20 @@ export default function RentalRequestForm({
   const [range, setRange] = useState<DateRange | undefined>();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [bookingUnit, setBookingUnit] = useState<"day" | "hour">("day");
+  const [hourlyStartTime, setHourlyStartTime] = useState("");
+  const [hourlyHours, setHourlyHours] = useState(1);
+
+  const selectedDayAvailability = useMemo(() => {
+    if (!startDate) return [];
+
+    const selected = parseISO(startDate);
+    if (!selected) return [];
+
+    const weekday = selected.getUTCDay();
+
+    return hourlyAvailability.filter((window) => window.weekday === weekday);
+  }, [startDate, hourlyAvailability]);
 
   // delivery UI
   const deliveryAllowed = deliveryMode !== "pickup_only";
@@ -321,7 +364,8 @@ export default function RentalRequestForm({
   }, [serviceChoice]);
 
   // base rental
-  const baseSubtotal = days * pricePerDay;
+  const baseSubtotal =
+    bookingUnit === "hour" ? hourlyHours * rentalHourRate : days * pricePerDay;
 
   // ✅ discount applies only when delivery selected + a service selected + enabled
   const deliveryDiscount = useMemo(() => {
@@ -353,18 +397,30 @@ export default function RentalRequestForm({
   const totalPlusDeposit = total + deposit;
 
   // min/max days guard message
-  const minViolation = minRentalDays && days > 0 && days < minRentalDays;
-  const maxViolation = maxRentalDays && days > 0 && days > maxRentalDays;
+  const minViolation =
+    bookingUnit === "day" && minRentalDays && days > 0 && days < minRentalDays;
+
+  const maxViolation =
+    bookingUnit === "day" && maxRentalDays && days > 0 && days > maxRentalDays;
 
   const ownerProvidedLicensedService =
     serviceChoice === "operator" ||
     serviceChoice === "driver" ||
     serviceChoice === "driver_labor";
 
-  const canSubmit =
+  const dailyBookingValid =
+    bookingUnit === "day" &&
     Boolean(startDate && endDate && days > 0) &&
     !minViolation &&
-    !maxViolation &&
+    !maxViolation;
+
+  const hourlyBookingValid =
+    bookingUnit === "hour" &&
+    Boolean(startDate && hourlyStartTime && hourlyHours > 0) &&
+    selectedDayAvailability.length > 0;
+
+  const canSubmit =
+    (dailyBookingValid || hourlyBookingValid) &&
     (!needsLicenseBlock || renterHasLicense || ownerProvidedLicensedService);
 
   const showServiceSelector = true;
@@ -390,9 +446,42 @@ export default function RentalRequestForm({
     >
       <h2 className="text-lg font-semibold">Request this listing</h2>
 
+      {rentalHourlyEnabled && rentalHourRate > 0 ? (
+        <div className="rounded-lg border bg-white p-3 text-sm">
+          <div className="font-semibold">Rental type</div>
+
+          <div className="mt-2 flex flex-wrap gap-4">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="booking_unit_choice"
+                value="day"
+                checked={bookingUnit === "day"}
+                onChange={() => setBookingUnit("day")}
+              />
+              <span>Daily rental — {formatMoney(pricePerDay)} / day</span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="booking_unit_choice"
+                value="hour"
+                checked={bookingUnit === "hour"}
+                onChange={() => setBookingUnit("hour")}
+              />
+              <span>Hourly rental — {formatMoney(rentalHourRate)} / hour</span>
+            </label>
+          </div>
+        </div>
+      ) : null}
+
       <input type="hidden" name="listing_id" value={listingId} />
       <input type="hidden" name="start_date" value={startDate} />
       <input type="hidden" name="end_date" value={endDate} />
+      <input type="hidden" name="booking_unit" value={bookingUnit} />
+      <input type="hidden" name="hourly_start_time" value={hourlyStartTime} />
+      <input type="hidden" name="hourly_hours" value={String(hourlyHours)} />
 
       {/* delivery */}
       <input
@@ -459,95 +548,221 @@ export default function RentalRequestForm({
         value={String(serviceChoice === "operator" ? serviceTotal : 0)}
       />
 
-      <div className="hidden md:block max-w-full overflow-hidden">
-        <div className="mb-3 flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="h-4 w-4 border border-red-300 bg-red-100" />
-            <span>Booked / unavailable</span>
-          </div>
+      {bookingUnit === "day" ? (
+        <>
+          <div className="hidden md:block max-w-full overflow-hidden">
+            <div className="mb-3 flex flex-wrap gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 border border-red-300 bg-red-100" />
+                <span>Booked / unavailable</span>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <span className="h-4 w-4 border border-green-300 bg-green-100" />
-            <span>Partial day availability</span>
-          </div>
-        </div>
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 border border-green-300 bg-green-100" />
+                <span>Partial day availability</span>
+              </div>
+            </div>
 
-        <DayPicker
-          mode="range"
-          selected={range}
-          onSelect={(r) => {
-            setRange(r);
+            <DayPicker
+              mode="range"
+              selected={range}
+              onSelect={(r) => {
+                setRange(r);
 
-            if (!r?.from) {
-              setStartDate("");
-              setEndDate("");
-              return;
-            }
+                if (!r?.from) {
+                  setStartDate("");
+                  setEndDate("");
+                  return;
+                }
 
-            setStartDate(r.from.toISOString().slice(0, 10));
+                setStartDate(r.from.toISOString().slice(0, 10));
 
-            if (r.to) {
-              setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
-            } else {
-              setEndDate("");
-            }
-          }}
-          numberOfMonths={1}
-          modifiers={{
-            booked: (d) => {
-              for (const b of blocked) {
-                const start = parseISO(b.start);
-                const endEx = parseISO(b.end_exclusive);
+                if (r.to) {
+                  setEndDate(addDaysUTC(r.to, 1).toISOString().slice(0, 10));
+                } else {
+                  setEndDate("");
+                }
+              }}
+              numberOfMonths={1}
+              modifiers={{
+                booked: (d) => {
+                  for (const b of blocked) {
+                    const start = parseISO(b.start);
+                    const endEx = parseISO(b.end_exclusive);
 
-                if (start && endEx && d >= start && d < endEx) {
+                    if (start && endEx && d >= start && d < endEx) {
+                      return true;
+                    }
+                  }
+
+                  return false;
+                },
+              }}
+              modifiersClassNames={{
+                booked:
+                  "bg-red-100 text-red-700 line-through font-semibold border border-red-300",
+              }}
+              disabled={(d) => {
+                const now = new Date();
+
+                if (
+                  d < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                ) {
                   return true;
                 }
+
+                for (const b of blocked) {
+                  const start = parseISO(b.start);
+                  const endEx = parseISO(b.end_exclusive);
+
+                  if (start && endEx && d >= start && d < endEx) {
+                    return true;
+                  }
+                }
+
+                return false;
+              }}
+            />
+          </div>
+
+          <div className="grid gap-3 md:hidden">
+            <label className="grid gap-1">
+              <span className="text-sm text-slate-600">Start date</span>
+              <input
+                type="date"
+                className="border rounded-lg p-2"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-sm text-slate-600">End date</span>
+              <input
+                type="date"
+                className="border rounded-lg p-2"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </label>
+          </div>
+        </>
+      ) : (
+        <div className="rounded-lg border bg-white p-3">
+          <div className="mb-2 text-sm font-semibold">
+            Select hourly rental date
+          </div>
+
+          <DayPicker
+            mode="single"
+            selected={startDate ? fromLocalDateString(startDate) : undefined}
+            onSelect={(date) => {
+              if (!date) {
+                setStartDate("");
+                setEndDate("");
+                return;
               }
 
-              return false;
-            },
-          }}
-          modifiersClassNames={{
-            booked:
-              "bg-red-100 text-red-700 line-through font-semibold border border-red-300",
-          }}
-          disabled={(d) => {
-            const now = new Date();
-            // disallow past dates
-            if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate()))
-              return true;
+              const selectedDate = toLocalDateString(date);
 
-            // block booked ranges
-            for (const b of blocked) {
-              const start = parseISO(b.start);
-              const endEx = parseISO(b.end_exclusive);
-              if (d >= start && d < endEx) return true;
-            }
-            return false;
-          }}
-        />
-      </div>
-      <div className="grid gap-3 md:hidden">
-        <label className="grid gap-1">
-          <span className="text-sm text-slate-600">Start date</span>
-          <input
-            type="date"
-            className="border rounded-lg p-2"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </label>
+              const nextDay = new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate() + 1,
+              );
 
-        <label className="grid gap-1">
-          <span className="text-sm text-slate-600">End date</span>
-          <input
-            type="date"
-            className="border rounded-lg p-2"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+              setStartDate(selectedDate);
+              setEndDate(toLocalDateString(nextDay));
+
+              // Keep hourly rentals within one calendar day.
+              // end_date stays as the next-day boundary for compatibility.
+              setEndDate(addDaysUTC(date, 1).toISOString().slice(0, 10));
+            }}
+            numberOfMonths={1}
+            disabled={(d) => {
+              const now = new Date();
+
+              return (
+                d < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              );
+            }}
           />
-        </label>
-      </div>
+
+          {startDate ? (
+            selectedDayAvailability.length > 0 ? (
+              <div className="mt-4 grid gap-3">
+                <div className="rounded-lg border bg-slate-50 p-3 text-sm">
+                  <div className="font-semibold text-slate-900">
+                    Owner availability for this day
+                  </div>
+
+                  <div className="mt-2 grid gap-1 text-slate-600">
+                    {selectedDayAvailability.map((window) => (
+                      <div key={window.id}>
+                        {window.start_time.slice(0, 5)} –{" "}
+                        {window.end_time.slice(0, 5)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1">
+                    <span className="text-sm font-semibold text-slate-700">
+                      Start time
+                    </span>
+
+                    <input
+                      type="time"
+                      value={hourlyStartTime}
+                      onChange={(e) => setHourlyStartTime(e.target.value)}
+                      className="rr-input"
+                    />
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-sm font-semibold text-slate-700">
+                      Number of hours
+                    </span>
+
+                    <input
+                      type="number"
+                      min={1}
+                      max={24}
+                      step={1}
+                      value={hourlyHours}
+                      onChange={(e) =>
+                        setHourlyHours(Math.max(1, Number(e.target.value) || 1))
+                      }
+                      className="rr-input"
+                    />
+                  </label>
+                </div>
+
+                <div className="text-sm text-slate-600">
+                  Equipment rate:{" "}
+                  <span className="font-semibold">
+                    {formatMoney(rentalHourRate)} / hour
+                  </span>
+                </div>
+
+                <div className="text-sm font-semibold text-slate-900">
+                  Estimated equipment rental:{" "}
+                  {formatMoney(hourlyHours * rentalHourRate)}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-lg border bg-amber-50 p-3 text-sm text-amber-800">
+                The owner has not set hourly availability for this day.
+              </div>
+            )
+          ) : (
+            <div className="mt-3 text-xs text-slate-500">
+              Choose a date to see the owner&apos;s hourly availability.
+            </div>
+          )}
+        </div>
+      )}
       {(minViolation || maxViolation) && (
         <div className="rounded-lg border bg-white p-3 text-sm text-amber-700">
           {minViolation ? (

@@ -115,6 +115,20 @@ export default async function ListingPage({
     buffer_days: rental.buffer_days ?? 0,
   }));
 
+  const { data: hourlyAvailability, error: hourlyAvailabilityError } =
+    await supabase
+      .from("listing_hourly_availability")
+      .select("id, weekday, start_time, end_time")
+      .eq("listing_id", id)
+      .order("weekday", { ascending: true });
+
+  if (hourlyAvailabilityError) {
+    console.error(
+      "Listing hourly availability error:",
+      hourlyAvailabilityError.message,
+    );
+  }
+
   /* =========================
      Normalize numbers for UI + form
   ========================== */
@@ -265,8 +279,11 @@ export default async function ListingPage({
           <RentalRequestForm
             listingId={id}
             blocked={blockedRanges}
+            hourlyAvailability={hourlyAvailability ?? []}
             /* pricing + rules (fixes NaN + missing totals) */
             pricePerDay={pricePerDay}
+            rentalHourlyEnabled={rentalHourlyEnabled}
+            rentalHourRate={rentalHourRate}
             securityDeposit={securityDeposit}
             minRentalDays={minRentalDays}
             maxRentalDays={maxRentalDays}
