@@ -49,7 +49,7 @@ type Listing = {
   delivery_miles?: number | null;
 };
 
-type SortMode = "newest" | "price_asc" | "price_desc";
+type SortMode = "newest" | "price_asc" | "price_desc" | "distance";
 
 const CATEGORIES = [
   { key: "heavy_equipment", label: "Heavy Equipment" },

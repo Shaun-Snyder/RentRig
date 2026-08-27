@@ -116,7 +116,6 @@ export default function ProfileForm({
   initialOccupation: string;
   initialPhone: string;
   initialAvatarUrl: string;
-  initialAvatarUrl: string;
   initialSummary: string;
   initialMemberSince: string;
   initialActiveListings: number;

@@ -65,6 +65,10 @@ export default async function RentalDetailsPage({
     notFound();
   }
 
+  const listing = Array.isArray(rental.listing)
+    ? (rental.listing[0] ?? null)
+    : rental.listing;
+
   let thumbUrl: string | null = null;
 
   if (rental.listing_id) {
@@ -117,7 +121,7 @@ export default async function RentalDetailsPage({
                 {thumbUrl ? (
                   <img
                     src={thumbUrl}
-                    alt={rental.listing?.title ?? "Listing photo"}
+                    alt={listing?.title ?? "Listing photo"}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -133,12 +137,12 @@ export default async function RentalDetailsPage({
                     Listing
                   </div>
                   <div className="mt-1 text-2xl font-bold">
-                    {rental.listing?.title ?? "Listing"}
+                    {listing?.title ?? "Listing"}
                   </div>
 
-                  {(rental.listing?.city || rental.listing?.state) && (
+                  {(listing?.city || listing?.state) && (
                     <div className="mt-1 text-sm text-slate-600">
-                      {[rental.listing?.city, rental.listing?.state]
+                      {[listing?.city, listing?.state]
                         .filter(Boolean)
                         .join(", ")}
                     </div>
@@ -224,8 +228,8 @@ export default async function RentalDetailsPage({
                 <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
                   <div className="font-semibold text-slate-700">Daily rate</div>
                   <div className="font-bold text-slate-900">
-                    {typeof rental.listing?.price_per_day === "number"
-                      ? `$${Number(rental.listing.price_per_day).toFixed(2)}/day`
+                    {typeof listing?.price_per_day === "number"
+                      ? `$${Number(listing?.price_per_day).toFixed(2)}/day`
                       : "—"}
                   </div>
                 </div>
@@ -235,7 +239,7 @@ export default async function RentalDetailsPage({
                     Security deposit
                   </div>
                   <div className="font-bold text-slate-900">
-                    ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
+                    ${Number(listing?.security_deposit ?? 0).toFixed(2)}
                   </div>
                 </div>
 
@@ -294,7 +298,7 @@ export default async function RentalDetailsPage({
                   Original Deposit
                 </div>
                 <div className="mt-1 text-2xl font-bold text-slate-900">
-                  ${Number(rental.listing?.security_deposit ?? 0).toFixed(2)}
+                  ${Number(listing?.security_deposit ?? 0).toFixed(2)}
                 </div>
               </div>
 

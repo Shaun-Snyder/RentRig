@@ -86,6 +86,10 @@ export default async function RenterInspectionPage({
     redirect("/dashboard/rentals");
   }
 
+  const listing = Array.isArray(rental.listing)
+    ? (rental.listing[0] ?? null)
+    : rental.listing;
+
   const typedRental: RentalRow = {
     id: rental.id,
     start_date: rental.start_date,
@@ -96,10 +100,10 @@ export default async function RenterInspectionPage({
     created_at: rental.created_at,
     renter_id: rental.renter_id,
     rental_agreement_url: rental.rental_agreement_url ?? null,
-    listing: rental.listing
+    listing: listing
       ? {
-          id: rental.listing.id,
-          title: rental.listing.title,
+          id: listing.id,
+          title: listing.title,
         }
       : null,
   };

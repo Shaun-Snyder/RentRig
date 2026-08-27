@@ -60,6 +60,9 @@ function addDaysUTC(date: Date, days: number) {
 function daysBetween(start: string, end: string) {
   const a = parseISO(start);
   const b = parseISO(end);
+
+  if (!a || !b) return 0;
+
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000));
 }
 

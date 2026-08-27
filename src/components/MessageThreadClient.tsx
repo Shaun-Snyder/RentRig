@@ -10,6 +10,7 @@ type ThreadRental = {
   start_date?: string | null;
   end_date?: string | null;
   status?: string | null;
+  is_inquiry?: boolean | null;
   listing?: {
     id: string;
     title: string;

@@ -958,6 +958,59 @@ export async function createRentalInspection(
     message: "Inspection saved.",
   };
 }
+
+export async function cancelRental(rentalId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "Not authenticated." };
+  }
+
+  const { data: rental, error: rentalError } = await supabase
+    .from("rentals")
+    .select("id, renter_id, status")
+    .eq("id", rentalId)
+    .single();
+
+  if (rentalError || !rental) {
+    return {
+      ok: false,
+      message: rentalError?.message || "Rental not found.",
+    };
+  }
+
+  if (rental.renter_id !== user.id) {
+    return { ok: false, message: "You cannot cancel this rental." };
+  }
+
+  if (rental.status !== "pending") {
+    return {
+      ok: false,
+      message: "Only pending rental requests can be cancelled.",
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("rentals")
+    .update({ status: "cancelled" })
+    .eq("id", rentalId)
+    .eq("renter_id", user.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    return { ok: false, message: updateError.message };
+  }
+
+  revalidatePath("/dashboard/rentals");
+  revalidatePath("/dashboard/owner-rentals");
+
+  return { ok: true, message: "Rental request cancelled." };
+}
+
 export async function submitRating(formData: FormData) {
   const supabase = await createClient();
 

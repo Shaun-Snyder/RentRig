@@ -314,8 +314,7 @@ export default function RenterRentalsClient({
                   disabled={
                     r.status !== "approved" ||
                     r.renter_returned ||
-                    returnedMap[r.id] ||
-                    r.status === "rejected"
+                    returnedMap[r.id]
                   }
                   className="rr-btn rr-btn-secondary"
                 >
