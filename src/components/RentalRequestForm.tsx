@@ -158,6 +158,52 @@ function timeToMinutes(value: string) {
   return hour * 60 + minute;
 }
 
+function getRemainingHourlyWindows(
+  availableWindows: { start_time: string; end_time: string }[],
+  bookedWindows: { start_time: string; end_time: string }[],
+) {
+  const booked = bookedWindows
+    .map((window) => ({
+      start: timeToMinutes(window.start_time),
+      end: timeToMinutes(window.end_time),
+    }))
+    .sort((a, b) => a.start - b.start);
+
+  const remaining: { start: number; end: number }[] = [];
+
+  for (const available of availableWindows) {
+    const availableStart = timeToMinutes(available.start_time);
+    const availableEnd = timeToMinutes(available.end_time);
+
+    let cursor = availableStart;
+
+    for (const booking of booked) {
+      if (booking.end <= cursor) continue;
+      if (booking.start >= availableEnd) break;
+
+      if (booking.start > cursor) {
+        remaining.push({
+          start: cursor,
+          end: Math.min(booking.start, availableEnd),
+        });
+      }
+
+      cursor = Math.max(cursor, booking.end);
+
+      if (cursor >= availableEnd) break;
+    }
+
+    if (cursor < availableEnd) {
+      remaining.push({
+        start: cursor,
+        end: availableEnd,
+      });
+    }
+  }
+
+  return remaining;
+}
+
 function minutesToTime(value: number) {
   const hour = Math.floor(value / 60);
   const minute = value % 60;
@@ -232,47 +278,11 @@ export default function RentalRequestForm({
   const remainingHourlyAvailability = useMemo(() => {
     if (!startDate) return [];
 
-    const booked = hourlyBookedWindows
-      .filter((window) => window.date === startDate)
-      .map((window) => ({
-        start: timeToMinutes(window.start_time),
-        end: timeToMinutes(window.end_time),
-      }))
-      .sort((a, b) => a.start - b.start);
+    const bookedForDate = hourlyBookedWindows.filter(
+      (window) => window.date === startDate,
+    );
 
-    const remaining: { start: number; end: number }[] = [];
-
-    for (const available of selectedDayAvailability) {
-      const availableStart = timeToMinutes(available.start_time);
-      const availableEnd = timeToMinutes(available.end_time);
-
-      let cursor = availableStart;
-
-      for (const booking of booked) {
-        if (booking.end <= cursor) continue;
-        if (booking.start >= availableEnd) break;
-
-        if (booking.start > cursor) {
-          remaining.push({
-            start: cursor,
-            end: Math.min(booking.start, availableEnd),
-          });
-        }
-
-        cursor = Math.max(cursor, booking.end);
-
-        if (cursor >= availableEnd) break;
-      }
-
-      if (cursor < availableEnd) {
-        remaining.push({
-          start: cursor,
-          end: availableEnd,
-        });
-      }
-    }
-
-    return remaining;
+    return getRemainingHourlyWindows(selectedDayAvailability, bookedForDate);
   }, [startDate, selectedDayAvailability, hourlyBookedWindows]);
 
   const maxHourlyHoursFromStart = useMemo(() => {
@@ -774,23 +784,68 @@ export default function RentalRequestForm({
               hourlyAvailable: (d) => {
                 const dateString = toLocalDateString(d);
 
-                const hasHours = hourlyAvailability.some(
+                const availableForDay = hourlyAvailability.filter(
                   (window) => window.weekday === d.getDay(),
                 );
 
-                const hasBooking = hourlyBookedWindows.some(
+                const bookedForDay = hourlyBookedWindows.filter(
                   (window) => window.date === dateString,
                 );
 
-                return hasHours && !hasBooking;
+                if (availableForDay.length === 0) return false;
+
+                const remaining = getRemainingHourlyWindows(
+                  availableForDay,
+                  bookedForDay,
+                );
+
+                return bookedForDay.length === 0 && remaining.length > 0;
               },
 
               hourlyPartial: (d) => {
                 const dateString = toLocalDateString(d);
 
-                return hourlyBookedWindows.some(
+                const availableForDay = hourlyAvailability.filter(
+                  (window) => window.weekday === d.getDay(),
+                );
+
+                const bookedForDay = hourlyBookedWindows.filter(
                   (window) => window.date === dateString,
                 );
+
+                if (availableForDay.length === 0 || bookedForDay.length === 0) {
+                  return false;
+                }
+
+                const remaining = getRemainingHourlyWindows(
+                  availableForDay,
+                  bookedForDay,
+                );
+
+                return remaining.length > 0;
+              },
+
+              hourlyFull: (d) => {
+                const dateString = toLocalDateString(d);
+
+                const availableForDay = hourlyAvailability.filter(
+                  (window) => window.weekday === d.getDay(),
+                );
+
+                const bookedForDay = hourlyBookedWindows.filter(
+                  (window) => window.date === dateString,
+                );
+
+                if (availableForDay.length === 0 || bookedForDay.length === 0) {
+                  return false;
+                }
+
+                const remaining = getRemainingHourlyWindows(
+                  availableForDay,
+                  bookedForDay,
+                );
+
+                return remaining.length === 0;
               },
             }}
 
@@ -800,6 +855,9 @@ export default function RentalRequestForm({
 
               hourlyPartial:
                 "bg-amber-100 text-amber-800 font-semibold border border-amber-400",
+
+              hourlyFull:
+                "bg-red-100 text-red-700 line-through font-semibold border border-red-300",
             }}
 
             disabled={(d) => {
@@ -810,11 +868,24 @@ export default function RentalRequestForm({
 
               if (isPast) return true;
 
-              const hasHourlyAvailability = hourlyAvailability.some(
+              const availableForDay = hourlyAvailability.filter(
                 (window) => window.weekday === d.getDay(),
               );
 
-              return !hasHourlyAvailability;
+              if (availableForDay.length === 0) return true;
+
+              const dateString = toLocalDateString(d);
+
+              const bookedForDay = hourlyBookedWindows.filter(
+                (window) => window.date === dateString,
+              );
+
+              const remaining = getRemainingHourlyWindows(
+                availableForDay,
+                bookedForDay,
+              );
+
+              return remaining.length === 0;
             }}
           />
 
