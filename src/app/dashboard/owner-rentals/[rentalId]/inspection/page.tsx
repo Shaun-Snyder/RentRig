@@ -125,7 +125,12 @@ deposit_refund_transaction_id,
   }
 
   // Only the owner of the listing can view this page
-  if (!rental.listing || rental.listing.owner_id !== user.id) {
+
+  const listing = Array.isArray(rental.listing)
+    ? (rental.listing[0] ?? null)
+    : rental.listing;
+
+  if (!listing || listing.owner_id !== user.id) {
     redirect("/dashboard/owner-rentals");
   }
 
@@ -153,10 +158,10 @@ deposit_refund_transaction_id,
     deposit_refund_amount: rental.deposit_refund_amount ?? null,
     deposit_refunded_at: rental.deposit_refunded_at ?? null,
     deposit_refund_transaction_id: rental.deposit_refund_transaction_id ?? null,
-    listing: rental.listing
+    listing: listing
       ? {
-          id: rental.listing.id,
-          title: rental.listing.title,
+          id: listing.id,
+          title: listing.title,
         }
       : null,
   };
@@ -437,7 +442,13 @@ deposit_refund_transaction_id,
         <OwnerInspectionForm rental={typedRental as any} />
 
         {/* Return deposit handling */}
-        <form action={updateRentalDeposit} className="rr-card mt-6 p-4">
+        <form
+          action={async (formData) => {
+            "use server";
+            await updateRentalDeposit(formData);
+          }}
+          className="rr-card mt-6 p-4"
+        >
           <input type="hidden" name="rental_id" value={rental.id} />
 
           <div className="border-b border-slate-200 pb-4">

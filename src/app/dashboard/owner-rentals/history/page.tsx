@@ -20,30 +20,43 @@ export default async function OwnerRentalsHistoryPage() {
   const { data: rentals, error: rentalsError } = await supabase
     .from("rentals")
     .select(
-      [
-        "id",
-        "listing_id",
-        "renter_id",
-        "start_date",
-        "end_date",
-        "status",
-        "message",
-        "created_at",
+      `
+  id,
+  listing_id,
+  renter_id,
+  start_date,
+  end_date,
+  status,
+  message,
+  created_at,
 
-        "hourly_is_estimate",
-        "hourly_estimated_hours",
-        "hourly_final_hours",
-        "hourly_final_total",
-        "hourly_finalized_at",
+  hourly_is_estimate,
+  hourly_estimated_hours,
+  hourly_final_hours,
+  hourly_final_total,
+  hourly_finalized_at,
 
-        "operator_selected",
-        "operator_rate_unit",
-        "operator_rate",
-        "operator_hours",
-        "operator_total",
+  operator_selected,
+  operator_rate_unit,
+  operator_rate,
+  operator_hours,
+  operator_total,
 
-        "inspections:rental_inspections(id, role, phase, odometer, hours_used, fuel_percent, notes, created_at, photos:rental_inspection_photos(id, url))",
-      ].join(", "),
+  inspections:rental_inspections(
+    id,
+    role,
+    phase,
+    odometer,
+    hours_used,
+    fuel_percent,
+    notes,
+    created_at,
+    photos:rental_inspection_photos(
+      id,
+      url
+    )
+  )
+`,
     )
     .lt("end_date", today)
     .order("end_date", { ascending: false });

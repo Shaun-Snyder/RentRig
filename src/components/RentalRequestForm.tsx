@@ -19,6 +19,12 @@ type HourlyAvailability = {
   end_time: string;
 };
 
+type HourlyBookedWindow = {
+  date: string;
+  start_time: string;
+  end_time: string;
+};
+
 function formatMoney(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -67,6 +73,7 @@ type Props = {
   rentalHourRate?: number;
   blocked?: BlockedRange[];
   hourlyAvailability?: HourlyAvailability[];
+  hourlyBookedWindows?: HourlyBookedWindow[];
   minRentalDays?: number;
   maxRentalDays?: number;
   securityDeposit?: number;
@@ -132,6 +139,32 @@ function fromLocalDateString(value: string) {
   return new Date(year, month - 1, day);
 }
 
+function formatTime(value: string) {
+  const [hourString, minuteString] = value.slice(0, 5).split(":");
+  const hour = Number(hourString);
+  const minute = Number(minuteString);
+
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function timeToMinutes(value: string) {
+  const [hour, minute] = value.slice(0, 5).split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+function minutesToTime(value: number) {
+  const hour = Math.floor(value / 60);
+  const minute = value % 60;
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 export default function RentalRequestForm({
   listingId,
   pricePerDay,
@@ -139,6 +172,7 @@ export default function RentalRequestForm({
   rentalHourRate = 0,
   blocked = [],
   hourlyAvailability = [],
+  hourlyBookedWindows = [],
   minRentalDays,
   maxRentalDays,
   securityDeposit,
@@ -187,13 +221,73 @@ export default function RentalRequestForm({
   const selectedDayAvailability = useMemo(() => {
     if (!startDate) return [];
 
-    const selected = parseISO(startDate);
+    const selected = fromLocalDateString(startDate);
     if (!selected) return [];
 
-    const weekday = selected.getUTCDay();
+    const weekday = selected.getDay();
 
     return hourlyAvailability.filter((window) => window.weekday === weekday);
   }, [startDate, hourlyAvailability]);
+
+  const remainingHourlyAvailability = useMemo(() => {
+    if (!startDate) return [];
+
+    const booked = hourlyBookedWindows
+      .filter((window) => window.date === startDate)
+      .map((window) => ({
+        start: timeToMinutes(window.start_time),
+        end: timeToMinutes(window.end_time),
+      }))
+      .sort((a, b) => a.start - b.start);
+
+    const remaining: { start: number; end: number }[] = [];
+
+    for (const available of selectedDayAvailability) {
+      const availableStart = timeToMinutes(available.start_time);
+      const availableEnd = timeToMinutes(available.end_time);
+
+      let cursor = availableStart;
+
+      for (const booking of booked) {
+        if (booking.end <= cursor) continue;
+        if (booking.start >= availableEnd) break;
+
+        if (booking.start > cursor) {
+          remaining.push({
+            start: cursor,
+            end: Math.min(booking.start, availableEnd),
+          });
+        }
+
+        cursor = Math.max(cursor, booking.end);
+
+        if (cursor >= availableEnd) break;
+      }
+
+      if (cursor < availableEnd) {
+        remaining.push({
+          start: cursor,
+          end: availableEnd,
+        });
+      }
+    }
+
+    return remaining;
+  }, [startDate, selectedDayAvailability, hourlyBookedWindows]);
+
+  const maxHourlyHoursFromStart = useMemo(() => {
+    if (!hourlyStartTime) return 0;
+
+    const startMinutes = timeToMinutes(hourlyStartTime);
+
+    const window = remainingHourlyAvailability.find(
+      (item) => startMinutes >= item.start && startMinutes < item.end,
+    );
+
+    if (!window) return 0;
+
+    return Math.floor((window.end - startMinutes) / 60);
+  }, [hourlyStartTime, remainingHourlyAvailability]);
 
   // delivery UI
   const deliveryAllowed = deliveryMode !== "pickup_only";
@@ -673,18 +767,54 @@ export default function RentalRequestForm({
 
               setStartDate(selectedDate);
               setEndDate(toLocalDateString(nextDay));
-
-              // Keep hourly rentals within one calendar day.
-              // end_date stays as the next-day boundary for compatibility.
-              setEndDate(addDaysUTC(date, 1).toISOString().slice(0, 10));
             }}
             numberOfMonths={1}
+
+            modifiers={{
+              hourlyAvailable: (d) => {
+                const dateString = toLocalDateString(d);
+
+                const hasHours = hourlyAvailability.some(
+                  (window) => window.weekday === d.getDay(),
+                );
+
+                const hasBooking = hourlyBookedWindows.some(
+                  (window) => window.date === dateString,
+                );
+
+                return hasHours && !hasBooking;
+              },
+
+              hourlyPartial: (d) => {
+                const dateString = toLocalDateString(d);
+
+                return hourlyBookedWindows.some(
+                  (window) => window.date === dateString,
+                );
+              },
+            }}
+
+            modifiersClassNames={{
+              hourlyAvailable:
+                "bg-green-100 text-green-800 font-semibold border border-green-300",
+
+              hourlyPartial:
+                "bg-amber-100 text-amber-800 font-semibold border border-amber-400",
+            }}
+
             disabled={(d) => {
               const now = new Date();
 
-              return (
-                d < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              const isPast =
+                d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+              if (isPast) return true;
+
+              const hasHourlyAvailability = hourlyAvailability.some(
+                (window) => window.weekday === d.getDay(),
               );
+
+              return !hasHourlyAvailability;
             }}
           />
 
@@ -699,11 +829,64 @@ export default function RentalRequestForm({
                   <div className="mt-2 grid gap-1 text-slate-600">
                     {selectedDayAvailability.map((window) => (
                       <div key={window.id}>
-                        {window.start_time.slice(0, 5)} –{" "}
-                        {window.end_time.slice(0, 5)}
+                        {formatTime(window.start_time)} –{" "}
+                        {formatTime(window.end_time)}
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {hourlyBookedWindows.filter(
+                  (window) => window.date === startDate,
+                ).length > 0 ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+                    <div className="font-semibold text-red-800">
+                      Already rented
+                    </div>
+
+                    <div className="mt-2 grid gap-1 text-red-700">
+                      {hourlyBookedWindows
+                        .filter((window) => window.date === startDate)
+                        .map((window, index) => (
+                          <div
+                            key={`${window.date}-${window.start_time}-${index}`}
+                          >
+                            {formatTime(window.start_time)} –{" "}
+                            {formatTime(window.end_time)}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
+                  <div className="font-semibold text-green-800">
+                    Available now
+                  </div>
+
+                  {remainingHourlyAvailability.length > 0 ? (
+                    <div className="mt-2 grid gap-1 text-green-700">
+                      {remainingHourlyAvailability.map((window, index) => (
+                        <div key={`${window.start}-${window.end}-${index}`}>
+                          {formatTime(
+                            `${String(Math.floor(window.start / 60)).padStart(2, "0")}:${String(
+                              window.start % 60,
+                            ).padStart(2, "0")}`,
+                          )}{" "}
+                          –{" "}
+                          {formatTime(
+                            `${String(Math.floor(window.end / 60)).padStart(2, "0")}:${String(
+                              window.end % 60,
+                            ).padStart(2, "0")}`,
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-red-700">
+                      No hourly time remains available for this day.
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -712,12 +895,36 @@ export default function RentalRequestForm({
                       Start time
                     </span>
 
-                    <input
-                      type="time"
+                    <select
                       value={hourlyStartTime}
                       onChange={(e) => setHourlyStartTime(e.target.value)}
                       className="rr-input"
-                    />
+                    >
+                      <option value="">Select start time</option>
+
+                      {remainingHourlyAvailability.flatMap((window) => {
+                        const options = [];
+
+                        for (
+                          let minute = window.start;
+                          minute < window.end;
+                          minute += 60
+                        ) {
+                          const value = minutesToTime(minute);
+
+                          options.push(
+                            <option
+                              key={`${window.start}-${minute}`}
+                              value={value}
+                            >
+                              {formatTime(value)}
+                            </option>,
+                          );
+                        }
+
+                        return options;
+                      })}
+                    </select>
                   </label>
 
                   <label className="grid gap-1">
@@ -728,12 +935,22 @@ export default function RentalRequestForm({
                     <input
                       type="number"
                       min={1}
-                      max={24}
+                      max={Math.max(1, maxHourlyHoursFromStart)}
                       step={1}
                       value={hourlyHours}
-                      onChange={(e) =>
-                        setHourlyHours(Math.max(1, Number(e.target.value) || 1))
-                      }
+                      onChange={(e) => {
+                        const requested = Math.max(
+                          1,
+                          Number(e.target.value) || 1,
+                        );
+
+                        setHourlyHours(
+                          Math.min(
+                            requested,
+                            Math.max(1, maxHourlyHoursFromStart),
+                          ),
+                        );
+                      }}
                       className="rr-input"
                     />
                   </label>

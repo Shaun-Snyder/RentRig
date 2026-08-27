@@ -105,15 +105,40 @@ export default async function ListingPage({
   ========================== */
   const { data: approvedRentals } = await supabase
     .from("rentals")
-    .select("start_date, end_date, status, buffer_days")
+    .select(
+      `
+    start_date,
+    end_date,
+    status,
+    buffer_days,
+    booking_unit,
+    hourly_start_time,
+    hourly_end_time
+  `,
+    )
     .eq("listing_id", id)
     .in("status", ["approved", "active"]);
 
-  const blockedRanges = (approvedRentals ?? []).map((rental) => ({
-    start: rental.start_date,
-    end_exclusive: rental.end_date,
-    buffer_days: rental.buffer_days ?? 0,
-  }));
+  const blockedRanges = (approvedRentals ?? [])
+    .filter((rental) => rental.booking_unit !== "hour")
+    .map((rental) => ({
+      start: rental.start_date,
+      end_exclusive: rental.end_date,
+      buffer_days: rental.buffer_days ?? 0,
+    }));
+
+  const hourlyBookedWindows = (approvedRentals ?? [])
+    .filter(
+      (rental) =>
+        rental.booking_unit === "hour" &&
+        rental.hourly_start_time &&
+        rental.hourly_end_time,
+    )
+    .map((rental) => ({
+      date: rental.start_date,
+      start_time: rental.hourly_start_time,
+      end_time: rental.hourly_end_time,
+    }));
 
   const { data: hourlyAvailability, error: hourlyAvailabilityError } =
     await supabase
@@ -280,6 +305,7 @@ export default async function ListingPage({
             listingId={id}
             blocked={blockedRanges}
             hourlyAvailability={hourlyAvailability ?? []}
+            hourlyBookedWindows={hourlyBookedWindows}
             /* pricing + rules (fixes NaN + missing totals) */
             pricePerDay={pricePerDay}
             rentalHourlyEnabled={rentalHourlyEnabled}

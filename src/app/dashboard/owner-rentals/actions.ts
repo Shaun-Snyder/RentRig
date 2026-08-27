@@ -305,7 +305,7 @@ security_deposit_amount,
     .eq("id", rentalId);
 
   if (updErr) {
-    return { ok: false, error: updErr.message as const };
+    return { ok: false, error: updErr.message };
   }
 
   // Admin client for renter email + profile names (bypass RLS safely server-side)
@@ -326,7 +326,7 @@ security_deposit_amount,
     return {
       ok: true,
       emailed: false,
-      error: `Approved, but email failed: ${renterUserErr.message}` as const,
+      error: `Approved, but email failed: ${renterUserErr.message}`,
     };
   }
 
@@ -522,7 +522,7 @@ export async function rejectRental(rentalId: string) {
     .from("rentals")
     .update({ status: "rejected" })
     .eq("id", rentalId);
-  if (error) return { ok: false, error: error.message as const };
+  if (error) return { ok: false, error: error.message };
 
   revalidatePath("/dashboard/owner-rentals");
   revalidatePath("/dashboard/rentals");
@@ -572,7 +572,7 @@ export async function markRentalCompleted(rentalId: string) {
     .maybeSingle();
 
   if (checkoutError) {
-    return { ok: false, error: checkoutError.message as const };
+    return { ok: false, error: checkoutError.message };
   }
 
   if (!checkoutInspection) {
@@ -590,7 +590,7 @@ export async function markRentalCompleted(rentalId: string) {
     .eq("id", rentalId)
     .eq("status", "approved");
 
-  if (error) return { ok: false, error: error.message as const };
+  if (error) return { ok: false, error: error.message };
 
   revalidatePath("/dashboard/owner-rentals");
   revalidatePath("/dashboard/rentals");
@@ -723,7 +723,7 @@ export async function updateRentalDeposit(formData: FormData) {
     .eq("id", rentalId);
 
   if (updateError) {
-    return { ok: false, error: updateError.message as const };
+    return { ok: false, error: updateError.message };
   }
 
   revalidatePath(`/dashboard/owner-rentals/${rentalId}`);
@@ -830,7 +830,7 @@ export async function updateOwnerDiscount(formData: FormData) {
     .eq("id", rentalId);
 
   if (updateError) {
-    return { ok: false, error: updateError.message as const };
+    return { ok: false, error: updateError.message };
   }
 
   revalidatePath(`/dashboard/owner-rentals/${rentalId}`);

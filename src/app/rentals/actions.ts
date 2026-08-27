@@ -51,6 +51,15 @@ export async function requestRental(formData: FormData) {
   const end_date = String(formData.get("end_date") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim() || null;
 
+  const booking_unit =
+    String(formData.get("booking_unit") ?? "day") === "hour" ? "hour" : "day";
+
+  const hourly_start_time = String(
+    formData.get("hourly_start_time") ?? "",
+  ).trim();
+
+  const hourly_hours = toInt(formData.get("hourly_hours"), 0);
+
   if (!listing_id) return { ok: false, message: "Missing listing id." };
   if (!isValidISODate(start_date) || !isValidISODate(end_date)) {
     return { ok: false, message: "Dates must be YYYY-MM-DD." };
@@ -113,7 +122,8 @@ export async function requestRental(formData: FormData) {
       delivery_service_discount_amount,
 
       price_per_day,
-      security_deposit,
+rental_hour_rate,
+security_deposit,
 
       operator_enabled,
       operator_rate_unit,
@@ -183,21 +193,141 @@ export async function requestRental(formData: FormData) {
 
   const { data: approved } = await supabase
     .from("rentals")
-    .select("start_date, end_date, buffer_days")
+    .select(
+      `
+    start_date,
+    end_date,
+    buffer_days,
+    booking_unit,
+    hourly_start_time,
+    hourly_end_time
+  `,
+    )
     .eq("listing_id", listing_id)
     .eq("status", "approved");
 
-  const reqStart = parseISODate(start_date);
-  const reqEnd = addDaysUTC(parseISODate(end_date), 1 + buffer_days);
+  if (booking_unit === "day") {
+    const reqStart = parseISODate(start_date);
+    const reqEnd = addDaysUTC(parseISODate(end_date), 1 + buffer_days);
 
-  for (const r of approved ?? []) {
-    const rStart = parseISODate(r.start_date);
-    const rEnd = addDaysUTC(
-      parseISODate(r.end_date),
-      1 + Number(r.buffer_days ?? 0),
-    );
-    if (rangesOverlap(reqStart, reqEnd, rStart, rEnd)) {
-      return { ok: false, message: "Listing not available for those dates." };
+    for (const r of approved ?? []) {
+      // An hourly rental should not automatically block the entire day.
+      if (r.booking_unit === "hour") continue;
+
+      const rStart = parseISODate(r.start_date);
+      const rEnd = addDaysUTC(
+        parseISODate(r.end_date),
+        1 + Number(r.buffer_days ?? 0),
+      );
+
+      if (rangesOverlap(reqStart, reqEnd, rStart, rEnd)) {
+        return {
+          ok: false,
+          message: "Listing not available for those dates.",
+        };
+      }
+    }
+  }
+
+  if (booking_unit === "hour") {
+    if (!hourly_start_time || hourly_hours < 1) {
+      return {
+        ok: false,
+        message: "Choose a valid hourly start time and rental length.",
+      };
+    }
+
+    const [startHour, startMinute] = hourly_start_time.split(":").map(Number);
+
+    const requestStartMinutes = startHour * 60 + startMinute;
+    const requestEndMinutes = requestStartMinutes + hourly_hours * 60;
+
+    const requestDate = parseISODate(start_date);
+    const weekday = requestDate.getUTCDay();
+
+    const { data: hourlyWindows, error: hourlyWindowsError } = await supabase
+      .from("listing_hourly_availability")
+      .select("start_time, end_time")
+      .eq("listing_id", listing_id)
+      .eq("weekday", weekday);
+
+    if (hourlyWindowsError) {
+      return {
+        ok: false,
+        message: hourlyWindowsError.message,
+      };
+    }
+
+    const fitsOwnerAvailability = (hourlyWindows ?? []).some((window) => {
+      const [windowStartHour, windowStartMinute] = String(window.start_time)
+        .slice(0, 5)
+        .split(":")
+        .map(Number);
+
+      const [windowEndHour, windowEndMinute] = String(window.end_time)
+        .slice(0, 5)
+        .split(":")
+        .map(Number);
+
+      const windowStartMinutes = windowStartHour * 60 + windowStartMinute;
+
+      const windowEndMinutes = windowEndHour * 60 + windowEndMinute;
+
+      return (
+        requestStartMinutes >= windowStartMinutes &&
+        requestEndMinutes <= windowEndMinutes
+      );
+    });
+
+    if (!fitsOwnerAvailability) {
+      return {
+        ok: false,
+        message: "Requested hours are outside the owner's available hours.",
+      };
+    }
+
+    for (const r of approved ?? []) {
+      // A daily rental still blocks the entire date.
+      if (r.booking_unit !== "hour") {
+        if (r.start_date === start_date) {
+          return {
+            ok: false,
+            message: "Listing is already booked for that date.",
+          };
+        }
+
+        continue;
+      }
+
+      // Hourly bookings only conflict if they are on the same date.
+      if (r.start_date !== start_date) continue;
+
+      if (!r.hourly_start_time || !r.hourly_end_time) continue;
+
+      const [bookedStartHour, bookedStartMinute] = r.hourly_start_time
+        .slice(0, 5)
+        .split(":")
+        .map(Number);
+
+      const [bookedEndHour, bookedEndMinute] = r.hourly_end_time
+        .slice(0, 5)
+        .split(":")
+        .map(Number);
+
+      const bookedStartMinutes = bookedStartHour * 60 + bookedStartMinute;
+
+      const bookedEndMinutes = bookedEndHour * 60 + bookedEndMinute;
+
+      const overlaps =
+        requestStartMinutes < bookedEndMinutes &&
+        bookedStartMinutes < requestEndMinutes;
+
+      if (overlaps) {
+        return {
+          ok: false,
+          message: "Those hours are already booked.",
+        };
+      }
     }
   }
 
@@ -397,11 +527,14 @@ export async function requestRental(formData: FormData) {
         ? operatorUnit
         : service_unit;
 
-  const rental_rate_unit = "day";
+  const rental_rate_unit = booking_unit === "hour" ? "hour" : "day";
 
-  const rental_rate = Math.max(0, Number(listing.price_per_day ?? 0) || 0);
+  const rental_rate =
+    booking_unit === "hour"
+      ? Math.max(0, Number(listing.rental_hour_rate ?? 0) || 0)
+      : Math.max(0, Number(listing.price_per_day ?? 0) || 0);
 
-  const rental_quantity = rental_days;
+  const rental_quantity = booking_unit === "hour" ? hourly_hours : rental_days;
 
   const rental_subtotal = rental_rate * rental_quantity;
 
@@ -423,6 +556,21 @@ export async function requestRental(formData: FormData) {
   const owner_payout_amount =
     Math.round((customer_total - rentrig_fee_amount) * 100) / 100;
 
+  let hourly_end_time: string | null = null;
+
+  if (booking_unit === "hour" && hourly_start_time && hourly_hours > 0) {
+    const [startHour, startMinute] = hourly_start_time.split(":").map(Number);
+
+    const totalMinutes = startHour * 60 + startMinute + hourly_hours * 60;
+
+    const endHour = Math.floor(totalMinutes / 60);
+    const endMinute = totalMinutes % 60;
+
+    hourly_end_time = `${String(endHour).padStart(2, "0")}:${String(
+      endMinute,
+    ).padStart(2, "0")}`;
+  }
+
   const rentalInsert = {
     listing_id,
     renter_id: user.id,
@@ -432,6 +580,10 @@ export async function requestRental(formData: FormData) {
     message,
     status: "pending",
     is_inquiry: false,
+
+    booking_unit,
+    hourly_start_time: booking_unit === "hour" ? hourly_start_time : null,
+    hourly_end_time: booking_unit === "hour" ? hourly_end_time : null,
 
     rental_rate_unit,
     rental_rate,
@@ -478,6 +630,10 @@ export async function requestRental(formData: FormData) {
     "message",
     "status",
     "is_inquiry",
+
+    "booking_unit",
+    "hourly_start_time",
+    "hourly_end_time",
 
     "rental_rate_unit",
     "rental_rate",

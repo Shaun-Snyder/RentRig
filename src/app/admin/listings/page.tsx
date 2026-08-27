@@ -47,7 +47,12 @@ export default async function AdminListingsPage() {
     )
     .order("created_at", { ascending: false });
 
-  const listingList = listings ?? [];
+  const listingList = (listings ?? []).map((listing) => ({
+    ...listing,
+    owner: Array.isArray(listing.owner)
+      ? (listing.owner[0] ?? null)
+      : listing.owner,
+  }));
 
   return (
     <>

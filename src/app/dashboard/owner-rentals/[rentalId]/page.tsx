@@ -5,7 +5,6 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import SaveButton from "@/components/SaveButton";
 import StatusBadge from "@/components/StatusBadge";
 import OwnerDiscountForm from "@/components/OwnerDiscountForm";
 
@@ -93,7 +92,15 @@ export default async function OwnerRentalDetailsPage({
     console.error("OwnerRentalDetailsPage error:", error);
   }
 
-  if (!rental || rental.listing?.owner_id !== user.id) {
+  const listing = Array.isArray(rental?.listing)
+    ? (rental.listing[0] ?? null)
+    : rental?.listing;
+
+  const renter = Array.isArray(rental?.renter)
+    ? (rental.renter[0] ?? null)
+    : rental?.renter;
+
+  if (!rental || !listing || listing.owner_id !== user.id) {
     notFound();
   }
 
@@ -125,7 +132,7 @@ export default async function OwnerRentalDetailsPage({
               </div>
 
               <div className="mt-3 text-xl font-bold">
-                {rental.listing?.title ?? "Listing"}
+                {listing?.title ?? "Listing"}
               </div>
 
               <div className="mt-3 grid gap-2 text-sm text-slate-700">
@@ -154,12 +161,12 @@ export default async function OwnerRentalDetailsPage({
               <div className="mt-3 grid gap-2 text-sm text-slate-700">
                 <div>
                   <span className="font-semibold">Name:</span>{" "}
-                  {rental.renter?.full_name ?? "Renter"}
+                  {renter?.full_name ?? "Renter"}
                 </div>
 
                 <div>
                   <span className="font-semibold">Company:</span>{" "}
-                  {rental.renter?.company_name ?? "Not provided"}
+                  {renter?.company_name ?? "Not provided"}
                 </div>
               </div>
             </div>
