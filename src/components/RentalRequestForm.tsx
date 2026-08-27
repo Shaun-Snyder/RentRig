@@ -344,13 +344,27 @@ export default function RentalRequestForm({
     (!OPERATOR_ONLY_HEAVY_LIFTS || isHeavyCategory),
   );
 
-  // If license is required and renter doesn't confirm, force Operator (UI guard)
+  // If license is required and renter doesn't have one,
+  // use an owner-provided licensed service when available.
   useEffect(() => {
     if (needsLicenseBlock && !renterHasLicense) {
-      if (showOperatorOption) setServiceChoice("operator");
-      else setServiceChoice("none");
+      if (showOperatorOption) {
+        setServiceChoice("operator");
+      } else if (showDriverOption) {
+        setServiceChoice("driver");
+      } else if (showDriverLaborOption) {
+        setServiceChoice("driver_labor");
+      } else {
+        setServiceChoice("none");
+      }
     }
-  }, [needsLicenseBlock, renterHasLicense, showOperatorOption]);
+  }, [
+    needsLicenseBlock,
+    renterHasLicense,
+    showOperatorOption,
+    showDriverOption,
+    showDriverLaborOption,
+  ]);
 
   // If option isn't available, bounce back to none
   useEffect(() => {
@@ -1113,12 +1127,15 @@ export default function RentalRequestForm({
             </label>
           </div>
 
-          {!showOperatorOption && !renterHasLicense && (
-            <div className="mt-2 text-xs font-semibold text-red-700">
-              This listing requires a licensed operator, but the owner does not
-              currently offer one.
-            </div>
-          )}
+          {!showOperatorOption &&
+            !showDriverOption &&
+            !showDriverLaborOption &&
+            !renterHasLicense && (
+              <div className="mt-2 text-xs font-semibold text-red-700">
+                This listing requires a licensed driver or operator, but the
+                owner does not currently offer one.
+              </div>
+            )}
         </div>
       )}
 
