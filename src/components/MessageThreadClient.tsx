@@ -124,6 +124,32 @@ export default function MessageThreadClient({
   }, [rental?.id, me]);
 
   useEffect(() => {
+    if (!rental?.id) return;
+
+    const channel = supabase
+      .channel(`rental-messages-${rental.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "rental_messages",
+          filter: `rental_id=eq.${rental.id}`,
+        },
+        () => {
+          loadMessages();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rental?.id]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs]);
   async function markThreadRead() {
