@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import { createClient } from "@/lib/supabase/server";
 import ProfileForm from "@/components/ProfileForm";
+import StripePayoutSetupButton from "@/components/StripePayoutSetupButton";
+import { stripe } from "@/lib/stripe";
 
 type OwnerRequestRow = {
   id: string;
@@ -29,10 +31,50 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "role, full_name, company_name, city, state, occupation, phone, avatar_url, profile_summary, created_at",
+      "role, full_name, company_name, city, state, occupation, phone, avatar_url, profile_summary, created_at, stripe_account_id",
     )
     .eq("id", user.id)
     .single();
+
+  let stripePayoutStatus:
+    "not_setup" | "active" | "pending" | "restricted" | "unsupported" =
+    "not_setup";
+
+  if (profile?.stripe_account_id) {
+    try {
+      const stripeAccount = await stripe.v2.core.accounts.retrieve(
+        profile.stripe_account_id,
+        {
+          include: ["configuration.recipient"],
+        },
+      );
+
+      const stripeBalance =
+        stripeAccount.configuration?.recipient?.capabilities?.stripe_balance;
+
+      const transfersStatus = stripeBalance?.stripe_transfers?.status;
+      const payoutsStatus = stripeBalance?.payouts?.status;
+
+      if (transfersStatus === "active" && payoutsStatus === "active") {
+        stripePayoutStatus = "active";
+      } else if (
+        transfersStatus === "unsupported" ||
+        payoutsStatus === "unsupported"
+      ) {
+        stripePayoutStatus = "unsupported";
+      } else if (
+        transfersStatus === "restricted" ||
+        payoutsStatus === "restricted"
+      ) {
+        stripePayoutStatus = "restricted";
+      } else {
+        stripePayoutStatus = "pending";
+      }
+    } catch (error) {
+      console.error("Unable to retrieve Stripe payout status:", error);
+      stripePayoutStatus = "pending";
+    }
+  }
 
   const role = profile?.role ?? "user";
   const email = user.email ?? "(no email)";
@@ -159,6 +201,21 @@ export default async function DashboardPage() {
             initialMemberSince={profile?.created_at ?? ""}
             initialActiveListings={activeListingsCount ?? 0}
           />
+        </div>
+
+        <div className="mt-4 rounded-none border p-4 rr-card shadow-sm">
+          <div className="text-xs font-semibold text-slate-500 tracking-wide">
+            Owner Payouts
+          </div>
+
+          <div className="mt-2 text-sm text-slate-700">
+            Set up Stripe to receive rental payouts directly to your bank
+            account.
+          </div>
+
+          <div className="mt-3">
+            <StripePayoutSetupButton status={stripePayoutStatus} />
+          </div>
         </div>
 
         {/* INFO BUBBLES UNDER PROFILE */}
