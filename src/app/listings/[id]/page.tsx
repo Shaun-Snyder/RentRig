@@ -28,6 +28,7 @@ export default async function ListingPage({
       owner_id,
       title,
       description,
+      additional_info,
       category,
 
       price_per_day,
@@ -316,6 +317,18 @@ export default async function ListingPage({
             <div className="rr-outline-section text-lg mb-2">Description</div>
             <p className="rr-subtext whitespace-pre-wrap">
               {listing.description}
+            </p>
+          </div>
+        ) : null}
+
+        {listing.additional_info ? (
+          <div className="rr-card p-5 mb-6">
+            <div className="rr-outline-section text-lg mb-2">
+              Additional Info / Services
+            </div>
+
+            <p className="rr-subtext whitespace-pre-wrap">
+              {listing.additional_info}
             </p>
           </div>
         ) : null}

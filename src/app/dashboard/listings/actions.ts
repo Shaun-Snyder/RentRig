@@ -49,6 +49,7 @@ export async function createListing(arg1: any, arg2?: any) {
   const title = toStr(fd.get("title"));
   const category = toStr(fd.get("category"));
   const description = toStr(fd.get("description")) || null;
+  const additional_info = toStr(fd.get("additional_info")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
   const security_deposit = toNum(fd.get("security_deposit"));
@@ -150,6 +151,7 @@ export async function createListing(arg1: any, arg2?: any) {
     title,
     category,
     description,
+    additional_info,
     price_per_day,
     security_deposit,
 
@@ -214,6 +216,7 @@ export async function updateListing(arg1: any, arg2?: any) {
   const title = toStr(fd.get("title"));
   const category = toStr(fd.get("category"));
   const description = toStr(fd.get("description")) || null;
+  const additional_info = toStr(fd.get("additional_info")) || null;
 
   const price_per_day = toNum(fd.get("price_per_day"));
   const security_deposit = toNum(fd.get("security_deposit"));
@@ -313,6 +316,7 @@ export async function updateListing(arg1: any, arg2?: any) {
       title: title || undefined,
       category: category || undefined,
       description,
+      additional_info,
 
       price_per_day,
       security_deposit,

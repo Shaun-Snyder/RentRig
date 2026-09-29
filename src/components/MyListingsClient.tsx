@@ -16,6 +16,7 @@ type Listing = {
   title: string;
   category: string;
   description: string | null;
+  additional_info: string | null;
 
   license_required: boolean;
   license_type: string | null;
@@ -426,6 +427,7 @@ export default function MyListingsClient({
     fd.set("title", x.title ?? "");
     fd.set("category", x.category ?? "other");
     fd.set("description", x.description ?? "");
+    fd.set("additional_info", x.additional_info ?? "");
 
     fd.set("city", (x.city ?? "").toString());
     fd.set("state", (x.state ?? "").toString());
@@ -629,6 +631,16 @@ export default function MyListingsClient({
               className="rounded-md border px-3 py-2"
               name="description"
               rows={3}
+            />
+          </div>
+
+          <div className="grid gap-1">
+            <label className="text-sm">Additional Info / Services</label>
+            <textarea
+              className="rounded-md border px-3 py-2"
+              name="additional_info"
+              rows={3}
+              placeholder="Example: Available for hauling, manual labor, delivery, operator services, or other helpful information."
             />
           </div>
 
@@ -1612,6 +1624,19 @@ export default function MyListingsClient({
                       name="description"
                       rows={3}
                       defaultValue={l.description ?? ""}
+                    />
+                  </div>
+
+                  <div className="grid gap-1">
+                    <label className="text-sm">
+                      Additional Info / Services
+                    </label>
+                    <textarea
+                      className="rounded-md border px-3 py-2"
+                      name="additional_info"
+                      rows={3}
+                      defaultValue={l.additional_info ?? ""}
+                      placeholder="Example: Available for hauling, manual labor, delivery, operator services, or other helpful information."
                     />
                   </div>
 
