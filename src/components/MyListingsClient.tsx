@@ -1704,6 +1704,22 @@ export default function MyListingsClient({
                       </a>
                     </div>
                   </div>
+
+                  <div className="grid gap-2">
+                    <div className="text-sm font-medium">Blackout Dates</div>
+
+                    <div className="text-xs text-slate-500">
+                      Mark dates when this listing is unavailable for rental.
+                    </div>
+
+                    <a
+                      href={`/dashboard/listings/${l.id}/blackout-dates`}
+                      className="rr-btn rr-btn-secondary"
+                    >
+                      Manage Blackout Dates
+                    </a>
+                  </div>
+
                   <div className="grid gap-1">
                     <label className="text-sm">Security deposit</label>
 

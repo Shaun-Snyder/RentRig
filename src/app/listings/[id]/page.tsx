@@ -119,13 +119,45 @@ export default async function ListingPage({
     .eq("listing_id", id)
     .in("status", ["approved", "active"]);
 
-  const blockedRanges = (approvedRentals ?? [])
-    .filter((rental) => rental.booking_unit !== "hour")
-    .map((rental) => ({
-      start: rental.start_date,
-      end_exclusive: rental.end_date,
-      buffer_days: rental.buffer_days ?? 0,
-    }));
+  const { data: blackoutDates, error: blackoutDatesError } = await supabase
+    .from("listing_blackout_dates")
+    .select("blackout_date")
+    .eq("listing_id", id)
+    .order("blackout_date", { ascending: true });
+
+  if (blackoutDatesError) {
+    console.error("Listing blackout dates error:", blackoutDatesError.message);
+  }
+
+  const blockedRanges = [
+    ...(approvedRentals ?? [])
+      .filter((rental) => rental.booking_unit !== "hour")
+      .map((rental) => ({
+        start: rental.start_date,
+        end_exclusive: rental.end_date,
+        buffer_days: rental.buffer_days ?? 0,
+      })),
+    ...(blackoutDates ?? []).map((item) => {
+      const date = new Date(`${item.blackout_date}T00:00:00`);
+      const nextDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() + 1,
+      );
+
+      const endExclusive = [
+        nextDay.getFullYear(),
+        String(nextDay.getMonth() + 1).padStart(2, "0"),
+        String(nextDay.getDate()).padStart(2, "0"),
+      ].join("-");
+
+      return {
+        start: item.blackout_date,
+        end_exclusive: endExclusive,
+        buffer_days: 0,
+      };
+    }),
+  ];
 
   const hourlyBookedWindows = (approvedRentals ?? [])
     .filter(

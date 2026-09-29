@@ -801,6 +801,17 @@ export default function RentalRequestForm({
               hourlyAvailable: (d) => {
                 const dateString = toLocalDateString(d);
 
+                const isBlocked = blocked.some((range) => {
+                  const start = fromLocalDateString(range.start);
+                  const endExclusive = fromLocalDateString(range.end_exclusive);
+
+                  if (!start || !endExclusive) return false;
+
+                  return d >= start && d < endExclusive;
+                });
+
+                if (isBlocked) return true;
+
                 const availableForDay = hourlyAvailability.filter(
                   (window) => window.weekday === d.getDay(),
                 );
@@ -821,6 +832,16 @@ export default function RentalRequestForm({
 
               hourlyPartial: (d) => {
                 const dateString = toLocalDateString(d);
+
+                const isBlocked = blocked.some((range) => {
+                  const start = fromLocalDateString(range.start);
+                  const endExclusive = fromLocalDateString(range.end_exclusive);
+
+                  if (!start || !endExclusive) return false;
+
+                  return d >= start && d < endExclusive;
+                });
+                if (isBlocked) return true;
 
                 const availableForDay = hourlyAvailability.filter(
                   (window) => window.weekday === d.getDay(),
