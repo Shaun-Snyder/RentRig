@@ -5,6 +5,7 @@ import Link from "next/link";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
+import RentalCheckoutButton from "@/components/RentalCheckoutButton";
 
 export default async function RentalDetailsPage({
   params,
@@ -27,8 +28,41 @@ export default async function RentalDetailsPage({
         start_date,
         end_date,
         status,
+        payment_status,
+        stripe_checkout_session_id,
+        stripe_payment_intent_id,
+        paid_at,
         renter_returned,
         buffer_days,
+
+        rental_rate_unit,
+        rental_rate,
+        rental_quantity,
+        rental_subtotal,
+        security_deposit_amount,
+        rentrig_fee_rate,
+        rentrig_fee_amount,
+        owner_payout_amount,
+
+        delivery_selected,
+        delivery_fee,
+
+        owner_discount_amount,
+        owner_discount_note,
+
+        service_choice,
+        service_unit,
+        service_rate,
+        service_days,
+        service_hours,
+        service_total,
+
+        operator_selected,
+        operator_rate,
+        operator_rate_unit,
+        operator_days,
+        operator_hours,
+        operator_total,
 
         deposit_status,
         deposit_damage_deduction,
@@ -166,6 +200,11 @@ export default async function RentalDetailsPage({
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
+                  {rental.status === "approved" &&
+                  rental.payment_status !== "paid" ? (
+                    <RentalCheckoutButton rentalId={rental.id} />
+                  ) : null}
+
                   <Link
                     href={`/dashboard/rentals/${encodeURIComponent(
                       rental.id,
