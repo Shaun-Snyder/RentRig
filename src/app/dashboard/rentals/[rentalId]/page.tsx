@@ -205,6 +205,10 @@ export default async function RentalDetailsPage({
                     <RentalCheckoutButton rentalId={rental.id} />
                   ) : null}
 
+                  {rental.payment_status === "paid" ? (
+                    <span className="rr-badge">PAID</span>
+                  ) : null}
+
                   <Link
                     href={`/dashboard/rentals/${encodeURIComponent(
                       rental.id,
