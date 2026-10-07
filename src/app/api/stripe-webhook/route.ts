@@ -60,6 +60,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const { data: rental, error: rentalLookupError } = await admin
+      .from("rentals")
+      .select("id, renter_id, stripe_checkout_session_id, payment_status")
+      .eq("id", rentalId)
+      .maybeSingle();
+
+    if (rentalLookupError) {
+      console.error(
+        "Failed to verify rental for Stripe webhook:",
+        rentalLookupError,
+      );
+
+      return NextResponse.json(
+        { error: "Failed to verify rental" },
+        { status: 500 },
+      );
+    }
+
+    if (!rental) {
+      console.error("Stripe webhook rental not found:", rentalId);
+
+      return NextResponse.json({ error: "Rental not found" }, { status: 404 });
+    }
+
+    if (rental.stripe_checkout_session_id !== session.id) {
+      console.error("Stripe Checkout session does not match rental");
+
+      return NextResponse.json(
+        { error: "Checkout session mismatch" },
+        { status: 400 },
+      );
+    }
+
+    const sessionRenterId = session.metadata?.renter_id;
+
+    if (!sessionRenterId || sessionRenterId !== rental.renter_id) {
+      console.error("Stripe Checkout renter does not match rental");
+
+      return NextResponse.json({ error: "Renter mismatch" }, { status: 400 });
+    }
+
     const paymentIntentId =
       typeof session.payment_intent === "string"
         ? session.payment_intent
@@ -90,7 +131,8 @@ export async function POST(req: NextRequest) {
         stripe_charge_id: chargeId,
         paid_at: new Date().toISOString(),
       })
-      .eq("id", rentalId);
+      .eq("id", rentalId)
+      .neq("payment_status", "paid");
 
     if (rentalUpdateError) {
       console.error(
