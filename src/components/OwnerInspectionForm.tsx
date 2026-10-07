@@ -140,9 +140,11 @@ async function normalizeUploadFile(file: File): Promise<File> {
 export default function OwnerInspectionForm({
   rental,
   inspections,
+  phase = "checkin",
 }: {
   rental: RentalRow;
   inspections?: InspectionRow[];
+  phase?: "checkin" | "checkout";
 }) {
   const [msg, setMsg] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -287,16 +289,18 @@ export default function OwnerInspectionForm({
             <input type="hidden" name="rental_id" value={rental.id} />
             <input type="hidden" name="role" value="owner" />
 
-            <div className="grid gap-1">
-              <label className="text-xs font-medium">Phase</label>
-              <select
-                name="phase"
-                className="rr-input w-full text-sm"
-                defaultValue="checkin"
-              >
-                <option value="checkin">Check-in (before rental)</option>
-                <option value="checkout">Check-out (after rental)</option>
-              </select>
+            <input type="hidden" name="phase" value={phase} />
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Condition Type
+              </div>
+
+              <div className="mt-1 font-semibold text-slate-900">
+                {phase === "checkin"
+                  ? "Pre-Rental Condition"
+                  : "Return Condition"}
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -435,7 +439,9 @@ export default function OwnerInspectionForm({
                           shadow-sm
                         "
                       >
-                        {ins.phase === "checkin" ? "Check-in" : "Check-out"}
+                        {ins.phase === "checkin"
+                          ? "Pre-Rental Condition"
+                          : "Return Condition"}
                       </span>
 
                       {ins.created_at && (

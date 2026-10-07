@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
-import RenterInspectionForm from "@/components/RenterInspectionForm";
 
 type RentalRow = {
   id: string;
@@ -185,14 +184,19 @@ export default async function RenterInspectionPage({
     }));
   }
 
+  const ownerPreRentalInspection = inspections.find(
+    (inspection) =>
+      inspection.role === "owner" && inspection.phase === "checkin",
+  );
+
   return (
     <>
       <ServerHeader />
       <main className="mx-auto max-w-6xl px-6 py-4">
         <div className="rr-card p-4 mb-4">
           <PageHeader
-            title="Rental Condition"
-            subtitle="Record check-in / check-out condition for this rental."
+            title="Pre-Rental Condition"
+            subtitle="Review the owner's recorded condition of the equipment before pickup."
           />
         </div>
 
@@ -229,110 +233,106 @@ export default async function RenterInspectionPage({
         )}
 
         {/* Existing renter form (unchanged) */}
-        <RenterInspectionForm rental={typedRental} />
+        <div className="rr-card p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Pre-Rental Condition
+          </div>
 
-        {/* Inspections list (owner + renter) */}
-        <section className="mt-8">
+          <div className="mt-2 text-sm text-slate-600">
+            Review the owner&apos;s pre-rental condition report below before
+            pickup.
+          </div>
+        </div>
+
+        <section className="mt-6">
           <h2 className="mb-3 text-base font-semibold text-slate-800">
-            Inspection History
+            Owner Pre-Rental Condition
           </h2>
 
-          {inspections.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              No inspections recorded yet. Save a check-in or check-out above to
-              see them here.
-            </p>
+          {!ownerPreRentalInspection ? (
+            <div className="rr-card p-4 text-sm text-slate-600">
+              The owner has not recorded the pre-rental condition yet.
+            </div>
           ) : (
-            <div className="grid gap-3">
-              {inspections.map((insp) => (
-                <div
-                  key={insp.id}
-                  className="rr-card space-y-3 p-4 text-sm text-slate-700"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Role bubble */}
-                      <span
-                        className="
-                          inline-flex items-center
-                          rounded-full border border-black
-                          bg-white
-                          px-3 py-1
-                          text-[11px] font-semibold uppercase
-                          shadow-sm
-                        "
-                      >
-                        {insp.role === "owner" ? "Owner" : "Renter"}
-                      </span>
-
-                      {/* Phase bubble */}
-                      <span
-                        className="
-                          inline-flex items-center
-                          rounded-full border border-black
-                          bg-white
-                          px-3 py-1
-                          text-[11px]
-                          shadow-sm
-                        "
-                      >
-                        {insp.phase === "checkin" ? "Check-in" : "Check-out"}
-                      </span>
-                    </div>
-
-                    {insp.created_at && (
-                      <div className="text-[11px] text-slate-500">
-                        {new Date(insp.created_at).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 text-[11px]">
-                    {insp.odometer != null && (
-                      <span>Odometer: {insp.odometer} mi</span>
-                    )}
-                    {insp.hours_used != null && (
-                      <span>Hours: {insp.hours_used}</span>
-                    )}
-                    {insp.fuel_percent != null && (
-                      <span>Fuel: {insp.fuel_percent}%</span>
-                    )}
-                  </div>
-
-                  {insp.notes && (
-                    <div className="text-[11px]">
-                      <span className="font-medium">Notes:</span> {insp.notes}
-                    </div>
-                  )}
-
-                  {insp.damages && (
-                    <div className="text-[11px] text-rose-700">
-                      <span className="font-medium">Damages:</span>{" "}
-                      {insp.damages}
-                    </div>
-                  )}
-
-                  {insp.photos.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {insp.photos.map((p) => (
-                        <a
-                          key={p.id}
-                          href={p.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-block"
-                        >
-                          <img
-                            src={p.url}
-                            alt=""
-                            className="h-16 w-24 rounded border object-cover"
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+            <div className="rr-card space-y-4 p-4 text-sm text-slate-700">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="font-semibold text-green-700">
+                  ✓ Pre-rental condition recorded
                 </div>
-              ))}
+
+                {ownerPreRentalInspection.created_at ? (
+                  <div className="text-xs text-slate-500">
+                    {new Date(
+                      ownerPreRentalInspection.created_at,
+                    ).toLocaleString()}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {ownerPreRentalInspection.odometer != null ? (
+                  <div>
+                    <span className="font-semibold">Odometer:</span>{" "}
+                    {ownerPreRentalInspection.odometer} mi
+                  </div>
+                ) : null}
+
+                {ownerPreRentalInspection.hours_used != null ? (
+                  <div>
+                    <span className="font-semibold">Hours:</span>{" "}
+                    {ownerPreRentalInspection.hours_used}
+                  </div>
+                ) : null}
+
+                {ownerPreRentalInspection.fuel_percent != null ? (
+                  <div>
+                    <span className="font-semibold">Fuel:</span>{" "}
+                    {ownerPreRentalInspection.fuel_percent}%
+                  </div>
+                ) : null}
+              </div>
+
+              {ownerPreRentalInspection.damages ? (
+                <div>
+                  <div className="font-semibold text-rose-700">
+                    Existing Damage
+                  </div>
+                  <div className="mt-1 text-rose-700">
+                    {ownerPreRentalInspection.damages}
+                  </div>
+                </div>
+              ) : null}
+
+              {ownerPreRentalInspection.notes ? (
+                <div>
+                  <div className="font-semibold">Notes</div>
+                  <div className="mt-1">{ownerPreRentalInspection.notes}</div>
+                </div>
+              ) : null}
+
+              {ownerPreRentalInspection.photos.length > 0 ? (
+                <div>
+                  <div className="mb-2 font-semibold">Photos</div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {ownerPreRentalInspection.photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block"
+                      >
+                        <img
+                          src={photo.url}
+                          alt="Pre-rental condition"
+                          className="h-20 w-28 rounded border object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </section>

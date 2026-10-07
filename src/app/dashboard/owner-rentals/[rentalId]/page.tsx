@@ -104,6 +104,17 @@ export default async function OwnerRentalDetailsPage({
     notFound();
   }
 
+  const { data: ownerCheckinInspection } = await supabase
+    .from("rental_inspections")
+    .select("id")
+    .eq("rental_id", rental.id)
+    .eq("role", "owner")
+    .eq("phase", "checkin")
+    .limit(1)
+    .maybeSingle();
+
+  const hasOwnerCheckin = Boolean(ownerCheckinInspection);
+
   return (
     <>
       <ServerHeader />
@@ -338,7 +349,9 @@ export default async function OwnerRentalDetailsPage({
                 href={`/dashboard/owner-rentals/${rental.id}/inspection`}
                 className="rr-btn rr-btn-secondary"
               >
-                Record / View Condition
+                {hasOwnerCheckin
+                  ? "View Pre-Rental Condition"
+                  : "Record Pre-Rental Condition"}
               </Link>
             </div>
           </div>
