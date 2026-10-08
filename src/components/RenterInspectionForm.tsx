@@ -142,22 +142,13 @@ async function normalizeUploadFile(file: File): Promise<File> {
 
 export default function RenterInspectionForm({
   rental,
-  inspections,
+  phase = "checkin",
 }: {
   rental: RentalRow;
-  inspections?: InspectionRow[];
+  phase?: "checkin" | "checkout";
 }) {
   const [msg, setMsg] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [photoModalUrl, setPhotoModalUrl] = useState<string | null>(null);
-
-  const inspectionList: InspectionRow[] = Array.isArray(inspections)
-    ? [...inspections].sort(
-        (a, b) =>
-          new Date(b.created_at || "").getTime() -
-          new Date(a.created_at || "").getTime(),
-      )
-    : [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -249,17 +240,6 @@ export default function RenterInspectionForm({
               </div>
             )}
           </div>
-
-          <div className="flex gap-2">
-            <a
-              href={`/api/invoice?rental_id=${encodeURIComponent(rental.id)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rr-btn rr-btn-secondary"
-            >
-              Download invoice
-            </a>
-          </div>
         </div>
 
         {rental.message && (
@@ -286,16 +266,18 @@ export default function RenterInspectionForm({
             <input type="hidden" name="rental_id" value={rental.id} />
             <input type="hidden" name="role" value="renter" />
 
-            <div className="grid gap-1">
-              <label className="text-xs font-medium">Phase</label>
-              <select
-                name="phase"
-                className="rr-input w-full text-sm"
-                defaultValue="checkout"
-              >
-                <option value="checkin">Check-in (before rental)</option>
-                <option value="checkout">Check-out (after rental)</option>
-              </select>
+            <input type="hidden" name="phase" value={phase} />
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Condition Type
+              </div>
+
+              <div className="mt-1 font-semibold text-slate-900">
+                {phase === "checkin"
+                  ? "Renter Pre-Rental Condition"
+                  : "Renter Return Condition"}
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -395,131 +377,6 @@ export default function RenterInspectionForm({
           </form>
         </div>
       </div>
-
-      {/* Inspection history – rr-card + bubbles, newest first */}
-      {inspectionList.length > 0 && (
-        <section className="mt-4">
-          <h2 className="mb-2 text-sm font-semibold text-slate-800">
-            Inspection history
-          </h2>
-
-          <div className="space-y-3">
-            {inspectionList.map((ins) => (
-              <article key={ins.id} className="rr-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2 text-xs text-slate-700">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Role bubble */}
-                      <span
-                        className="
-                          inline-flex items-center
-                          rounded-full border border-black
-                          bg-white
-                          px-3 py-1
-                          text-[11px] font-semibold uppercase
-                          shadow-sm
-                        "
-                      >
-                        {ins.role === "owner" ? "Owner" : "Renter"}
-                      </span>
-
-                      {/* Phase bubble */}
-                      <span
-                        className="
-                          inline-flex items-center
-                          rounded-full border border-black
-                          bg-white
-                          px-3 py-1
-                          text-[11px]
-                          shadow-sm
-                        "
-                      >
-                        {ins.phase === "checkin" ? "Check-in" : "Check-out"}
-                      </span>
-
-                      {ins.created_at && (
-                        <span className="text-[11px] text-slate-500">
-                          {new Date(ins.created_at).toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid gap-1">
-                      {ins.odometer != null && (
-                        <div>Odometer: {ins.odometer} mi</div>
-                      )}
-                      {ins.hours_used != null && (
-                        <div>Hours used: {ins.hours_used}</div>
-                      )}
-                      {ins.fuel_percent != null && (
-                        <div>Fuel: {ins.fuel_percent}%</div>
-                      )}
-                      {ins.notes && (
-                        <div className="mt-1">
-                          <span className="font-medium">Notes:</span>{" "}
-                          {ins.notes}
-                        </div>
-                      )}
-                      {ins.damages && (
-                        <div className="mt-1 text-rose-700">
-                          <span className="font-medium">Damages:</span>{" "}
-                          {ins.damages}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Photo thumbnails */}
-                  {ins.photos && ins.photos.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {ins.photos.map((p, idx) => (
-                        <button
-                          key={`${ins.id}-${idx}`}
-                          type="button"
-                          onClick={() => setPhotoModalUrl(p.url)}
-                          className="overflow-hidden rounded-md border bg-slate-100 hover:opacity-90"
-                        >
-                          <img
-                            src={p.url}
-                            alt=""
-                            className="h-16 w-24 object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Fullscreen photo modal */}
-      {photoModalUrl && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70"
-          onClick={() => setPhotoModalUrl(null)}
-        >
-          <div
-            className="relative w-full max-w-3xl px-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="absolute -top-2 right-4 rr-btn rr-btn-secondary text-xs"
-              onClick={() => setPhotoModalUrl(null)}
-            >
-              Close
-            </button>
-            <img
-              src={photoModalUrl}
-              alt=""
-              className="max-h-[80vh] w-full rounded-lg bg-black object-contain"
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -783,12 +783,11 @@ deposit_refund_transaction_id,
 
         {/* Inspections list (owner + renter) */}
         <section className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold">Existing inspections</h2>
+          <h2 className="mb-3 text-sm font-semibold">Condition History</h2>
 
           {inspections.length === 0 ? (
             <p className="text-sm text-slate-600">
-              No inspections recorded yet. Save a check-in or check-out above to
-              see them here.
+              No condition reports recorded yet.
             </p>
           ) : (
             <div className="grid gap-3">
@@ -824,7 +823,9 @@ deposit_refund_transaction_id,
                           shadow-sm
                         "
                       >
-                        {insp.phase === "checkin" ? "Check-in" : "Check-out"}
+                        {insp.phase === "checkin"
+                          ? "Pre-Rental Condition"
+                          : "Return Condition"}
                       </span>
                     </div>
 

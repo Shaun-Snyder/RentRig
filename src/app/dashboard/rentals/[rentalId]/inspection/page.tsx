@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
+import RenterInspectionForm from "@/components/RenterInspectionForm";
 
 type RentalRow = {
   id: string;
@@ -189,6 +190,11 @@ export default async function RenterInspectionPage({
       inspection.role === "owner" && inspection.phase === "checkin",
   );
 
+  const renterPreRentalInspection = inspections.find(
+    (inspection) =>
+      inspection.role === "renter" && inspection.phase === "checkin",
+  );
+
   return (
     <>
       <ServerHeader />
@@ -232,17 +238,11 @@ export default async function RenterInspectionPage({
           </section>
         )}
 
-        {/* Existing renter form (unchanged) */}
-        <div className="rr-card p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Pre-Rental Condition
-          </div>
-
-          <div className="mt-2 text-sm text-slate-600">
-            Review the owner&apos;s pre-rental condition report below before
-            pickup.
-          </div>
-        </div>
+        {ownerPreRentalInspection && !renterPreRentalInspection && (
+          <section className="mb-6">
+            <RenterInspectionForm rental={typedRental} phase="checkin" />
+          </section>
+        )}
 
         <section className="mt-6">
           <h2 className="mb-3 text-base font-semibold text-slate-800">
@@ -336,6 +336,80 @@ export default async function RenterInspectionPage({
             </div>
           )}
         </section>
+        {renterPreRentalInspection && (
+          <section className="mt-6">
+            <h2 className="mb-3 text-base font-semibold text-slate-800">
+              My Pre-Rental Condition
+            </h2>
+
+            <div className="rr-card space-y-3 p-4 text-sm text-slate-700">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-semibold text-emerald-700">
+                  ✓ Renter pre-rental condition recorded
+                </div>
+
+                {renterPreRentalInspection.created_at && (
+                  <div className="text-xs text-slate-500">
+                    {new Date(
+                      renterPreRentalInspection.created_at,
+                    ).toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-6">
+                {renterPreRentalInspection.odometer != null && (
+                  <div>Odometer: {renterPreRentalInspection.odometer} mi</div>
+                )}
+
+                {renterPreRentalInspection.hours_used != null && (
+                  <div>Hours: {renterPreRentalInspection.hours_used}</div>
+                )}
+
+                {renterPreRentalInspection.fuel_percent != null && (
+                  <div>Fuel: {renterPreRentalInspection.fuel_percent}%</div>
+                )}
+              </div>
+
+              {renterPreRentalInspection.damages && (
+                <div>
+                  <div className="font-medium">Existing Damage</div>
+                  <div>{renterPreRentalInspection.damages}</div>
+                </div>
+              )}
+
+              {renterPreRentalInspection.notes && (
+                <div>
+                  <div className="font-medium">Notes</div>
+                  <div>{renterPreRentalInspection.notes}</div>
+                </div>
+              )}
+
+              {renterPreRentalInspection.photos.length > 0 && (
+                <div>
+                  <div className="mb-2 font-medium">Photos</div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {renterPreRentalInspection.photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          src={photo.url}
+                          alt=""
+                          className="h-24 w-32 rounded border object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
     </>
   );

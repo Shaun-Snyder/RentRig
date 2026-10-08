@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Require at least 1 renter checkout inspection with at least 1 photo
-  const { data: inspections, error: inspectionError } = await supabase
+  // Require both owner and renter pre-rental condition reports
+  const { data: preRentalInspections, error: inspectionError } = await supabase
     .from("rental_inspections")
-    .select("id, photos:rental_inspection_photos(id)")
+    .select("role")
     .eq("rental_id", rentalId)
-    .eq("role", "renter")
-    .eq("phase", "checkout");
+    .eq("phase", "checkin")
+    .in("role", ["owner", "renter"]);
 
   if (inspectionError) {
     return NextResponse.json(
@@ -50,16 +50,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const hasCheckoutPhotos = (inspections ?? []).some((row: any) => {
-    const photos = row?.photos ?? [];
-    return Array.isArray(photos) && photos.length > 0;
-  });
+  const hasOwnerPreRental = (preRentalInspections ?? []).some(
+    (inspection) => inspection.role === "owner",
+  );
 
-  if (!hasCheckoutPhotos) {
+  const hasRenterPreRental = (preRentalInspections ?? []).some(
+    (inspection) => inspection.role === "renter",
+  );
+
+  if (!hasOwnerPreRental || !hasRenterPreRental) {
     return NextResponse.json(
       {
         error:
-          "Please upload renter checkout photos in Record / view condition before marking this rental returned.",
+          "Both the owner and renter pre-rental condition reports must be completed before this rental can be marked returned.",
       },
       { status: 400 },
     );

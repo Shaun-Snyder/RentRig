@@ -19,6 +19,7 @@ type RentalRow = {
   end_date: string;
   status: string;
   renter_returned?: boolean | null;
+  has_owner_checkin?: boolean;
   message?: string | null;
   created_at?: string | null;
 
@@ -497,7 +498,9 @@ export default function OwnerRentalsClient({
                 href={`/dashboard/owner-rentals/${encodeURIComponent(r.id)}/inspection`}
                 className="rr-btn rr-btn-secondary"
               >
-                Record / view condition
+                {r.has_owner_checkin
+                  ? "View Pre-Rental Condition"
+                  : "Record Pre-Rental Condition"}
               </a>
 
               <button

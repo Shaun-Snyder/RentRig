@@ -214,6 +214,30 @@ export default async function OwnerRentalsPage() {
     }
   }
 
+  const rentalIds = rentalsRaw.map((r: any) => r.id);
+
+  const ownerCheckinRentalIds = new Set<string>();
+
+  if (rentalIds.length > 0) {
+    const { data: ownerCheckins, error: ownerCheckinsError } = await supabase
+      .from("rental_inspections")
+      .select("rental_id")
+      .in("rental_id", rentalIds)
+      .eq("role", "owner")
+      .eq("phase", "checkin");
+
+    if (ownerCheckinsError) {
+      console.error(
+        "Owner rentals check-in lookup error:",
+        ownerCheckinsError.message,
+      );
+    }
+
+    for (const row of ownerCheckins ?? []) {
+      ownerCheckinRentalIds.add(row.rental_id);
+    }
+  }
+
   // Final enriched rentals: only those whose listing is owned by this user
   const enriched = rentalsRaw
     .filter((r: any) => listingMap.has(r.listing_id))
@@ -225,6 +249,7 @@ export default async function OwnerRentalsPage() {
         avg: null,
         count: 0,
       },
+      has_owner_checkin: ownerCheckinRentalIds.has(r.id),
     }));
   return (
     <>

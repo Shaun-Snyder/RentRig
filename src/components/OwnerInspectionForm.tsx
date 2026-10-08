@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { createRentalInspection } from "@/app/rentals/actions";
 
 type RentalRow = {
@@ -148,6 +149,7 @@ export default function OwnerInspectionForm({
 }) {
   const [msg, setMsg] = useState("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const [photoModalUrl, setPhotoModalUrl] = useState<string | null>(null);
 
   const inspectionList: InspectionRow[] = Array.isArray(inspections)
@@ -185,10 +187,8 @@ export default function OwnerInspectionForm({
         alert(m);
         setMsg(m);
       } else {
-        const m = res.message || "Inspection saved.";
-        alert(m);
-        setMsg(m);
         form.reset();
+        router.refresh();
       }
     });
   }
@@ -275,10 +275,16 @@ export default function OwnerInspectionForm({
 
         {/* Owner check-in/check-out form */}
         <div className="mt-3 border-t pt-3">
-          <h3 className="text-base font-semibold">Record Condition</h3>
+          <h3 className="text-base font-semibold">
+            {phase === "checkin"
+              ? "Record Pre-Rental Condition"
+              : "Record Return Condition"}
+          </h3>
+
           <p className="mt-1 text-xs text-slate-600">
-            Take photos and note condition at pickup and return. Use this for
-            full inspection documentation and dispute protection.
+            {phase === "checkin"
+              ? "Document the equipment condition before the renter takes possession."
+              : "Document the equipment condition after it has been returned."}
           </p>
 
           <form
