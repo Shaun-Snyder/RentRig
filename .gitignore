@@ -33,4 +33,3 @@ src/additions/
 src/app/api/health/
 src/app/api/inspect/
 src/app/listings/[id]/page.tsx.bak
-src/lib/db/
