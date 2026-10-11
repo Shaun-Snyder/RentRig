@@ -7,6 +7,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import fs from "fs";
 import path from "path";
 import { sendInvoiceEmail } from "@/lib/email";
+import { stripe } from "@/lib/stripe";
 
 function money(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -247,11 +248,11 @@ export async function approveRentalAndEmail(rentalId: string) {
       delivery_selected,
       delivery_fee,
 
-rental_rate_unit,
-rental_rate,
-rental_quantity,
-rental_subtotal,
-security_deposit_amount,
+      rental_rate_unit,
+      rental_rate,
+      rental_quantity,
+      rental_subtotal,
+      security_deposit_amount,
 
       owner_discount_amount,
       owner_discount_note,
@@ -539,7 +540,9 @@ export async function markRentalCompleted(rentalId: string) {
   // Verify ownership (same pattern as approve)
   const { data: rental } = await supabase
     .from("rentals")
-    .select("id, status, renter_returned, listing:listings(owner_id)")
+    .select(
+      "id, status, renter_returned, payment_status, owner_payout_amount, owner_payout_status, stripe_transfer_id, deposit_status, listing:listings(owner_id)",
+    )
     .eq("id", rentalId)
     .single();
 
@@ -548,10 +551,83 @@ export async function markRentalCompleted(rentalId: string) {
   if (!rental || ownerId !== user.id) {
     return { ok: false, error: "Forbidden" as const };
   }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  const { data: ownerProfile, error: ownerProfileError } = await admin
+    .from("profiles")
+    .select("stripe_account_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (ownerProfileError) {
+    return { ok: false, error: ownerProfileError.message };
+  }
+
+  if (!ownerProfile?.stripe_account_id) {
+    return {
+      ok: false,
+      error:
+        "Complete Stripe payout setup before completing this rental." as const,
+    };
+  }
+
+  const stripeAccount = await stripe.v2.core.accounts.retrieve(
+    ownerProfile.stripe_account_id,
+    {
+      include: ["configuration.recipient"],
+    },
+  );
+
+  const stripeBalance =
+    stripeAccount.configuration?.recipient?.capabilities?.stripe_balance;
+
+  const transfersActive = stripeBalance?.stripe_transfers?.status === "active";
+  const payoutsActive = stripeBalance?.payouts?.status === "active";
+
+  if (!transfersActive || !payoutsActive) {
+    return {
+      ok: false,
+      error: "Owner Stripe payouts are not currently ready." as const,
+    };
+  }
+
   if (rental.status !== "approved") {
     return {
       ok: false,
       error: "Only approved rentals can be completed." as const,
+    };
+  }
+
+  if (rental.payment_status !== "paid") {
+    return {
+      ok: false,
+      error: "The rental must be paid before it can be completed." as const,
+    };
+  }
+
+  if (
+    rental.owner_payout_status === "transferred" ||
+    rental.stripe_transfer_id
+  ) {
+    return {
+      ok: false,
+      error: "The owner payout has already been transferred." as const,
+    };
+  }
+
+  const ownerPayoutAmount = Math.max(
+    0,
+    Number(rental.owner_payout_amount ?? 0) || 0,
+  );
+
+  if (ownerPayoutAmount <= 0) {
+    return {
+      ok: false,
+      error: "Owner payout amount must be greater than zero." as const,
     };
   }
 
@@ -583,10 +659,55 @@ export async function markRentalCompleted(rentalId: string) {
     };
   }
 
-  // Only allow from approved → completed
-  const { error } = await supabase
+  const finalizedDepositStatuses = [
+    "fully_refunded",
+    "partially_refunded",
+    "retained",
+  ];
+
+  if (!finalizedDepositStatuses.includes(rental.deposit_status ?? "")) {
+    return {
+      ok: false,
+      error:
+        "Review and finalize the security deposit before completing the rental." as const,
+    };
+  }
+
+  let transfer;
+
+  try {
+    transfer = await stripe.transfers.create(
+      {
+        amount: Math.round(ownerPayoutAmount * 100),
+        currency: "usd",
+        destination: ownerProfile.stripe_account_id,
+        transfer_group: `rental_${rentalId}`,
+        metadata: {
+          rental_id: rentalId,
+          owner_id: user.id,
+        },
+      },
+      {
+        idempotencyKey: `rental_owner_payout_${rentalId}`,
+      },
+    );
+  } catch (error) {
+    console.error("Stripe owner transfer failed:", error);
+
+    return {
+      ok: false,
+      error: "Stripe could not transfer the owner payout." as const,
+    };
+  }
+
+  const { error } = await admin
     .from("rentals")
-    .update({ status: "completed" })
+    .update({
+      status: "completed",
+      stripe_transfer_id: transfer.id,
+      owner_payout_status: "transferred",
+      owner_paid_at: new Date().toISOString(),
+    })
     .eq("id", rentalId)
     .eq("status", "approved");
 
@@ -620,6 +741,12 @@ export async function updateRentalDeposit(formData: FormData) {
       `
   id,
   security_deposit_amount,
+  payment_status,
+  stripe_payment_intent_id,
+  stripe_charge_id,
+  deposit_status,
+  deposit_refund_amount,
+  stripe_deposit_refund_id,
   listing:listings (
     owner_id,
     security_deposit
@@ -640,6 +767,19 @@ export async function updateRentalDeposit(formData: FormData) {
 
   if (!listing?.owner_id || listing.owner_id !== user.id) {
     return { ok: false, error: "Forbidden" as const };
+  }
+
+  const finalizedDepositStatuses = [
+    "fully_refunded",
+    "partially_refunded",
+    "retained",
+  ];
+
+  if (finalizedDepositStatuses.includes(rental.deposit_status ?? "")) {
+    return {
+      ok: false,
+      error: "The security deposit has already been finalized." as const,
+    };
   }
 
   const depositAmount = Math.max(
@@ -700,6 +840,52 @@ export async function updateRentalDeposit(formData: FormData) {
 
   const now = new Date().toISOString();
 
+  let stripeDepositRefundId = rental.stripe_deposit_refund_id ?? null;
+
+  if (refundAmount > 0) {
+    if (rental.payment_status !== "paid") {
+      return {
+        ok: false,
+        error:
+          "The rental must be paid before issuing a deposit refund." as const,
+      };
+    }
+
+    if (!rental.stripe_charge_id) {
+      return {
+        ok: false,
+        error: "The original Stripe charge could not be found." as const,
+      };
+    }
+
+    if (!stripeDepositRefundId) {
+      try {
+        const refund = await stripe.refunds.create(
+          {
+            charge: rental.stripe_charge_id,
+            amount: Math.round(refundAmount * 100),
+            metadata: {
+              rental_id: rentalId,
+              refund_type: "security_deposit",
+            },
+          },
+          {
+            idempotencyKey: `rental_deposit_refund_${rentalId}`,
+          },
+        );
+
+        stripeDepositRefundId = refund.id;
+      } catch (error) {
+        console.error("Stripe deposit refund failed:", error);
+
+        return {
+          ok: false,
+          error: "Stripe could not issue the security deposit refund." as const,
+        };
+      }
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("rentals")
     .update({
@@ -714,6 +900,7 @@ export async function updateRentalDeposit(formData: FormData) {
       deposit_owner_notes: ownerNotes || null,
       deposit_renter_explanation: renterExplanation || null,
       deposit_refund_amount: refundAmount,
+      stripe_deposit_refund_id: stripeDepositRefundId,
       deposit_refunded_at:
         depositStatus === "fully_refunded" ||
         depositStatus === "partially_refunded"

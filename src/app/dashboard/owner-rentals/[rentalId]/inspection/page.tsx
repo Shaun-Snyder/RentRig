@@ -284,6 +284,12 @@ deposit_refund_transaction_id,
   const hasOwnerCheckin = Boolean(ownerCheckinInspection);
   const hasOwnerCheckout = Boolean(ownerCheckoutInspection);
 
+  const depositFinalized = [
+    "fully_refunded",
+    "partially_refunded",
+    "retained",
+  ].includes(typedRental.deposit_status ?? "");
+
   return (
     <>
       <ServerHeader />
@@ -545,6 +551,32 @@ deposit_refund_transaction_id,
               refunding the security deposit.
             </div>
           </div>
+        ) : depositFinalized ? (
+          <div className="rr-card mt-6 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Return Deposit
+            </div>
+
+            <div className="mt-2 font-semibold text-green-700">
+              ✓ Security deposit finalized
+            </div>
+
+            <div className="mt-2 text-sm text-slate-600">
+              Status:{" "}
+              {String(typedRental.deposit_status ?? "")
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, (letter) => letter.toUpperCase())}
+            </div>
+
+            <div className="mt-1 text-sm text-slate-600">
+              Refund: $
+              {Number(typedRental.deposit_refund_amount ?? 0).toFixed(2)}
+            </div>
+
+            <div className="mt-1 text-xs text-slate-500">
+              The deposit review is locked and cannot be changed.
+            </div>
+          </div>
         ) : (
           <form
             action={async (formData) => {
@@ -757,12 +789,12 @@ deposit_refund_transaction_id,
 
               <div className="flex items-center justify-between border-t border-slate-200 pt-4">
                 <div className="text-sm text-slate-500">
-                  Save the final deductions after reviewing the return
-                  condition.
+                  Finalizing the deposit will issue the renter&apos;s refund and
+                  lock the deposit review.
                 </div>
 
                 <SaveButton
-                  idleText="Save Deposit Changes"
+                  idleText="Finalize Deposit & Issue Refund"
                   pendingText="Saving..."
                   size="lg"
                 />
@@ -785,11 +817,14 @@ deposit_refund_transaction_id,
               <div className="mt-2 text-sm text-slate-600">
                 Record the return condition before completing the rental.
               </div>
+            ) : !depositFinalized ? (
+              <div className="mt-2 text-sm text-slate-600">
+                Finalize the security deposit before completing the rental.
+              </div>
             ) : (
               <>
                 <div className="mt-2 text-sm text-slate-600">
-                  Return condition is complete. Review the security deposit,
-                  then complete the rental.
+                  Return condition and security deposit review are complete.
                 </div>
 
                 <div className="mt-4 flex justify-end">
