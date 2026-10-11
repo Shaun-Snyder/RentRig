@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   approveRentalAndEmail,
   rejectRental,
-  markRentalCompleted,
 } from "@/app/dashboard/owner-rentals/actions";
 import FinalizeHourlyService from "@/components/FinalizeHourlyService";
 import { createClient } from "@/lib/supabase/client";
@@ -193,18 +192,6 @@ export default function OwnerRentalsClient({
   async function onReject(rentalId: string) {
     startTransition(async () => {
       const res = await rejectRental(rentalId);
-      if (!res.ok) {
-        alert(res.error);
-        return;
-      }
-
-      router.refresh();
-    });
-  }
-
-  async function onComplete(rentalId: string) {
-    startTransition(async () => {
-      const res = await markRentalCompleted(rentalId);
       if (!res.ok) {
         alert(res.error);
         return;
@@ -513,16 +500,6 @@ export default function OwnerRentalsClient({
                 }`}
               >
                 {isApproved ? "Approved" : "Approve & Email"}
-              </button>
-
-              <button
-                onClick={() => onComplete(r.id)}
-                disabled={
-                  isPending || r.status !== "approved" || !r.renter_returned
-                }
-                className="rr-btn rr-btn-secondary"
-              >
-                {r.renter_returned ? "Complete" : "Waiting on Return"}
               </button>
 
               {!isApproved && !isRejected ? (

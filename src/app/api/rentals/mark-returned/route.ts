@@ -68,6 +68,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Require renter return condition before marking the rental returned
+  const { data: renterReturnInspection, error: renterReturnError } =
+    await supabase
+      .from("rental_inspections")
+      .select("id")
+      .eq("rental_id", rentalId)
+      .eq("role", "renter")
+      .eq("phase", "checkout")
+      .limit(1)
+      .maybeSingle();
+
+  if (renterReturnError) {
+    return NextResponse.json(
+      { error: renterReturnError.message },
+      { status: 500 },
+    );
+  }
+
+  if (!renterReturnInspection) {
+    return NextResponse.json(
+      {
+        error:
+          "Please record your return condition before marking this rental returned.",
+      },
+      { status: 400 },
+    );
+  }
+
   const { error } = await supabase
     .from("rentals")
     .update({ renter_returned: true })

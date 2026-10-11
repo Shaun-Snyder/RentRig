@@ -15,6 +15,7 @@ type RentalRow = {
   message: string | null;
   created_at: string;
   renter_id: string;
+  renter_returned: boolean;
   rental_agreement_url: string | null;
   listing: {
     id: string;
@@ -70,6 +71,7 @@ export default async function RenterInspectionPage({
       message,
       created_at,
       renter_id,
+      renter_returned,
       rental_agreement_url,
       listing:listings ( id, title )
     `,
@@ -99,6 +101,7 @@ export default async function RenterInspectionPage({
     message: rental.message,
     created_at: rental.created_at,
     renter_id: rental.renter_id,
+    renter_returned: rental.renter_returned,
     rental_agreement_url: rental.rental_agreement_url ?? null,
     listing: listing
       ? {
@@ -195,6 +198,11 @@ export default async function RenterInspectionPage({
       inspection.role === "renter" && inspection.phase === "checkin",
   );
 
+  const renterReturnInspection = inspections.find(
+    (inspection) =>
+      inspection.role === "renter" && inspection.phase === "checkout",
+  );
+
   return (
     <>
       <ServerHeader />
@@ -241,6 +249,104 @@ export default async function RenterInspectionPage({
         {ownerPreRentalInspection && !renterPreRentalInspection && (
           <section className="mb-6">
             <RenterInspectionForm rental={typedRental} phase="checkin" />
+          </section>
+        )}
+
+        {ownerPreRentalInspection &&
+          renterPreRentalInspection &&
+          !renterReturnInspection &&
+          !typedRental.renter_returned && (
+            <section className="mb-6">
+              <RenterInspectionForm rental={typedRental} phase="checkout" />
+            </section>
+          )}
+
+        {renterReturnInspection && (
+          <section className="mb-6">
+            <h2 className="mb-3 text-base font-semibold text-slate-800">
+              My Return Condition
+            </h2>
+
+            <div className="rr-card space-y-4 p-4 text-sm text-slate-700">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="font-semibold text-green-700">
+                  ✓ Renter return condition recorded
+                </div>
+
+                {renterReturnInspection.created_at ? (
+                  <div className="text-xs text-slate-500">
+                    {new Date(
+                      renterReturnInspection.created_at,
+                    ).toLocaleString()}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {renterReturnInspection.odometer != null ? (
+                  <div>
+                    <span className="font-semibold">Odometer:</span>{" "}
+                    {renterReturnInspection.odometer} mi
+                  </div>
+                ) : null}
+
+                {renterReturnInspection.hours_used != null ? (
+                  <div>
+                    <span className="font-semibold">Hours:</span>{" "}
+                    {renterReturnInspection.hours_used}
+                  </div>
+                ) : null}
+
+                {renterReturnInspection.fuel_percent != null ? (
+                  <div>
+                    <span className="font-semibold">Fuel:</span>{" "}
+                    {renterReturnInspection.fuel_percent}%
+                  </div>
+                ) : null}
+              </div>
+
+              {renterReturnInspection.damages ? (
+                <div>
+                  <div className="font-semibold text-rose-700">
+                    Damage / Issues
+                  </div>
+                  <div className="mt-1 text-rose-700">
+                    {renterReturnInspection.damages}
+                  </div>
+                </div>
+              ) : null}
+
+              {renterReturnInspection.notes ? (
+                <div>
+                  <div className="font-semibold">Notes</div>
+                  <div className="mt-1">{renterReturnInspection.notes}</div>
+                </div>
+              ) : null}
+
+              {renterReturnInspection.photos.length > 0 ? (
+                <div>
+                  <div className="mb-2 font-semibold">Photos</div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {renterReturnInspection.photos.map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block"
+                      >
+                        <img
+                          src={photo.url}
+                          alt="Renter return condition"
+                          className="h-20 w-28 rounded border object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </section>
         )}
 
