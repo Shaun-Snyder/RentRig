@@ -73,6 +73,8 @@ export default async function RenterInspectionPage({
       renter_id,
       renter_returned,
       rental_agreement_url,
+rental_agreement_signed,
+rental_agreement_signed_at,
       listing:listings ( id, title )
     `,
     )
@@ -86,6 +88,10 @@ export default async function RenterInspectionPage({
 
   if (rental.renter_id !== user.id) {
     redirect("/dashboard/rentals");
+  }
+
+  if (rental.rental_agreement_url && !rental.rental_agreement_signed) {
+    redirect(`/dashboard/rentals/${rentalId}`);
   }
 
   const listing = Array.isArray(rental.listing)

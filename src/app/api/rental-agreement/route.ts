@@ -78,7 +78,11 @@ export async function POST(request: NextRequest) {
   // Save URL on the rentals table
   const { error: updateError } = await supabase
     .from("rentals")
-    .update({ rental_agreement_url: publicUrl })
+    .update({
+      rental_agreement_url: publicUrl,
+      rental_agreement_signed: false,
+      rental_agreement_signed_at: null,
+    })
     .eq("id", rentalId);
 
   if (updateError) {

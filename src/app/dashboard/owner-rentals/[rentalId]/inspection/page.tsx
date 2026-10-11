@@ -18,6 +18,8 @@ type RentalRow = {
   message: string | null;
   created_at: string;
   rental_agreement_url: string | null;
+  rental_agreement_signed: boolean;
+  rental_agreement_signed_at: string | null;
   security_deposit_amount?: number | null;
 
   deposit_status?: string | null;
@@ -97,6 +99,8 @@ export default async function OwnerInspectionPage({
       message,
       created_at,
       rental_agreement_url,
+rental_agreement_signed,
+rental_agreement_signed_at,
 
 security_deposit_amount,
 
@@ -144,6 +148,8 @@ deposit_refund_transaction_id,
     message: rental.message,
     created_at: rental.created_at,
     rental_agreement_url: rental.rental_agreement_url ?? null,
+    rental_agreement_signed: rental.rental_agreement_signed ?? false,
+    rental_agreement_signed_at: rental.rental_agreement_signed_at ?? null,
     security_deposit_amount: rental.security_deposit_amount ?? null,
 
     deposit_status: rental.deposit_status ?? null,
@@ -335,6 +341,26 @@ deposit_refund_transaction_id,
                     </a>
                   )}
                 </div>
+
+                {typedRental.rental_agreement_signed ? (
+                  <div className="text-right">
+                    <div className="font-semibold text-green-700">
+                      ✓ Agreement signed
+                    </div>
+
+                    {typedRental.rental_agreement_signed_at ? (
+                      <div className="mt-1 text-[11px] text-slate-500">
+                        {new Date(
+                          typedRental.rental_agreement_signed_at,
+                        ).toLocaleString()}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : typedRental.rental_agreement_url ? (
+                  <div className="font-semibold text-amber-700">
+                    Waiting for renter signature
+                  </div>
+                ) : null}
               </div>
             )}
 

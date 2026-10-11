@@ -6,6 +6,7 @@ import ServerHeader from "@/components/ServerHeader";
 import PageHeader from "@/components/PageHeader";
 import { createClient } from "@/lib/supabase/server";
 import RentalCheckoutButton from "@/components/RentalCheckoutButton";
+import RentalAgreementConfirmButton from "@/components/RentalAgreementConfirmButton";
 
 export default async function RentalDetailsPage({
   params,
@@ -34,6 +35,9 @@ export default async function RentalDetailsPage({
         paid_at,
         renter_returned,
         buffer_days,
+        rental_agreement_url,
+        rental_agreement_signed,
+        rental_agreement_signed_at,
 
         rental_rate_unit,
         rental_rate,
@@ -220,7 +224,12 @@ export default async function RentalDetailsPage({
                     <span className="rr-badge">PAID</span>
                   ) : null}
 
-                  {hasOwnerCheckin ? (
+                  {rental.rental_agreement_url &&
+                  !rental.rental_agreement_signed ? (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
+                      Sign Rental Agreement First
+                    </div>
+                  ) : hasOwnerCheckin ? (
                     <Link
                       href={`/dashboard/rentals/${encodeURIComponent(
                         rental.id,
@@ -245,6 +254,40 @@ export default async function RentalDetailsPage({
               </div>
             </div>
           </div>
+
+          {rental.rental_agreement_url ? (
+            <div className="rr-card p-5">
+              <div className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Rental Agreement
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <a
+                  href={rental.rental_agreement_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rr-btn rr-btn-secondary"
+                >
+                  View Rental Agreement
+                </a>
+
+                {rental.rental_agreement_signed ? (
+                  <span className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+                    ✓ Agreement Signed
+                  </span>
+                ) : (
+                  <RentalAgreementConfirmButton rentalId={rental.id} />
+                )}
+              </div>
+
+              {!rental.rental_agreement_signed ? (
+                <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                  You must review and sign the rental agreement before
+                  continuing with the rental.
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rr-card p-5">
